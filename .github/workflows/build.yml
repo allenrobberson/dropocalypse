@@ -1,0 +1,77 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Check Metal shaders compile
+        run: |
+          awk '/\/\/ METAL-BEGIN/{flag=1;next}/\/\/ METAL-END/{flag=0}flag' \
+            Sources/LogoVisualizer/Render/ShaderSource.swift > /tmp/Shaders.metal
+          if ! xcrun -sdk macosx metal -c /tmp/Shaders.metal -o /tmp/Shaders.air 2>/tmp/metal-err.txt; then
+            if grep -qi "missing metal toolchain\|cannot execute tool 'metal'\|toolchain" /tmp/metal-err.txt; then
+              echo "Metal toolchain not installed on this runner; downloading it"
+              xcodebuild -downloadComponent MetalToolchain || true
+              xcrun -sdk macosx metal -c /tmp/Shaders.metal -o /tmp/Shaders.air
+            else
+              cat /tmp/metal-err.txt
+              exit 1
+            fi
+          fi
+          echo "Shaders OK"
+
+      - name: Build app
+        env:
+          VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+        run: |
+          export VERSION="${VERSION#v}"
+          [ -z "$VERSION" ] && export VERSION="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          chmod +x scripts/build-app.sh
+          ./scripts/build-app.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LogoVisualizer-macOS
+          path: |
+            dist/*.zip
+            dist/*.dmg
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/*.dmg
+          generate_release_notes: true
+          body: |
+            ## Download
+
+            Download the **.dmg** file under Assets below, open it, and drag **Logo Visualizer** into Applications.
+            Works on Apple Silicon and Intel Macs, macOS 13 Ventura or later.
+
+            **First launch:** the app is free and not notarized by Apple, so macOS will block it the first time.
+            Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to "Logo Visualizer".
+            (On macOS 14 and earlier you can instead right-click the app → **Open**.)
+            When asked, allow microphone access so it can hear the music.
