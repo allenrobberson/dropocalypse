@@ -171,3 +171,7 @@ jobs:
 
             By default the Windows version listens to **what your PC is playing** (Spotify, YouTube, DJ software), so no microphone is needed.
             Switch to a mic or line-in under **Audio** in the toolbar.
+
+            ## ❤️ Support Dropocalypse
+            Dropocalypse is free and always will be. If you enjoy it, please consider [sponsoring the project](https://github.com/sponsors/allenrobberson).
+            The first goal is the $99/year Apple Developer membership so Mac downloads open without a security warning.

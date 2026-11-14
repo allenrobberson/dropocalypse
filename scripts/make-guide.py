@@ -533,6 +533,10 @@ def build():
           "including commercially. The full source code, the latest downloads and the online version of this "
           "guide are at <b>github.com/allenrobberson/dropocalypse</b>.", body),
         P("Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals are original code.", small),
+        sub("Support Dropocalypse"),
+        P("Dropocalypse is free and always will be. If you enjoy it, please consider sponsoring the project at "
+          "<b>github.com/sponsors/allenrobberson</b>. The first goal is the $99/year Apple Developer membership, "
+          "so Mac downloads can open without a security warning.", body),
     ]))
     return s
 
