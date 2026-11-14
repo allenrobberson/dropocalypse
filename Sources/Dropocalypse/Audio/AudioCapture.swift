@@ -8,7 +8,8 @@ struct AudioInputDevice: Identifiable, Hashable {
     let name: String
 }
 
-/// Captures audio from a microphone or line-in with the smallest practical hardware buffer
+/// Captures audio from a microphone or line-in — or, on macOS 14.2+, straight from what the Mac
+/// is playing (all apps, or one app such as Spotify) through a Core Audio process tap — with the smallest practical hardware buffer
 /// and feeds it, on the real-time thread, straight into the feature extractor.
 ///
 /// Uses `AVAudioSinkNode` rather than `installTap`: taps deliver audio in 100–400 ms chunks,
@@ -17,6 +18,10 @@ final class AudioCapture: ObservableObject {
     let analysis = AudioAnalysis()
 
     @Published private(set) var devices: [AudioInputDevice] = []
+    /// Open apps you can listen to directly (macOS 14.2+).
+    @Published private(set) var audioApps: [AudioApp] = []
+    /// True while the selected source is Mac audio rather than a mic or line-in.
+    @Published private(set) var isTapSource = false
     @Published private(set) var statusText: String = "Starting…"
     @Published private(set) var isRunning = false
     @Published private(set) var permissionDenied = false
@@ -30,6 +35,20 @@ final class AudioCapture: ObservableObject {
     private var configObserver: NSObjectProtocol?
     private var extractorBox: ExtractorBox?
     private var selectedUID: String?
+    private var tap: AnyObject?            // ProcessTap (macOS 14.2+)
+    private var tapWatcher: AnyObject?     // TapWatcher (macOS 14.2+)
+    private var tapProcesses: Set<AudioObjectID> = []
+    private var restartWork: DispatchWorkItem?
+
+    /// Picker tags for the Mac-audio sources.
+    static let allMacAudioTag = "tap:all"
+    static func appTag(_ bundleID: String) -> String { "tap:app:\(bundleID)" }
+
+    /// Process taps need macOS 14.2 or later.
+    static var macAudioSupported: Bool {
+        if #available(macOS 14.2, *) { return true }
+        return false
+    }
 
     init() {
         refreshDevices()
@@ -39,6 +58,7 @@ final class AudioCapture: ObservableObject {
 
     func refreshDevices() {
         devices = Self.inputDevices()
+        if #available(macOS 14.2, *) { audioApps = ProcessTap.audioApps() }
     }
 
     // MARK: Start / stop
@@ -46,6 +66,10 @@ final class AudioCapture: ObservableObject {
     /// Starts capture from the device with the given UID, or the system default input if nil.
     func start(deviceUID: String?) {
         selectedUID = deviceUID
+        if let uid = deviceUID, uid.hasPrefix("tap:") {
+            startTap(uid)
+            return
+        }
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
             startEngine()
@@ -62,6 +86,13 @@ final class AudioCapture: ObservableObject {
     }
 
     func stop() {
+        restartWork?.cancel()
+        restartWork = nil
+        if #available(macOS 14.2, *) { (tap as? ProcessTap)?.stop() }
+        tap = nil
+        tapWatcher = nil
+        tapProcesses = []
+        isTapSource = false
         if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         configObserver = nil
         engine?.stop()
@@ -157,6 +188,82 @@ final class AudioCapture: ObservableObject {
         }
     }
 
+    // MARK: Mac audio (process tap)
+
+    private func startTap(_ uid: String) {
+        stop()
+        permissionDenied = false
+        isTapSource = true
+        guard #available(macOS 14.2, *) else {
+            statusText = "Listening to Mac audio needs macOS 14.2 or later. Use a mic or line-in instead."
+            return
+        }
+        refreshDevices()
+
+        var processes: [AudioObjectID]? = nil
+        var label = "All Mac audio"
+        if uid != Self.allMacAudioTag {
+            let bundleID = String(uid.dropFirst("tap:app:".count))
+            label = ProcessTap.appName(for: bundleID) ?? audioApps.first { $0.id == bundleID }?.name ?? bundleID
+            let objects = ProcessTap.processObjects(forApp: bundleID)
+            tapProcesses = Set(objects)
+            if objects.isEmpty {
+                statusText = ProcessTap.appName(for: bundleID) == nil
+                    ? "\(label) isn't open. Open it and press play."
+                    : "Waiting for \(label) to play something…"
+                watchTap()
+                return
+            }
+            processes = objects
+        }
+
+        do {
+            let tap = try ProcessTap(processes: processes)
+            let box = ExtractorBox(sampleRate: tap.sampleRate, maxFrames: 8192)
+            let analysis = self.analysis
+            try tap.start(preferredBufferFrames: preferredBufferFrames) { list, frames in
+                box.process(bufferList: list, frameCount: frames, into: analysis)
+            }
+            self.tap = tap
+            extractorBox = box
+            isRunning = true
+            sampleRate = tap.sampleRate
+            ioBufferFrames = tap.bufferFrames
+            let ms = tap.bufferFrames > 0 ? String(format: " · %.1f ms buffer", Double(tap.bufferFrames) / tap.sampleRate * 1000) : ""
+            statusText = "Listening: \(label) · \(Int(tap.sampleRate)) Hz\(ms)"
+        } catch {
+            statusText = "Couldn't listen to Mac audio: \(error)"
+        }
+        watchTap()
+    }
+
+    /// Restart the tap when the chosen app starts/stops audio or the output device changes.
+    @available(macOS 14.2, *)
+    private func watchTap() {
+        tapWatcher = TapWatcher { [weak self] change in
+            guard let self, let uid = self.selectedUID, uid.hasPrefix("tap:") else { return }
+            self.audioApps = ProcessTap.audioApps()
+            switch change {
+            case .output:
+                self.scheduleRestart()
+            case .processes:
+                guard uid != Self.allMacAudioTag else { return }
+                let bundleID = String(uid.dropFirst("tap:app:".count))
+                if Set(ProcessTap.processObjects(forApp: bundleID)) != self.tapProcesses { self.scheduleRestart() }
+            }
+        }
+    }
+
+    private func scheduleRestart() {
+        restartWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.start(deviceUID: self.selectedUID)
+        }
+        restartWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
+
     // MARK: Core Audio helpers
 
     private static func currentDevice(of unit: AudioUnit) -> AudioDeviceID? {
@@ -167,7 +274,7 @@ final class AudioCapture: ObservableObject {
         return status == noErr && id != 0 ? id : nil
     }
 
-    private static func setBufferFrameSize(_ frames: UInt32, on device: AudioDeviceID) {
+    static func setBufferFrameSize(_ frames: UInt32, on device: AudioDeviceID) {
         var addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyBufferFrameSize,
                                               mScope: kAudioObjectPropertyScopeGlobal,
                                               mElement: kAudioObjectPropertyElementMain)
@@ -189,6 +296,7 @@ final class AudioCapture: ObservableObject {
             guard inputChannelCount(id) > 0 else { return nil }
             let name = stringProperty(id, kAudioObjectPropertyName) ?? "Audio Input \(id)"
             let uid = stringProperty(id, kAudioDevicePropertyDeviceUID) ?? "\(id)"
+            if uid.hasPrefix("io.github.allenrobberson.dropocalypse.tap") { return nil }   // our own tap device
             return AudioInputDevice(id: id, uid: uid, name: name)
         }
     }
@@ -207,7 +315,7 @@ final class AudioCapture: ObservableObject {
         return list.reduce(0) { $0 + Int($1.mNumberChannels) }
     }
 
-    private static func stringProperty(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
+    static func stringProperty(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
         var addr = AudioObjectPropertyAddress(mSelector: selector,
                                               mScope: kAudioObjectPropertyScopeGlobal,
                                               mElement: kAudioObjectPropertyElementMain)
@@ -223,7 +331,7 @@ final class AudioCapture: ObservableObject {
 
 /// Owns the feature extractor and a scratch buffer for mixing to mono, so the real-time
 /// callback never allocates.
-private final class ExtractorBox: @unchecked Sendable {
+final class ExtractorBox: @unchecked Sendable {
     private var extractor: FeatureExtractor
     private let mono: UnsafeMutablePointer<Float>
     private let maxFrames: Int

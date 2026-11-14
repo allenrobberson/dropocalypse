@@ -107,23 +107,56 @@ struct TopToolbar: View {
         }
     }
 
+    /// A saved app that isn't open right now still needs a row, or the picker shows blank.
+    private var missingAppTag: (tag: String, name: String)? {
+        let tag = settings.inputDeviceUID
+        guard tag.hasPrefix("tap:app:") else { return nil }
+        let id = String(tag.dropFirst("tap:app:".count))
+        guard !capture.audioApps.contains(where: { $0.id == id }) else { return nil }
+        return (tag, "\(id.components(separatedBy: ".").last ?? id) (not open)")
+    }
+
     private var audioControls: some View {
-        PopoverForm(title: "Audio input") {
-            Picker("Input", selection: $settings.inputDeviceUID) {
-                Text("System default").tag("")
-                ForEach(capture.devices) { d in Text(d.name).tag(d.uid) }
+        PopoverForm(title: "Audio source") {
+            Picker("Listen to", selection: $settings.inputDeviceUID) {
+                if AudioCapture.macAudioSupported {
+                    Section("Mac audio: no mic needed") {
+                        Text("All Mac audio").tag(AudioCapture.allMacAudioTag)
+                        ForEach(capture.audioApps) { app in
+                            Text(app.isPlaying ? "\(app.name)  ♪ playing" : app.name)
+                                .tag(AudioCapture.appTag(app.id))
+                        }
+                        if let missing = missingAppTag {
+                            Text(missing.name).tag(missing.tag)
+                        }
+                    }
+                }
+                Section("Microphone or line-in") {
+                    Text("System default input").tag("")
+                    ForEach(capture.devices) { d in Text(d.name).tag(d.uid) }
+                }
             }
             HStack {
-                Button("Refresh devices") { capture.refreshDevices() }
+                Button("Refresh list") { capture.refreshDevices() }
                 Button("Restart audio") { model.startAudio() }
             }
             .font(.caption)
+            if capture.isTapSource {
+                Text("Pick Spotify, Music, a browser or any open app, and Dropocalypse hears exactly what it plays, at full quality. The first time, macOS asks to allow system audio recording. If nothing moves, turn on Dropocalypse in System Settings → Privacy & Security → Screen & System Audio Recording.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if !AudioCapture.macAudioSupported {
+                Text("Update to macOS 14.2 or later to listen to Spotify and other apps directly.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             slider("Sensitivity", $settings.sensitivity, 0.2...4)
             slider("Beat threshold", $settings.beatThreshold, 1.1...2.2) { String(format: "%.2f×", $0) }
             Text(capture.statusText)
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onAppear { capture.refreshDevices() }
     }
 
     private var lookControls: some View {

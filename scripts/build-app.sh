@@ -41,6 +41,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSApplicationCategoryType</key><string>public.app-category.music</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>Dropocalypse listens to the audio your Mac is playing (for example Spotify) so the visuals can react to it.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Dropocalypse listens to your microphone or line-in so the visuals and your logo can move with the music. Audio is analyzed live and never recorded or sent anywhere.</string>
 </dict>
