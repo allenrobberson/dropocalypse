@@ -6,7 +6,7 @@ A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Wind
 
 Play music and the visuals swirl, zoom and pulse. It listens through a microphone or line-in, or on Windows, straight to whatever the PC is playing. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **10 built-in visual styles**: Classic Tunnel, Spectrum Skyline, Starburst, Oscilloscope Drift, Kaleido Bloom, Liquid Plasma, Vortex, Lissajous Neon, Mirror Hall and Black Hole. Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **20 built-in visual styles**: 10 Winamp/MilkDrop-style originals plus 10 takes on the most-loved visualizer looks: a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames. Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
@@ -49,7 +49,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 10 styles](#the-10-styles)
+- [The 20 styles](#the-20-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -77,7 +77,7 @@ From left to right:
 | Control | What it does |
 |---|---|
 | 🖼 **Add Logo / logo name** | Opens the [Logo menu](#logo-menu) |
-| **‹  Style name  ›** | Previous style, pick a style from the list, next style |
+| **‹  Style name  ›** | Previous style, pick any of the 20 styles from the list, next style |
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
@@ -104,7 +104,7 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Click it to jump straight to any of the [10 styles](#the-10-styles) |
+| **Style name** | Click it to jump straight to any of the [20 styles](#the-20-styles) |
 | ⟳ **Auto-cycle** | When on, the app moves to the next style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Choosing a style by hand restarts the timer. |
 
 ### Motion panel
@@ -153,7 +153,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
 
-### The 10 styles
+### The 20 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -168,7 +168,24 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | 9 | **Mirror Hall** | Two vertical waveforms reflected four ways into an infinite hall of mirrors |
 | 10 | **Black Hole** | Everything is pulled inward and spirals down into the center |
 
-All styles use the bass to zoom, spin and ripple harder. The mids add extra warp.
+**Classic favorites:** our own versions of the visualizer looks people love most, from YouTube music channels to iTunes and synthwave.
+
+| # | Style | What it looks like |
+|---|---|---|
+| 11 | **Bass Ring** | A circular spectrum that wraps around your logo and follows it, with sparks bursting off on every kick. It sizes itself to your logo automatically. |
+| 12 | **Neon Equalizer** | Smooth neon spectrum bars across the screen with a glassy reflection underneath |
+| 13 | **Pulsar Ridges** | Stacked white ridgelines that scroll up the screen, with the bass rising in the middle: the classic "joy plot" look |
+| 14 | **Outrun Grid** | A synthwave sunset: striped sun, glowing horizon and a neon grid floor that races toward you faster when the bass hits |
+| 15 | **Hyperspace** | A starfield that jumps to warp speed on the drops |
+| 16 | **Particle Storm** | Hundreds of glowing particles flowing in currents around the logo, scattering outward on every beat |
+| 17 | **Lightning Storm** | Lightning bolts crack out from behind the logo on the beat, over a stormy plasma sky |
+| 18 | **Digital Rain** | Columns of glowing green glyphs raining down, falling faster with the bass |
+| 19 | **Lava Lamp** | Big soft blobs of color drifting and melting into each other, swelling with the bass |
+| 20 | **Inferno** | Embers and flames rising from the bottom of the screen, flaring up with each frequency band |
+
+All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
+
+> **Tip:** **Bass Ring** and **Particle Storm** are built around a centered logo, so try turning **Bounce** and **Slide** down so the logo stays put. For **Pulsar Ridges** and **Outrun Grid**, a smaller **Size** (around 0.2) keeps the logo from covering the scene.
 
 ### Keyboard shortcuts and menus
 
@@ -258,7 +275,8 @@ Sources/Dropocalypse/
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 10 built-in styles (add your own here!)
+  Render/Scenes.swift         the 20 built-in styles (add your own here!)
+  Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
   Views/                      SwiftUI window and auto-hiding toolbar
