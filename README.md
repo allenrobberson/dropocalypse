@@ -2,30 +2,42 @@
 
 **The drop hits. Your logo goes off.**
 
-A free, open-source, Winamp / MilkDrop-style music visualizer for macOS that **makes your logo dance to the bass**.
+A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Windows** that **makes your logo dance to the bass**.
 
-Play music on any speaker. The Mac listens through its microphone or a line-in, and the visuals swirl, zoom and pulse. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
+Play music and the visuals swirl, zoom and pulse. It listens through a microphone or line-in, or on Windows, straight to whatever the PC is playing. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
 - 🎛 **10 built-in visual styles**: Classic Tunnel, Spectrum Skyline, Starburst, Oscilloscope Drift, Kaleido Bloom, Liquid Plasma, Vortex, Lissajous Neon, Mirror Hall and Black Hole. Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
-- 🎚 **Any input**: built-in mic, USB mic, audio interface or line-in, with a device picker.
+- 🎚 **Any input**: built-in mic, USB mic, audio interface or line-in, with a device picker. On Windows it can also capture **what the PC is playing**, with no mic needed.
 - 🖥 **Full screen**, with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
 **→ [Download](#download) · [User guide](#user-guide) · [Build from source](#building-from-source)**
 
 ## Download
 
-1. Go to the **[latest release](../../releases/latest)** and download the `.dmg`.
-2. Open it and drag **Dropocalypse** into **Applications**.
-3. **First launch:** the app is free and isn't notarized by Apple, so macOS blocks it the first time.
+Get both versions from the **[latest release](../../releases/latest)**.
+
+### 🍎 Mac
+
+1. Download the `macOS.dmg`, open it, and drag **Dropocalypse** into **Applications**.
+2. **First launch:** the app is free and isn't notarized by Apple, so macOS blocks it the first time.
    - **macOS 15 Sequoia and later:** try to open it once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
    - **macOS 13–14:** right-click the app → **Open** → **Open**.
    - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Dropocalypse.app"`
-4. Allow **microphone** access when asked. Audio is analyzed live and is never recorded or sent anywhere.
+3. Allow **microphone** access when asked. Audio is analyzed live and is never recorded or sent anywhere.
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
+
+### 🪟 Windows (portable: no install, no admin rights)
+
+1. Download the `Windows-portable.zip`, right-click it → **Extract All**, and open the folder.
+2. Double-click **Dropocalypse.exe**. Nothing gets installed, and you can keep the folder anywhere, even on a USB stick.
+3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the free app isn't code-signed.
+4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
+
+Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
 
 ## User guide
 
@@ -72,8 +84,10 @@ From left to right:
 | **Audio** | Opens the [Audio panel](#audio-panel): input device and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
-| ⌨ | Shows the keyboard shortcuts |
-| ⤢ | Full screen on / off |
+| ⌨ / **Keys** | Shows the keyboard shortcuts |
+| ⤢ / **Full screen** | Full screen on / off |
+
+> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
 
 ### Logo menu
 
@@ -122,7 +136,7 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 
 | Control | Default | What it does |
 |---|---|---|
-| **Input** | System default | Which microphone or audio input to listen to: built-in mic, USB mic, audio interface, line-in, and so on |
+| **Input** | Mac: System default<br>Windows: System audio | Which audio to listen to: built-in mic, USB mic, audio interface or line-in. **Windows only:** *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. |
 | **Refresh devices** | | Updates the list after you plug something in |
 | **Restart audio** | | Restarts listening. Use it if the visuals stop reacting after a device change or sleep. |
 | **Sensitivity** | 1.00 | How easily quiet audio drives the visuals (0.2 to 4). Raise it in a quiet room or when the mic is far from the speakers. Lower it if room noise makes things twitch when no music is playing. |
@@ -162,28 +176,34 @@ All styles use the bass to zoom, spin and ripple harder. The mids add extra warp
 |---|---|
 | `F` | Full screen on / off |
 | `T` or `S` | Show / hide the toolbar |
-| `Esc` | Hide the toolbar |
+| `Esc` | Hide the toolbar (Windows: press again to exit full screen) |
+| `F11` | Full screen (Windows) |
+| `Ctrl+O` | Choose a logo (Windows) |
 | `L` | Choose a logo |
 | `G` | Show / hide the logo |
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
 
-The menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Show/Hide Toolbar (⌘,), Restart Audio**.
+On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Show/Hide Toolbar (⌘,), Restart Audio**.
 
 ### Setting up for a live show
 
-1. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio → Input**. A direct feed reacts more cleanly than a mic hearing a loud room.
-2. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
-3. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
-4. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. In full screen, the Mac's menu bar and Dock are hidden so they don't cover the visuals.
-5. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it.
+1. **Playing from the same Windows PC?** Pick *System audio* under **Audio**. It's the cleanest signal there is, with no cables or mic.
+2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio → Input**. A direct feed reacts more cleanly than a mic hearing a loud room.
+3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
+4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
+5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. In full screen, the Mac's menu bar and Dock are hidden so they don't cover the visuals.
+6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it.
 
 ### Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| **"Dropocalypse can't be opened"** on first launch | The app isn't notarized by Apple. See step 3 under [Download](#download). |
-| **Nothing reacts to the music** | Check that microphone access is on: **System Settings → Privacy & Security → Microphone → Dropocalypse**. Then use **Audio → Restart audio** and make sure the right input is selected. |
+| **Mac: "Dropocalypse can't be opened"** on first launch | The app isn't notarized by Apple. See [Download → Mac](#-mac). |
+| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The app isn't code-signed. |
+| **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
+| **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
+| **Nothing reacts to the music** | Check that microphone access is on. **Mac:** System Settings → Privacy & Security → Microphone → Dropocalypse. **Windows:** Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. Then use **Audio → Restart audio** and make sure the right input is selected. |
 | **It reacts, but only a little** | Raise **Sensitivity** and lower **Beat threshold**. Check that the input's level isn't turned down in **System Settings → Sound → Input**. |
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
 | **My USB interface isn't listed** | Plug it in, then click **Refresh devices** in the Audio panel |
@@ -201,6 +221,8 @@ Most visualizers feel laggy because of how they listen and analyze. This one:
 3. **Jumps instantly on a hit and only smooths the release**, with beat impulses driving stiff, damped springs.
 4. **Renders at the display's refresh rate**, up to 120 Hz on ProMotion. It reads the newest audio values right before each frame and uses only two drawables to avoid an extra frame of queueing.
 
+On Windows the same design uses **WASAPI**: `IAudioClient3` asks for the smallest shared-mode period the driver allows, and the capture thread is registered with MMCSS ("Pro Audio") so it isn't starved. Rendering uses a flip-model **Direct3D 11** swap chain with a frame-latency waitable object and a maximum latency of one frame.
+
 ## Building from source
 
 ```bash
@@ -212,11 +234,21 @@ swift run -c release            # quick run
 
 You need Xcode 15 or later (or the Command Line Tools) on macOS 13 or later. There are no third-party dependencies.
 
+**Windows** (Visual Studio 2022 with the "Desktop development with C++" workload, plus CMake):
+
+```powershell
+cmake -S windows -B build -A x64
+cmake --build build --config Release
+build\Release\Dropocalypse.exe
+```
+
+The Windows build downloads [Dear ImGui](https://github.com/ocornut/imgui) (MIT) for the toolbar and links the C runtime statically, so the `.exe` runs without installing anything.
+
 **Releases are automatic.** GitHub Actions builds every push to `main`. To publish a new downloadable version, do either of these:
 - On GitHub, go to **Actions → Build → Run workflow**, type a version such as `0.2.0`, and click **Run workflow**.
 - Or push a tag: `git tag v0.2.0 && git push origin v0.2.0`
 
-Either way, a GitHub Release is published with the `.dmg` and `.zip` attached.
+Either way, the Mac and Windows versions are built side by side and published together in one GitHub Release.
 
 ### Project layout
 
@@ -230,22 +262,31 @@ Sources/Dropocalypse/
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
   Views/                      SwiftUI window and auto-hiding toolbar
+
+windows/
+  src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
+  src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
+  src/shaders.h               HLSL port of the Metal shaders
+  src/main.cpp                window, swap chain, auto-hiding toolbar, settings
+  app.manifest                "asInvoker": runs without admin rights
 ```
 
 ### Adding a style
 
-Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift`. Each style is a handful of numbers: zoom, rotation, warp, trail decay, mirror and kaleidoscope settings, wave style and colors. Pull requests with new styles are very welcome.
+Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) and the matching entry in `windows/src/scenes.h` (Windows). Each style is a handful of numbers: zoom, rotation, warp, trail decay, mirror and kaleidoscope settings, wave style and colors. Pull requests with new styles are very welcome.
 
 ## Roadmap
 
 - [ ] Load MilkDrop `.milk` presets through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL), including the ~10,000-preset "Cream of the Crop" pack
+- [x] Windows version (portable, no admin rights)
+- [x] Capture the PC's own audio output without a microphone (Windows)
 - [ ] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
-- [ ] App icon and notarized builds
+- [ ] App icon, notarized Mac builds and code-signed Windows builds
 
 ## License
 
 [MIT](LICENSE): free to use, modify and share, including commercially.
 
-Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals in this app are original code; no MilkDrop presets or Shadertoy shaders are bundled.
+Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals in this app are original code; no MilkDrop presets or Shadertoy shaders are bundled. The Windows toolbar uses [Dear ImGui](https://github.com/ocornut/imgui) (MIT).
