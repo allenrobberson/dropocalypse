@@ -21,7 +21,25 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
+**→ [What's new](#-whats-new-in-050) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
+
+## 🆕 What's new in 0.5.0
+
+### 🎧 Listen to Spotify, or any app on your Mac, with no mic (macOS 14.2+)
+Before, the Mac version could only hear music through a microphone or line-in. Now it can listen **directly to the sound an app is playing**, at full quality, with no cables, mic or extra software like BlackHole.
+
+1. Click **Audio** in the toolbar.
+2. Open the **Listen to** drop-down. Under **Mac audio**, pick **Spotify** (or Music, Safari, Chrome, your DJ app: every open app is listed, and the ones playing right now come first, marked ♪). Or pick **All Mac audio** to react to everything.
+3. The first time, macOS asks to allow **system audio recording**. Click **Allow**.
+
+You still hear everything normally; Dropocalypse only listens along. If the app you picked hasn't played anything yet, it starts the moment you press play, and it keeps working if you switch to headphones or another speaker. Mics and line-in are still in the same drop-down, under **Microphone or line-in**.
+
+> On macOS 13 to 14.1 the Mac-audio choices don't appear. Update to macOS 14.2 or later, or use a mic or line-in.
+
+### Also new since 0.4
+- 🖥 **Truly full screen on the Mac**: full screen now covers every pixel, including the strip beside the MacBook camera notch, with the menu bar and Dock fully hidden. Use **F**, the green window button or **Visualizer → Full Screen** (⌃⌘F). Press **Esc** twice to leave.
+- 〰️ **Pulsar Ridges stretch edge to edge** across the whole screen.
+- 💬 **[Discussions](../../discussions)** are open for questions, style ideas and clips of your logo in action.
 
 ## Download
 

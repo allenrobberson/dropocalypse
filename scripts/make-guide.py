@@ -175,6 +175,21 @@ def tip_box(text):
     return t
 
 
+def whats_new_box(items):
+    color = SECTION_COLORS[0]
+    rows = [[P(f'<font color="{color.hexval().replace("0x", "#")}"><b>\u2605</b></font>', body), P(t, body)] for t in items]
+    t = Table(rows, colWidths=[0.3 * inch, 6.2 * inch])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), tint(color, 0.9)),
+        ("LINEBEFORE", (0, 0), (0, -1), 4, color),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return t
+
+
 # ---------------------------------------------------------------------------- page decoration
 
 def cover_page(canvas, doc):
@@ -279,6 +294,17 @@ def build():
     s.append(P("Dropocalypse is a free, open-source music visualizer for Mac and Windows in the spirit of "
                "Winamp and MilkDrop. It listens to music and turns it into swirling, zooming, pulsing visuals, "
                "while your logo sits on top and pulses, squashes, bounces, slides and wobbles to the bass.", body))
+    s.append(Spacer(1, 12))
+    s.append(P("What's new in version 0.5", h2))
+    s.append(whats_new_box([
+        "<b>Listen to Spotify, or any app on your Mac, with no mic</b> (macOS 14.2 or later). Click <b>Audio</b>, "
+        "open the <b>Listen to</b> drop-down and pick the app, or <b>All Mac audio</b>. Playing apps are listed "
+        "first. Allow <b>system audio recording</b> the first time. See section 1.",
+        "<b>Truly full screen on the Mac</b>: every pixel, including beside the MacBook notch, with the menu bar "
+        "and Dock hidden. F, the green button or Ctrl+Cmd+F; Esc twice to leave.",
+        "<b>Pulsar Ridges</b> now stretch edge to edge across the screen.",
+        "<b>Discussions</b> are open on GitHub for questions, ideas and clips.",
+    ]))
 
     # ---- Mac
     s.append(PageBreak())
