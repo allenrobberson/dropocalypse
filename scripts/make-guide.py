@@ -300,10 +300,16 @@ def build():
         f"Dropocalypse.",
         f"<b>macOS 13 and 14:</b> right-click (or Control-click) the app {ARROW} <b>Open</b> {ARROW} <b>Open</b>.",
     ])
-    s.append(sub("Microphone access"))
-    s.append(P("When asked, click <b>Allow</b> so Dropocalypse can hear the music. Audio is analyzed live on your "
-               "Mac and is never recorded or sent anywhere. If you clicked Don't Allow by mistake, turn it on in "
-               f"<b>System Settings {ARROW} Privacy &amp; Security {ARROW} Microphone</b>.", body))
+    s.append(sub("Listening to music on the Mac"))
+    s.append(P("Click <b>Audio</b> in the toolbar and open the <b>Listen to</b> drop-down. On macOS 14.2 or later "
+               "you can pick <b>any app on your Mac</b>, such as <b>Spotify</b>, Music, Safari, Chrome or your DJ "
+               "software, or <b>All Mac audio</b>. Dropocalypse hears exactly what that app plays, at full quality, "
+               "with no microphone or extra software. Apps playing right now are listed first.", body))
+    s.append(P("The first time, macOS asks to allow <b>system audio recording</b>: click <b>Allow</b>. To use a "
+               "microphone or line-in instead, pick it in the same drop-down and allow <b>microphone</b> access. "
+               "Audio is analyzed live and is never recorded or sent anywhere. If you clicked Don't Allow by mistake, "
+               f"turn it on in <b>System Settings {ARROW} Privacy &amp; Security</b>, under <b>Screen &amp; System "
+               f"Audio Recording</b> (apps) or <b>Microphone</b> (mic).", body))
 
     # ---- Windows
     s += section(2, "Install on Windows")
@@ -327,7 +333,9 @@ def build():
     # ---- Quick start
     s += section(3, "Quick start")
     s += steps([
-        "Open Dropocalypse and play some music. The visuals start reacting right away.",
+        "Open Dropocalypse, click <b>Audio</b> and pick what to listen to: on a Mac, an app like <b>Spotify</b> "
+        "(macOS 14.2+) or a mic; on Windows, System audio is already selected. Play some music and the visuals "
+        "start reacting right away.",
         "Drag your logo (PNG, JPG and most image types) onto the window, or press <b>L</b> to choose a file. "
         "A PNG with a transparent background looks best.",
         "Press <b>F</b> for full screen.",
@@ -402,11 +410,14 @@ def build():
 
     s.append(sub("Audio panel"))
     s.append(table(["Control", "Default", "What it does"], [
-        ["<b>Input</b>", "Mac: default input<br/>Windows: System audio",
-         "Which audio to listen to: built-in mic, USB mic, audio interface or line-in. <b>Windows only:</b> "
+        ["<b>Listen to</b> (Mac)", "Default input",
+         "Drop-down of everything you can listen to. <b>Mac audio</b> (macOS 14.2+): <b>All Mac audio</b> or "
+         "any open app, such as Spotify (playing apps are marked ♪). <b>Microphone or line-in</b>: built-in "
+         "mic, USB mic, audio interface or line-in."],
+        ["<b>Input</b> (Windows)", "System audio",
          "“System audio” listens to what the PC is playing, and “Playing on: …” listens to one "
-         "output device."],
-        ["<b>Refresh devices</b>", "", "Updates the list after you plug something in"],
+         "output device. You can also pick a mic or line-in."],
+        ["<b>Refresh list</b>", "", "Updates the list after you open an app or plug something in"],
         ["<b>Restart audio</b>", "", "Use if the visuals stop reacting after a device change or sleep"],
         ["<b>Sensitivity</b>", "1.00", "Raise it in a quiet room or with a distant mic; lower it if room noise makes "
                                        "things twitch"],
@@ -473,8 +484,8 @@ def build():
     # ---- Live show
     s += section(8, "Setting up for a live show")
     s += steps([
-        "<b>Playing from the same Windows PC?</b> Choose <b>System audio</b> under Audio. It's the cleanest "
-        "signal, with no cables or mic.",
+        "<b>Playing from the same computer?</b> On a Mac, pick your music or DJ app (or All Mac audio) under "
+        "<b>Audio</b>. On Windows, choose <b>System audio</b>. It's the cleanest signal, with no cables or mic.",
         "<b>Use a direct feed if you can.</b> Run the booth, record or aux output of your mixer or DJ controller "
         "into a USB audio interface and pick it under Audio. A direct feed reacts more cleanly than a mic in a "
         "loud room.",
@@ -505,13 +516,16 @@ def build():
          "your microphone. Then use Audio → Restart audio and check the selected input."
          if FONT == "Guide" else
          "Check microphone access in your system privacy settings, then use Audio > Restart audio."],
+        ["<b>Mac: listening to an app, but nothing reacts</b>",
+         "Make sure the app is playing. Then allow Dropocalypse in System Settings, Privacy &amp; Security, "
+         "<b>Screen &amp; System Audio Recording</b>, and click Restart audio. Needs macOS 14.2 or later."],
         ["<b>Windows: visuals ignore Spotify / YouTube</b>",
          "Under Audio, choose <b>System audio</b>. With both headphones and speakers, pick the “Playing on: "
          "…” entry for the device you're listening on."],
         ["<b>It reacts, but only a little</b>",
          "Raise Sensitivity and lower Beat threshold. Check the input level in your system Sound settings."],
         ["<b>It twitches when no music is playing</b>", "Lower Sensitivity, or use a direct line-in feed"],
-        ["<b>My USB interface isn't listed</b>", "Plug it in, then click <b>Refresh devices</b> in the Audio panel"],
+        ["<b>My app or USB interface isn't listed</b>", "Open the app or plug it in, then click <b>Refresh list</b> in the Audio panel"],
         ["<b>My logo looks blurry</b>", "Use a larger image: about 1000 pixels on the long side is ideal"],
         ["<b>My logo has a white box around it</b>",
          "The image has a solid background. Export it as a PNG with a transparent background."],

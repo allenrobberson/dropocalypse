@@ -12,13 +12,13 @@
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Windows** that **makes your logo dance to the bass**.
 
-Play music and the visuals swirl, zoom and pulse. It listens through a microphone or line-in, or on Windows, straight to whatever the PC is playing. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
+Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
 - 🎛 **20 built-in visual styles**: 10 Winamp/MilkDrop-style originals plus 10 takes on the most-loved visualizer looks: a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames. Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
-- 🎚 **Any input**: built-in mic, USB mic, audio interface or line-in, with a device picker. On Windows it can also capture **what the PC is playing**, with no mic needed.
+- 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
 **→ [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
@@ -34,7 +34,7 @@ Get both versions from the **[latest release](../../releases/latest)**. Each rel
    - **macOS 15 Sequoia and later:** try to open it once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
    - **macOS 13–14:** right-click the app → **Open** → **Open**.
    - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Dropocalypse.app"`
-3. Allow **microphone** access when asked. Audio is analyzed live and is never recorded or sent anywhere.
+3. Click **Audio** in the toolbar and choose what to listen to: an app like **Spotify** or **All Mac audio** (macOS 14.2+), or a mic or line-in. macOS asks once for permission: *system audio recording* for apps, *microphone* for a mic. Audio is analyzed live and is never recorded or sent anywhere.
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
@@ -64,7 +64,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 
 ### Quick start
 
-1. Open **Dropocalypse** and allow microphone access.
+1. Open **Dropocalypse**, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), or a mic or line-in. Allow access when macOS asks.
 2. Play some music. The visuals start reacting right away.
 3. Drag your logo (PNG, JPG, PDF or SVG) onto the window, or press **L** to pick a file.
 4. Press **F** for full screen.
@@ -89,7 +89,7 @@ From left to right:
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
-| **Audio** | Opens the [Audio panel](#audio-panel): input device and sensitivity. The mic icon is crossed out when audio isn't running. |
+| **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
@@ -144,7 +144,8 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 
 | Control | Default | What it does |
 |---|---|---|
-| **Input** | Mac: System default<br>Windows: System audio | Which audio to listen to: built-in mic, USB mic, audio interface or line-in. **Windows only:** *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. |
+| **Listen to** (Mac) | System default input | A drop-down of everything you can listen to. **Mac audio** (macOS 14.2+): *All Mac audio*, or any open app such as **Spotify**, Music, Safari or Chrome. Apps playing right now are listed first and marked ♪. Dropocalypse hears exactly what that app plays, at full quality, with no mic or extra software. If the app hasn't played anything yet, it starts the moment it does. **Microphone or line-in**: built-in mic, USB mic, audio interface or line-in. |
+| **Input** (Windows) | System audio | *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. You can also pick a mic, audio interface or line-in. |
 | **Refresh devices** | | Updates the list after you plug something in |
 | **Restart audio** | | Restarts listening. Use it if the visuals stop reacting after a device change or sleep. |
 | **Sensitivity** | 1.00 | How easily quiet audio drives the visuals (0.2 to 4). Raise it in a quiet room or when the mic is far from the speakers. Lower it if room noise makes things twitch when no music is playing. |
@@ -214,8 +215,8 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 
 ### Setting up for a live show
 
-1. **Playing from the same Windows PC?** Pick *System audio* under **Audio**. It's the cleanest signal there is, with no cables or mic.
-2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio → Input**. A direct feed reacts more cleanly than a mic hearing a loud room.
+1. **Playing from the same computer?** On a Mac, pick your music or DJ app (or *All Mac audio*) under **Audio → Listen to**. On Windows, pick *System audio*. It's the cleanest signal there is, with no cables or mic.
+2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
 5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
@@ -229,10 +230,11 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 | **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The app isn't code-signed. |
 | **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
 | **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
+| **Nothing reacts when listening to an app** (Mac) | Make sure the app is actually playing, then allow Dropocalypse in **System Settings → Privacy & Security → Screen & System Audio Recording** (under *System Audio Recording Only*) and click **Restart audio**. Needs macOS 14.2 or later. |
 | **Nothing reacts to the music** | Check that microphone access is on. **Mac:** System Settings → Privacy & Security → Microphone → Dropocalypse. **Windows:** Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. Then use **Audio → Restart audio** and make sure the right input is selected. |
 | **It reacts, but only a little** | Raise **Sensitivity** and lower **Beat threshold**. Check that the input's level isn't turned down in **System Settings → Sound → Input**. |
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
-| **My USB interface isn't listed** | Plug it in, then click **Refresh devices** in the Audio panel |
+| **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** in the Audio panel |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
 | **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
 | **The toolbar won't appear** | Move the mouse to the very top of the window, click anywhere, or press **T** |
@@ -281,6 +283,7 @@ Either way, the Mac and Windows versions are built side by side and published to
 ```
 Sources/Dropocalypse/
   Audio/AudioCapture.swift    mic / line-in capture, device list, small hardware buffers
+  Audio/ProcessTap.swift      Core Audio process tap: listen to one app or all Mac audio (14.2+)
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
@@ -307,7 +310,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [ ] Load MilkDrop `.milk` presets through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL), including the ~10,000-preset "Cream of the Crop" pack
 - [x] Windows version (portable, no admin rights)
 - [x] Capture the PC's own audio output without a microphone (Windows)
-- [ ] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone
+- [x] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone (macOS 14.2+)
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
 - [ ] App icon, notarized Mac builds and code-signed Windows builds

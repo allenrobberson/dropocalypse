@@ -162,6 +162,9 @@ jobs:
             Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
             (On macOS 14 and earlier you can right-click the app → **Open** instead.)
 
+            **Listen to Spotify or any app:** click **Audio** in the toolbar and pick the app from the **Listen to** drop-down
+            (or **All Mac audio**). No mic or extra software needed; requires macOS 14.2 or later. You can still pick a mic or line-in there too.
+
             ### 🪟 Windows (portable, no admin rights needed)
             Download the **Windows-portable .zip** below, right-click it → **Extract All**, and run **Dropocalypse.exe**.
             Nothing is installed. Works on Windows 10 and 11 (64-bit).
