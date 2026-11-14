@@ -1,3 +1,11 @@
+<p align="center">
+  <a href="https://github.com/sponsors/allenrobberson"><img src="https://img.shields.io/badge/Sponsor-Support%20Dropocalypse-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Dropocalypse on GitHub"></a>
+</p>
+<p align="center">
+  <b>💖 Dropocalypse is free and open source. If it makes your shows, streams or parties better, please <a href="https://github.com/sponsors/allenrobberson">become a sponsor</a>.</b><br>
+  Sponsorships keep the project going. The first goal is the $99/year Apple Developer membership so Mac downloads open without a security warning.
+</p>
+
 # Dropocalypse
 
 **The drop hits. Your logo goes off.**
