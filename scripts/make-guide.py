@@ -263,7 +263,8 @@ def later_pages(canvas, doc):
 
 # Signature color of each style (its base hue in the app), used for the swatches in section 6.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
-              0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05]
+              0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
+              0.97, 0.25, 0.7]
 
 
 def build():
@@ -273,7 +274,7 @@ def build():
     # ---- Contents
     s.append(P("Contents", h1))
     items = ["Install on Mac", "Install on Windows", "Quick start", "The toolbar",
-             "Logo, Motion, Audio and Look settings", "The 20 visual styles", "Keyboard shortcuts",
+             "Logo, Motion, Audio and Look settings", "The 23 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
     for i, name in enumerate(items, 1):
@@ -295,9 +296,12 @@ def build():
                "Winamp and MilkDrop. It listens to music and turns it into swirling, zooming, pulsing visuals, "
                "while your logo sits on top and pulses, squashes, bounces, slides and wobbles to the bass.", body))
     s.append(Spacer(1, 12))
-    s.append(P("What's new in version 0.5", h2))
+    s.append(P("What's new", h2))
     s.append(whats_new_box([
-        "<b>Listen to Spotify, or any app on your Mac, with no mic</b> (macOS 14.2 or later). Click <b>Audio</b>, "
+        "<b>Version 0.6: three new equalizer styles</b> (23 in total): <b>Mirror Equalizer</b>, <b>LED Meter</b> "
+        "and <b>Rainbow Peaks</b>. See section 6.",
+        "<b>Smoother Outrun Grid sun</b>: no more stair-stepped, pixelated edge.",
+        "<b>Version 0.5: listen to Spotify, or any app on your Mac, with no mic</b> (macOS 14.2 or later). Click <b>Audio</b>, "
         "open the <b>Listen to</b> drop-down and pick the app, or <b>All Mac audio</b>. Playing apps are listed "
         "first. Allow <b>system audio recording</b> the first time. See section 1.",
         "<b>Truly full screen on the Mac</b>: every pixel, including beside the MacBook notch, with the menu bar "
@@ -384,7 +388,7 @@ def build():
     s.append(Spacer(1, 6))
     s.append(table(["Control", "What it does"], [
         ["<b>Add Logo</b> / logo name", "Opens the Logo menu: choose, remove, show or hide your logo"],
-        ["<b>‹  Style name  ›</b>", "Previous style, pick any of the 20 styles from the list, next style"],
+        ["<b>‹  Style name  ›</b>", "Previous style, pick any of the 23 styles from the list, next style"],
         ["<b>Auto-cycle</b> (⟳ on Mac)", "Moves to the next style automatically, with a smooth crossfade"],
         ["<b>Motion</b>", "How your logo reacts to the bass"],
         ["<b>Logo</b>", "Logo size, glow, color tint and trails"],
@@ -462,7 +466,7 @@ def build():
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles
-    s += section(6, "The 20 visual styles")
+    s += section(6, "The 23 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(table(["#", "Style", "What it looks like"], [
@@ -479,13 +483,16 @@ def build():
         ["11", "<b>Bass Ring</b>", "A circular spectrum wrapped around your logo, with sparks on every kick"],
         ["12", "<b>Neon Equalizer</b>", "Smooth neon bars across the screen with a glassy reflection"],
         ["13", "<b>Pulsar Ridges</b>", "Stacked white ridgelines that span the full screen and scroll upward, the classic “joy plot” look"],
-        ["14", "<b>Outrun Grid</b>", "A synthwave sunset: striped sun and a neon grid that races with the bass"],
+        ["14", "<b>Outrun Grid</b>", "A synthwave sunset: smooth striped sun and a neon grid that races with the bass"],
         ["15", "<b>Hyperspace</b>", "A starfield that jumps to warp speed on the drops"],
         ["16", "<b>Particle Storm</b>", "Hundreds of glowing particles flowing in currents, scattering on beats"],
         ["17", "<b>Lightning Storm</b>", "Lightning cracking out from behind the logo on the beat"],
         ["18", "<b>Digital Rain</b>", "Columns of green glyphs raining down, faster with the bass"],
         ["19", "<b>Lava Lamp</b>", "Soft blobs of color drifting and melting together"],
         ["20", "<b>Inferno</b>", "Embers and flames rising from the bottom of the screen"],
+        ["21", "<b>Mirror Equalizer</b>", "Bars grow up and down from a center line, in a sunset rainbow"],
+        ["22", "<b>LED Meter</b>", "A classic analyzer: green-yellow-red LED segments with peak markers"],
+        ["23", "<b>Rainbow Peaks</b>", "Thin rainbow bars with glowing caps that bounce on the beat"],
     ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "

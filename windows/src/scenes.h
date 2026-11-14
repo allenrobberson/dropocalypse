@@ -1,4 +1,4 @@
-// Dropocalypse for Windows - the 20 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 23 built-in styles (same values as the macOS Scenes.swift).
 #pragma once
 
 #include <array>

@@ -14,18 +14,25 @@ A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Wind
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **20 built-in visual styles**: 10 Winamp/MilkDrop-style originals plus 10 takes on the most-loved visualizer looks: a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames. Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **23 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers: mirrored, LED meter and rainbow peaks. Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [What's new](#-whats-new-in-050) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
+**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
 
-## 🆕 What's new in 0.5.0
+## 🆕 What's new
 
-### 🎧 Listen to Spotify, or any app on your Mac, with no mic (macOS 14.2+)
+### 0.6.0: three new equalizer styles and a smoother sun
+- 🌈 **Three new styles in the Neon Equalizer family** (now **23 styles** in total):
+  - **Mirror Equalizer**: bars grow up *and* down from a glowing center line, bass in the middle and highs out to the edges, in a sunset rainbow from pink through orange to gold.
+  - **LED Meter**: a classic hardware spectrum analyzer with segmented LEDs going green → yellow → red, and white peak markers that hang for a moment before dropping.
+  - **Rainbow Peaks**: thin bars that cycle through the whole rainbow, with glowing caps the bass knocks into the air that fall back with gravity, and a light trail tracing the tops.
+- 🌅 **Smoother Outrun Grid sun**: the sun's edge used to look stair-stepped and pixelated. It now follows a true circle with a smooth color gradient and soft edges, on any screen size.
+
+### 0.5.0: 🎧 Listen to Spotify, or any app on your Mac, with no mic (macOS 14.2+)
 Before, the Mac version could only hear music through a microphone or line-in. Now it can listen **directly to the sound an app is playing**, at full quality, with no cables, mic or extra software like BlackHole.
 
 1. Click **Audio** in the toolbar.
@@ -75,7 +82,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 20 styles](#the-20-styles)
+- [The 23 styles](#the-23-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -103,7 +110,7 @@ From left to right:
 | Control | What it does |
 |---|---|
 | 🖼 **Add Logo / logo name** | Opens the [Logo menu](#logo-menu) |
-| **‹  Style name  ›** | Previous style, pick any of the 20 styles from the list, next style |
+| **‹  Style name  ›** | Previous style, pick any of the 23 styles from the list, next style |
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
@@ -130,7 +137,7 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Click it to jump straight to any of the [20 styles](#the-20-styles) |
+| **Style name** | Click it to jump straight to any of the [23 styles](#the-23-styles) |
 | ⟳ **Auto-cycle** | When on, the app moves to the next style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Choosing a style by hand restarts the timer. |
 
 ### Motion panel
@@ -180,7 +187,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
 
-### The 20 styles
+### The 23 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -202,13 +209,21 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | 11 | **Bass Ring** | A circular spectrum that wraps around your logo and follows it, with sparks bursting off on every kick. It sizes itself to your logo automatically. |
 | 12 | **Neon Equalizer** | Smooth neon spectrum bars across the screen with a glassy reflection underneath |
 | 13 | **Pulsar Ridges** | Stacked white ridgelines that span the full width of the screen and scroll upward, with the bass rising in the middle: the classic "joy plot" look |
-| 14 | **Outrun Grid** | A synthwave sunset: striped sun, glowing horizon and a neon grid floor that races toward you faster when the bass hits |
+| 14 | **Outrun Grid** | A synthwave sunset: smooth striped sun, glowing horizon and a neon grid floor that races toward you faster when the bass hits |
 | 15 | **Hyperspace** | A starfield that jumps to warp speed on the drops |
 | 16 | **Particle Storm** | Hundreds of glowing particles flowing in currents around the logo, scattering outward on every beat |
 | 17 | **Lightning Storm** | Lightning bolts crack out from behind the logo on the beat, over a stormy plasma sky |
 | 18 | **Digital Rain** | Columns of glowing green glyphs raining down, falling faster with the bass |
 | 19 | **Lava Lamp** | Big soft blobs of color drifting and melting into each other, swelling with the bass |
 | 20 | **Inferno** | Embers and flames rising from the bottom of the screen, flaring up with each frequency band |
+
+**Equalizer family:** three more takes on Neon Equalizer.
+
+| # | Style | What it looks like |
+|---|---|---|
+| 21 | **Mirror Equalizer** | Bars grow up and down from a glowing center line, bass in the middle and highs at the edges, in a sunset rainbow (pink → orange → gold) |
+| 22 | **LED Meter** | A classic hardware spectrum analyzer: segmented LEDs from green through yellow to red, with peak markers that hang and then drop |
+| 23 | **Rainbow Peaks** | Thin bars cycling through the rainbow, with glowing caps that the bass knocks into the air and that fall back with gravity |
 
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
@@ -305,7 +320,7 @@ Sources/Dropocalypse/
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 20 built-in styles (add your own here!)
+  Render/Scenes.swift         the 23 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
