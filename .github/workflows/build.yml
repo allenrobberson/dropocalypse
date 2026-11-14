@@ -108,7 +108,9 @@ jobs:
           Copy-Item build/Release/Dropocalypse.exe package/Dropocalypse/
           Copy-Item windows/README.txt package/Dropocalypse/README.txt
           Copy-Item LICENSE package/Dropocalypse/LICENSE.txt
+          Copy-Item docs/Dropocalypse-User-Guide.pdf "package/Dropocalypse/Dropocalypse User Guide.pdf"
           New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item docs/Dropocalypse-User-Guide.pdf dist/Dropocalypse-User-Guide.pdf
           Compress-Archive -Path package/Dropocalypse -DestinationPath "dist/Dropocalypse-$env:APP_VERSION-Windows-portable.zip" -Force
           Get-ChildItem dist
 
@@ -116,7 +118,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Dropocalypse-Windows
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.pdf
 
   release:
     name: Publish release
@@ -140,8 +144,14 @@ jobs:
           files: |
             dist/*.zip
             dist/*.dmg
+            dist/*.pdf
           generate_release_notes: true
           body: |
+            ## 📖 User guide
+            New here? Download **Dropocalypse-User-Guide.pdf** below. It's a printable, step-by-step guide to installing and
+            using Dropocalypse on both Mac and Windows, covering every control, all 20 styles, keyboard shortcuts and troubleshooting.
+            (It's also included inside the Mac .dmg and the Windows .zip.)
+
             ## Download
 
             ### 🍎 Mac

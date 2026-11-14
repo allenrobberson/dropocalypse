@@ -63,6 +63,9 @@ ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 STAGING="$(mktemp -d)"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
+if [ -f "docs/Dropocalypse-User-Guide.pdf" ]; then
+  cp "docs/Dropocalypse-User-Guide.pdf" "$STAGING/Dropocalypse User Guide.pdf"
+fi
 hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null
 rm -rf "$STAGING"
 

@@ -13,11 +13,11 @@ Play music and the visuals swirl, zoom and pulse. It listens through a microphon
 - 🎚 **Any input**: built-in mic, USB mic, audio interface or line-in, with a device picker. On Windows it can also capture **what the PC is playing**, with no mic needed.
 - 🖥 **Full screen**, with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [Download](#download) · [User guide](#user-guide) · [Build from source](#building-from-source)**
+**→ [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Build from source](#building-from-source)**
 
 ## Download
 
-Get both versions from the **[latest release](../../releases/latest)**.
+Get both versions from the **[latest release](../../releases/latest)**. Each release also includes **Dropocalypse-User-Guide.pdf**, a printable guide for Mac and Windows. You can [read it here](docs/Dropocalypse-User-Guide.pdf) too.
 
 ### 🍎 Mac
 
