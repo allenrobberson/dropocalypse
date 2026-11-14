@@ -29,7 +29,7 @@ struct TopToolbar: View {
             popoverButton(nil, icon: "keyboard", id: "keys") { shortcuts }
             toolbarButton(nil, icon: model.isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
                           help: "Full screen (F)") {
-                NSApp.keyWindow?.toggleFullScreen(nil)
+                model.toggleFullScreen()
             }
         }
         .padding(.leading, model.isFullScreen ? 12 : 80) // leave room for the window buttons

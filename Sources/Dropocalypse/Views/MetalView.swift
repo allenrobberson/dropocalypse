@@ -23,8 +23,12 @@ struct MetalView: NSViewRepresentable {
         } else {
             model.reportError("This Mac doesn't support Metal, which the visualizer needs.")
         }
+        let owner = model
+        DispatchQueue.main.async { [weak view, weak owner] in owner?.attachWindow(view?.window) }
         return view
     }
 
-    func updateNSView(_ nsView: MTKView, context: Context) {}
+    func updateNSView(_ nsView: MTKView, context: Context) {
+        if let window = nsView.window { model.attachWindow(window) }
+    }
 }

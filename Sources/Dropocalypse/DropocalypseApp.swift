@@ -41,6 +41,8 @@ struct DropocalypseApp: App {
                 Button("Previous Style") { model.nextScene(-1) }
                     .keyboardShortcut(.leftArrow, modifiers: [.command])
                 Divider()
+                Button("Full Screen") { model.toggleFullScreen() }
+                    .keyboardShortcut("f", modifiers: [.command, .control])
                 Button("Show/Hide Toolbar") { model.toggleToolbar() }
                     .keyboardShortcut(",", modifiers: [.command])
                 Button("Restart Audio") { model.startAudio() }

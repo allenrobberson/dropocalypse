@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// App-level state shared by the window, the settings panel and the renderer.
-final class VisualizerModel: ObservableObject {
+final class VisualizerModel: NSObject, ObservableObject {
     let settings = AppSettings()
     let capture = AudioCapture()
 
@@ -27,12 +27,12 @@ final class VisualizerModel: ObservableObject {
 
     private var keyMonitor: Any?
 
-    init() {
+    override init() {
+        super.init()
         hasCustomLogo = FileManager.default.fileExists(atPath: Self.savedLogoURL.path)
         logoName = UserDefaults.standard.string(forKey: "logoName")
         installKeyMonitor()
         startHideTimer()
-        observeFullScreen()
     }
 
     // MARK: Toolbar auto-hide
@@ -66,17 +66,89 @@ final class VisualizerModel: ObservableObject {
         }
     }
 
-    private func observeFullScreen() {
-        let nc = NotificationCenter.default
-        nc.addObserver(forName: NSWindow.didEnterFullScreenNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.isFullScreen = true
-            // Keep the system menu bar from sliding over our toolbar at the top edge.
-            NSApp.presentationOptions = [.fullScreen, .hideMenuBar, .hideDock]
+    // MARK: Full screen
+    //
+    // macOS's built-in full screen keeps a black band under the camera notch on newer MacBooks and
+    // can leave the menu-bar strip unused. Instead we turn the window itself into a frameless window
+    // the exact size of its screen and hide the menu bar and Dock, so the visuals cover every pixel.
+
+    private weak var window: NSWindow?
+    private var savedFrame: NSRect?
+    private var savedStyle: NSWindow.StyleMask = []
+    private var savedMinSize = NSSize(width: 640, height: 400)
+    private var savedMaxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    private var savedMovable = true
+    private let zoomTarget = ButtonTarget()
+
+    /// Called once the Metal view is inside its window.
+    func attachWindow(_ window: NSWindow?) {
+        guard let window, self.window !== window else { return }
+        self.window = window
+        // Route every full-screen path (green button, F key, toolbar, menu) through our own mode.
+        window.collectionBehavior.remove(.fullScreenPrimary)
+        window.collectionBehavior.insert(.fullScreenNone)
+        hookZoomButton()
+    }
+
+    private func hookZoomButton() {
+        zoomTarget.action = { [weak self] in self?.toggleFullScreen() }
+        if let zoom = window?.standardWindowButton(.zoomButton) {
+            zoom.target = zoomTarget
+            zoom.action = #selector(ButtonTarget.fire)
         }
-        nc.addObserver(forName: NSWindow.didExitFullScreenNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.isFullScreen = false
-            NSApp.presentationOptions = []
-        }
+    }
+
+    private var targetWindow: NSWindow? {
+        window ?? NSApp.mainWindow ?? NSApp.windows.first { $0.isVisible && $0.canBecomeMain }
+    }
+
+    func toggleFullScreen() {
+        isFullScreen ? exitFullScreen() : enterFullScreen()
+    }
+
+    func enterFullScreen() {
+        guard !isFullScreen, let window = targetWindow else { return }
+        if window.styleMask.contains(.fullScreen) { window.toggleFullScreen(nil) } // leave any system full screen first
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        savedFrame = window.frame
+        savedStyle = window.styleMask
+        savedMinSize = window.contentMinSize
+        savedMaxSize = window.contentMaxSize
+        savedMovable = window.isMovable
+
+        NSApp.presentationOptions = [.hideDock, .hideMenuBar]   // fully hidden, no slide-down
+        // .resizable (without .titled) keeps the window able to take keyboard focus.
+        window.styleMask = [.resizable, .fullSizeContentView]
+        window.isMovable = false
+        window.contentMinSize = screen.frame.size
+        window.contentMaxSize = screen.frame.size
+        window.setFrame(screen.frame, display: true)
+        window.makeKeyAndOrderFront(nil)
+        isFullScreen = true
+        NotificationCenter.default.addObserver(self, selector: #selector(screensChanged),
+                                               name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+
+    func exitFullScreen() {
+        guard isFullScreen, let window = targetWindow else { return }
+        NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        isFullScreen = false
+        window.styleMask = savedStyle
+        window.contentMinSize = savedMinSize
+        window.contentMaxSize = savedMaxSize
+        window.isMovable = savedMovable
+        if let frame = savedFrame { window.setFrame(frame, display: true) }
+        NSApp.presentationOptions = []
+        window.makeKeyAndOrderFront(nil)
+        hookZoomButton()   // the title-bar buttons are rebuilt when the frame comes back
+    }
+
+    /// Resolution changed or a display was plugged in or out: re-fit to the screen we're on.
+    @objc private func screensChanged() {
+        guard isFullScreen, let window = targetWindow, let screen = window.screen ?? NSScreen.main else { return }
+        window.contentMinSize = screen.frame.size
+        window.contentMaxSize = screen.frame.size
+        window.setFrame(screen.frame, display: true)
     }
 
     func startAudio() {
@@ -202,11 +274,15 @@ final class VisualizerModel: ObservableObject {
                     self.lastActivity = .distantPast
                     return nil
                 }
+                if self.isFullScreen && self.openPopover == nil {
+                    self.exitFullScreen()
+                    return nil
+                }
                 return event
             default: break
             }
             switch event.charactersIgnoringModifiers?.lowercased() {
-            case "f": NSApp.keyWindow?.toggleFullScreen(nil); return nil
+            case "f": self.toggleFullScreen(); return nil
             case "s", "h", "t": self.toggleToolbar(); return nil
             case "l": self.chooseLogo(); return nil
             case "a": self.settings.autoCycle.toggle(); return nil
@@ -215,4 +291,10 @@ final class VisualizerModel: ObservableObject {
             }
         }
     }
+}
+
+/// Lets an AppKit button call a Swift closure.
+final class ButtonTarget: NSObject {
+    var action: (() -> Void)?
+    @objc func fire() { action?() }
 }
