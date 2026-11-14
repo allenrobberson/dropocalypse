@@ -423,8 +423,8 @@ public:
             for (int j = 0; j < pts; ++j) {
                 float x01 = (float)j / (pts - 1);
                 float d = std::fabs(x01 - 0.5f) * 2;
-                float e = (x01 - 0.5f) / 0.2f;
-                float env = std::exp(-e * e) * 0.9f + 0.1f;
+                float e = (x01 - 0.5f) / 0.22f;
+                float env = std::exp(-e * e) * 0.85f + 0.15f;
                 int idx = std::min(n - 1, (int)(d * n * 0.7f));
                 row[j] = (std::pow(f.bands[idx], 1.4f) + rng_.range(0, 0.06f)) * env;
             }
@@ -432,7 +432,7 @@ public:
             ridges_.push_back(row);
         }
         float spacing = 1.3f / rows;
-        float halfWidth = std::min(0.55f, f.aspect * 0.45f);
+        float halfWidth = f.aspect * 1.02f; // edge to edge (slightly past, so no visible ends)
         RGBA ink = f.color(0, 1);
         RGBA lineColor{ink.r, ink.g, ink.b, 0.95f};
         RGBA fill{0, 0, 0, 1};
@@ -670,7 +670,7 @@ private:
     struct RainColumn { float y, speed; int length; uint32_t seed; };
 
     static constexpr int RidgeRows = 30;
-    static constexpr int RidgePoints = 52;
+    static constexpr int RidgePoints = 96;
 
     RainColumn newColumn(float y) {
         return RainColumn{y, rng_.range(0.35f, 0.9f), (int)rng_.range(8, 22), (uint32_t)(rng_.next() * 1000000)};

@@ -141,6 +141,6 @@ private:
     int activeScene_ = -1;
     double sceneStart_ = 0;
 
-    static constexpr int MaxVertices = 80000;
+    static constexpr int MaxVertices = 96000;
     static constexpr int AdditiveCapacity = 52000; // the rest is for the alpha-blended "over" batch
 };

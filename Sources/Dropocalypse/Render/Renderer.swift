@@ -51,7 +51,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var feedbackIndex = 0
     private let feedbackFormat: MTLPixelFormat = .rgba16Float
 
-    private static let maxVertices = 80_000
+    private static let maxVertices = 96_000
     private static let additiveCapacity = 52_000 // the rest is for the alpha-blended "over" batch
     private var vertexBuffers: [MTLBuffer] = []
     private var bufferIndex = 0

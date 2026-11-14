@@ -59,7 +59,7 @@ final class StyleFX {
     private var bolts: [Bolt] = []
 
     private static let ridgeRows = 30
-    private static let ridgePoints = 52
+    private static let ridgePoints = 96
     private var ridges: [[Float]] = []
     private var ridgeTimer: Float = 0
 
@@ -162,7 +162,7 @@ final class StyleFX {
             for j in 0..<pts {
                 let x01 = Float(j) / Float(pts - 1)
                 let d = abs(x01 - 0.5) * 2                       // 0 center … 1 edge
-                let env = exp(-pow((x01 - 0.5) / 0.2, 2)) * 0.9 + 0.1
+                let env = exp(-pow((x01 - 0.5) / 0.22, 2)) * 0.85 + 0.15
                 let idx = min(n - 1, Int(d * Float(n) * 0.7))    // bass in the middle
                 row[j] = (pow(f.bands[idx], 1.4) + rng.range(0, 0.06)) * env
             }
@@ -171,7 +171,7 @@ final class StyleFX {
         }
 
         let spacing: Float = 1.3 / Float(rows)
-        let halfWidth: Float = min(0.55, f.aspect * 0.45)
+        let halfWidth: Float = f.aspect * 1.02            // edge to edge (slightly past, so no visible ends)
         let ink = f.color(0, 1)
         let lineColor: GeometryBuilder.RGBA = (ink.0, ink.1, ink.2, 0.95)
         let fill: GeometryBuilder.RGBA = (0, 0, 0, 1)
