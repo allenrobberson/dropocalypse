@@ -34,6 +34,9 @@ struct VisualScene {
 
     // Foreground drawing.
     var wave: WaveStyle = .circle
+    /// Radius of the shape's center, in screen-height units. 0 (or close to it) makes the
+    /// waveform burst straight out of the middle with no hollow ring.
+    var centerRadius: Float = 0.32
     var waveScale: Float = 1
     var thickness: Float = 1
     var baseHue: Float = 0          // 0…1
@@ -47,7 +50,7 @@ extension VisualScene {
         VisualScene(name: "Classic Tunnel",
               zoom: 1.025, zoomBass: 0.05, rotation: 0.004, rotationBass: 0.01,
               warpAmount: 0.003, decay: 0.95, hueShift: 0.006,
-              wave: .circle, waveScale: 1, thickness: 1.2, baseHue: 0.55),
+              wave: .circle, centerRadius: 0.03, waveScale: 1, thickness: 1.2, baseHue: 0.55),
 
         VisualScene(name: "Spectrum Skyline",
               zoom: 1.0, zoomBass: 0.006, warpAmount: 0.0015, decay: 0.9,
@@ -57,7 +60,7 @@ extension VisualScene {
         VisualScene(name: "Starburst",
               zoom: 1.045, zoomBass: 0.06, rotation: -0.002, rotationBass: -0.012,
               warpAmount: 0.002, decay: 0.93, hueShift: 0.01,
-              wave: .radialBars, waveScale: 1.1, thickness: 1, baseHue: 0.08),
+              wave: .radialBars, centerRadius: 0, waveScale: 1.1, thickness: 1, baseHue: 0.08),
 
         VisualScene(name: "Oscilloscope Drift",
               zoom: 1.006, zoomBass: 0.02, rotation: 0.0015,
@@ -68,18 +71,18 @@ extension VisualScene {
         VisualScene(name: "Kaleido Bloom",
               zoom: 1.012, zoomBass: 0.035, rotation: 0.006, rotationBass: 0.015,
               warpAmount: 0.003, decay: 0.95, kaleido: 6, hueShift: 0.008,
-              wave: .circle, waveScale: 0.8, thickness: 1.1, baseHue: 0.9, hueSpeed: 0.06),
+              wave: .circle, centerRadius: 0.03, waveScale: 0.8, thickness: 1.1, baseHue: 0.9, hueSpeed: 0.06),
 
         VisualScene(name: "Liquid Plasma",
               zoom: 1.004, zoomBass: 0.025, rotation: 0.001,
               warpAmount: 0.012, warpScale: 5, warpSpeed: 1.3, decay: 0.975,
               hueShift: 0.005, plasma: 1,
-              wave: .twinRings, waveScale: 0.7, thickness: 0.8, baseHue: 0.6, saturation: 0.75),
+              wave: .twinRings, centerRadius: 0.03, waveScale: 0.7, thickness: 0.8, baseHue: 0.6, saturation: 0.75),
 
         VisualScene(name: "Vortex",
               zoom: 1.03, zoomBass: 0.04, rotation: 0.025, rotationBass: 0.04,
               warpAmount: 0.002, decay: 0.94, hueShift: 0.012,
-              wave: .spiralDots, waveScale: 1, thickness: 1.2, baseHue: 0.15, hueSpeed: 0.08),
+              wave: .spiralDots, centerRadius: 0, waveScale: 1, thickness: 1.2, baseHue: 0.15, hueSpeed: 0.08),
 
         VisualScene(name: "Lissajous Neon",
               zoom: 1.008, zoomBass: 0.02, rotation: -0.004,
@@ -94,6 +97,6 @@ extension VisualScene {
         VisualScene(name: "Black Hole",
               zoom: 0.975, zoomBass: -0.03, rotation: -0.012, rotationBass: -0.02,
               warpAmount: 0.003, decay: 0.965, hueShift: -0.006,
-              wave: .twinRings, waveScale: 1.25, thickness: 1, baseHue: 0.02, hueSpeed: 0.02, vignette: 0.5),
+              wave: .twinRings, centerRadius: 0.2, waveScale: 1.25, thickness: 1, baseHue: 0.02, hueSpeed: 0.02, vignette: 0.5),
     ]
 }

@@ -429,6 +429,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         s.plasma = mix(a.plasma, b.plasma)
         s.vignette = mix(a.vignette, b.vignette)
         s.saturation = mix(a.saturation, b.saturation)
+        s.centerRadius = mix(a.centerRadius, b.centerRadius)
         return s
     }
 }

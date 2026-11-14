@@ -85,13 +85,13 @@ enum WaveDrawer {
 
         switch scene.wave {
         case .circle:
-            ring(wave: wave, stride: 2, radius: 0.32 * s * (1 + 0.25 * bass), amplitude: 0.12 * s,
+            ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.25 * bass), amplitude: 0.12 * s,
                  rotation: t * 0.2, width: width, into: &g) { color($0) }
 
         case .twinRings:
-            ring(wave: wave, stride: 2, radius: 0.2 * s * (1 + 0.3 * bass), amplitude: 0.07 * s,
+            ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.3 * bass), amplitude: 0.07 * s,
                  rotation: t * 0.5, width: width, into: &g) { color($0) }
-            ring(wave: wave, stride: 2, offset: 1, radius: 0.42 * s * (1 + 0.15 * bass), amplitude: 0.1 * s,
+            ring(wave: wave, stride: 2, offset: 1, radius: max(0.42 * s, scene.centerRadius * s + 0.22) * (1 + 0.15 * bass), amplitude: 0.1 * s,
                  rotation: -t * 0.4, width: width, into: &g) { color($0 + 0.5) }
 
         case .line:
@@ -127,7 +127,7 @@ enum WaveDrawer {
 
         case .radialBars:
             let count = bands.count
-            let inner = 0.1 + 0.06 * bass
+            let inner = scene.centerRadius > 0 ? scene.centerRadius + 0.06 * bass : 0
             for side in 0..<2 {
                 for i in 0..<count {
                     let frac = Float(i) / Float(count)
@@ -144,7 +144,7 @@ enum WaveDrawer {
                 for i in 0..<count {
                     let frac = Float(i) / Float(count)
                     let a = Float(i) * 0.33 + Float(arm) * 2 * .pi / 3 + t * 1.2
-                    let r = 0.05 + frac * 0.85 * s
+                    let r = scene.centerRadius + frac * 0.85 * s
                     let radius = 0.006 + bands[i] * 0.032 * scene.thickness
                     g.dot(SIMD2(cos(a), sin(a)) * r, radius: radius, color(frac + Float(arm) * 0.2))
                 }
@@ -178,7 +178,7 @@ enum WaveDrawer {
                 w += (first - w) * k
             }
             let a = Float(i) / Float(n) * 2 * .pi + rotation
-            let r = radius + w * amplitude
+            let r = max(0, radius + w * amplitude) // a zero radius emits straight from the center
             pts.append(SIMD2(cos(a), sin(a)) * r)
         }
         g.polyline(pts, closed: true, width: width) { color(Float($0) / Float(n)) }
