@@ -130,7 +130,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         let library = try device.makeLibrary(source: ShaderSource.metal, options: nil)
         func fn(_ name: String) throws -> MTLFunction {
             guard let f = library.makeFunction(name: name) else {
-                throw NSError(domain: "LogoVisualizer", code: 1,
+                throw NSError(domain: "Dropocalypse", code: 1,
                               userInfo: [NSLocalizedDescriptionKey: "Missing shader function \(name)"])
             }
             return f

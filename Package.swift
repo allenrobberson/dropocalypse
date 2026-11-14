@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "LogoVisualizer",
+    name: "Dropocalypse",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "LogoVisualizer",
-            path: "Sources/LogoVisualizer",
+            name: "Dropocalypse",
+            path: "Sources/Dropocalypse",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("Metal"),

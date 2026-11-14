@@ -1,4 +1,6 @@
-# Logo Visualizer
+# Dropocalypse
+
+**The drop hits. Your logo goes off.**
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for macOS that **makes your logo dance to the bass**.
 
@@ -14,11 +16,11 @@ Play music on any speaker. The Mac listens through its microphone or a line-in, 
 ## Download
 
 1. Go to the **[latest release](../../releases/latest)** and download the `.dmg`.
-2. Open it and drag **Logo Visualizer** into **Applications**.
+2. Open it and drag **Dropocalypse** into **Applications**.
 3. **First launch:** the app is free and isn't notarized by Apple, so macOS blocks it the first time.
    - **macOS 15 Sequoia and later:** try to open it once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
    - **macOS 13–14:** right-click the app → **Open** → **Open**.
-   - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Logo Visualizer.app"`
+   - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Dropocalypse.app"`
 4. Allow **microphone** access when asked. Audio is analyzed live and is never recorded or sent anywhere.
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
@@ -62,10 +64,10 @@ Most visualizers feel laggy because of how they listen and analyze. This one:
 ## Building from source
 
 ```bash
-git clone https://github.com/allenrobberson/logo-visualizer.git
-cd logo-visualizer
+git clone https://github.com/allenrobberson/dropocalypse.git
+cd dropocalypse
 swift run -c release            # quick run
-./scripts/build-app.sh          # builds dist/Logo Visualizer.app, .zip and .dmg
+./scripts/build-app.sh          # builds dist/Dropocalypse.app, .zip and .dmg
 ```
 
 You need Xcode 15 or later (or the Command Line Tools) on macOS 13 or later. There are no third-party dependencies.
@@ -79,7 +81,7 @@ Either way, a GitHub Release is published with the `.dmg` and `.zip` attached.
 ### Project layout
 
 ```
-Sources/LogoVisualizer/
+Sources/Dropocalypse/
   Audio/AudioCapture.swift    mic / line-in capture, device list, small hardware buffers
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo

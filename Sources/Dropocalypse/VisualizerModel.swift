@@ -98,8 +98,14 @@ final class VisualizerModel: ObservableObject {
 
     static var supportDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = base.appendingPathComponent("LogoVisualizer", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dir = base.appendingPathComponent("Dropocalypse", isDirectory: true)
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: dir.path) {
+            // Carry over a logo saved by the app's earlier name ("Logo Visualizer").
+            let old = base.appendingPathComponent("LogoVisualizer", isDirectory: true)
+            if fm.fileExists(atPath: old.path) { try? fm.copyItem(at: old, to: dir) }
+        }
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
 

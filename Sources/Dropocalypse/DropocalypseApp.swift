@@ -18,12 +18,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct LogoVisualizerApp: App {
+struct DropocalypseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = VisualizerModel()
 
     var body: some Scene {
-        WindowGroup("Logo Visualizer") {
+        WindowGroup("Dropocalypse") {
             ContentView(model: model)
                 .preferredColorScheme(.dark)
         }

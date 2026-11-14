@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Builds a universal (Apple Silicon + Intel) LogoVisualizer.app, a .zip and a .dmg in ./dist.
+# Builds a universal (Apple Silicon + Intel) Dropocalypse.app, a .zip and a .dmg in ./dist.
 #
 #   ./scripts/build-app.sh            # version from the latest git tag, or 0.0.0-dev
 #   VERSION=1.2.3 ./scripts/build-app.sh
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-APP_NAME="Logo Visualizer"
-EXEC_NAME="LogoVisualizer"
-BUNDLE_ID="io.github.allenrobberson.logovisualizer"
+APP_NAME="Dropocalypse"
+EXEC_NAME="Dropocalypse"
+BUNDLE_ID="io.github.allenrobberson.dropocalypse"
 VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)}"
 VERSION="${VERSION:-0.0.0-dev}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
@@ -42,7 +42,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Logo Visualizer listens to your microphone or line-in so the visuals and your logo can move with the music. Audio is analyzed live and never recorded or sent anywhere.</string>
+    <string>Dropocalypse listens to your microphone or line-in so the visuals and your logo can move with the music. Audio is analyzed live and never recorded or sent anywhere.</string>
 </dict>
 </plist>
 PLIST
@@ -56,8 +56,8 @@ codesign --force --deep --sign - "$APP"
 codesign --verify --verbose "$APP"
 
 echo "==> Packaging"
-ZIP="$DIST/LogoVisualizer-$VERSION-macOS.zip"
-DMG="$DIST/LogoVisualizer-$VERSION-macOS.dmg"
+ZIP="$DIST/Dropocalypse-$VERSION-macOS.zip"
+DMG="$DIST/Dropocalypse-$VERSION-macOS.dmg"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 
 STAGING="$(mktemp -d)"
