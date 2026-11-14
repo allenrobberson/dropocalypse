@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 0.6.1: Outrun Grid meter goes edge to edge
+- 🌇 The spectrum meter sitting on the **Outrun Grid** horizon now runs the **full width of the screen**, with bass meeting in the middle and highs at the edges. Its bars are colored to match the scene, from the sun's gold through pink and magenta to the grid's purple, and they reflect on the floor.
+
 ### 0.6.0: three new equalizer styles and a smoother sun
 - 🌈 **Three new styles in the Neon Equalizer family** (now **23 styles** in total):
   - **Mirror Equalizer**: bars grow up *and* down from a glowing center line, bass in the middle and highs out to the edges, in a sunset rainbow from pink through orange to gold.
@@ -209,7 +212,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | 11 | **Bass Ring** | A circular spectrum that wraps around your logo and follows it, with sparks bursting off on every kick. It sizes itself to your logo automatically. |
 | 12 | **Neon Equalizer** | Smooth neon spectrum bars across the screen with a glassy reflection underneath |
 | 13 | **Pulsar Ridges** | Stacked white ridgelines that span the full width of the screen and scroll upward, with the bass rising in the middle: the classic "joy plot" look |
-| 14 | **Outrun Grid** | A synthwave sunset: smooth striped sun, glowing horizon and a neon grid floor that races toward you faster when the bass hits |
+| 14 | **Outrun Grid** | A synthwave sunset: smooth striped sun, a full-width spectrum meter on the horizon in sunset colors, and a neon grid floor that races toward you faster when the bass hits |
 | 15 | **Hyperspace** | A starfield that jumps to warp speed on the drops |
 | 16 | **Particle Storm** | Hundreds of glowing particles flowing in currents around the logo, scattering outward on every beat |
 | 17 | **Lightning Storm** | Lightning bolts crack out from behind the logo on the beat, over a stormy plasma sky |

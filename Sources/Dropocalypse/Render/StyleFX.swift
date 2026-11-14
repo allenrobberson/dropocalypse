@@ -229,14 +229,30 @@ final class StyleFX {
         // Horizon line and a spectrum "skyline" sitting on it.
         let hc = hsv(gridHue + 0.05, 0.5, 1)
         g.rect(x0: -w, y0: horizon - 0.003, x1: w, y1: horizon + 0.003, (hc.0, hc.1, hc.2, 0.9))
+        // Edge to edge: bass meets in the middle, highs reach the screen edges. Colors run from
+        // the sun's gold through the sky's pink and magenta to the grid's purple, with a
+        // reflection on the floor.
         let n = f.bands.count
+        let slot = w / Float(n)
         for i in 0..<n {
             let frac = Float(i) / Float(n - 1)
-            let h = f.bands[i] * 0.12 * f.scene.waveScale
-            let c = hsv(0.5 + frac * 0.1, 0.8, 1)
+            let prev = f.bands[max(0, i - 1)], next = f.bands[min(n - 1, i + 1)]
+            let v = (prev + 2 * f.bands[i] + next) / 4
+            let h = 0.012 + pow(v, 1.1) * 0.2 * f.scene.waveScale
+            let hue = 0.12 - frac * 0.37
+            let c = hsv(hue, 0.9, 1), t = hsv(hue + 0.03, 0.5, 1)
+            let foot: GeometryBuilder.RGBA = (c.0, c.1, c.2, 0.85)
+            let tip: GeometryBuilder.RGBA = (t.0, t.1, t.2, 1)
+            let refl: GeometryBuilder.RGBA = (c.0, c.1, c.2, 0.28)
+            let fade: GeometryBuilder.RGBA = (c.0, c.1, c.2, 0)
             for side: Float in [-1, 1] {
-                let x = side * (0.38 + frac * (w - 0.4))
-                g.line(SIMD2(x, horizon), SIMD2(x, horizon + h), width: 0.006, (c.0, c.1, c.2, 0.8))
+                let xa = side * (Float(i) * slot + slot * 0.18)
+                let xb = side * (Float(i) * slot + slot * 0.82)
+                let x0 = min(xa, xb), x1 = max(xa, xb)
+                g.quad(SIMD2(x0, horizon + 0.003), foot, SIMD2(x1, horizon + 0.003), foot,
+                       SIMD2(x1, horizon + h), tip, SIMD2(x0, horizon + h), tip)
+                g.quad(SIMD2(x0, horizon - 0.003), refl, SIMD2(x1, horizon - 0.003), refl,
+                       SIMD2(x1, horizon - h * 0.45), fade, SIMD2(x0, horizon - h * 0.45), fade)
             }
         }
     }

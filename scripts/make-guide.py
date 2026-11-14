@@ -300,7 +300,7 @@ def build():
     s.append(whats_new_box([
         "<b>Version 0.6: three new equalizer styles</b> (23 in total): <b>Mirror Equalizer</b>, <b>LED Meter</b> "
         "and <b>Rainbow Peaks</b>. See section 6.",
-        "<b>Smoother Outrun Grid sun</b>: no more stair-stepped, pixelated edge.",
+        "<b>Outrun Grid</b>: smoother sun with no stair-stepped edge, and the horizon meter now runs the full width of the screen in sunset colors (0.6.1).",
         "<b>Version 0.5: listen to Spotify, or any app on your Mac, with no mic</b> (macOS 14.2 or later). Click <b>Audio</b>, "
         "open the <b>Listen to</b> drop-down and pick the app, or <b>All Mac audio</b>. Playing apps are listed "
         "first. Allow <b>system audio recording</b> the first time. See section 1.",
@@ -483,7 +483,7 @@ def build():
         ["11", "<b>Bass Ring</b>", "A circular spectrum wrapped around your logo, with sparks on every kick"],
         ["12", "<b>Neon Equalizer</b>", "Smooth neon bars across the screen with a glassy reflection"],
         ["13", "<b>Pulsar Ridges</b>", "Stacked white ridgelines that span the full screen and scroll upward, the classic “joy plot” look"],
-        ["14", "<b>Outrun Grid</b>", "A synthwave sunset: smooth striped sun and a neon grid that races with the bass"],
+        ["14", "<b>Outrun Grid</b>", "A synthwave sunset: smooth striped sun, a full-width sunset-colored meter and a racing neon grid"],
         ["15", "<b>Hyperspace</b>", "A starfield that jumps to warp speed on the drops"],
         ["16", "<b>Particle Storm</b>", "Hundreds of glowing particles flowing in currents, scattering on beats"],
         ["17", "<b>Lightning Storm</b>", "Lightning cracking out from behind the logo on the beat"],

@@ -479,14 +479,22 @@ public:
             g.line(farP, nearP, 0.003f, rgba(gc, 0.75f));
         }
         g.rect(-w, horizon - 0.003f, w, horizon + 0.003f, rgba(hsv(gridHue + 0.05f, 0.5f, 1), 0.9f));
+        // Edge to edge, colored from the sun's gold through pink and magenta to the grid's purple.
         int n = f.bandCount;
+        float slot = w / n;
         for (int i = 0; i < n; ++i) {
             float frac = (float)i / (n - 1);
-            float h = f.bands[i] * 0.12f * f.scene.waveScale;
-            Rgb c = hsv(0.5f + frac * 0.1f, 0.8f, 1);
+            float v = (f.bands[std::max(0, i - 1)] + 2 * f.bands[i] + f.bands[std::min(n - 1, i + 1)]) / 4;
+            float h = 0.012f + std::pow(v, 1.1f) * 0.2f * f.scene.waveScale;
+            float hue = 0.12f - frac * 0.37f;
+            Rgb c = hsv(hue, 0.9f, 1), t = hsv(hue + 0.03f, 0.5f, 1);
+            RGBA foot = rgba(c, 0.85f), tip = rgba(t, 1), refl = rgba(c, 0.28f), fade = rgba(c, 0);
             for (float side : {-1.0f, 1.0f}) {
-                float x = side * (0.38f + frac * (w - 0.4f));
-                g.line({x, horizon}, {x, horizon + h}, 0.006f, rgba(c, 0.8f));
+                float xa = side * (i * slot + slot * 0.18f), xb = side * (i * slot + slot * 0.82f);
+                float x0 = std::min(xa, xb), x1 = std::max(xa, xb);
+                g.quad({x0, horizon + 0.003f}, foot, {x1, horizon + 0.003f}, foot, {x1, horizon + h}, tip, {x0, horizon + h}, tip);
+                g.quad({x0, horizon - 0.003f}, refl, {x1, horizon - 0.003f}, refl, {x1, horizon - h * 0.45f}, fade,
+                       {x0, horizon - h * 0.45f}, fade);
             }
         }
     }
