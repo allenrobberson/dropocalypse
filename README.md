@@ -70,11 +70,11 @@ swift run -c release            # quick run
 
 You need Xcode 15 or later (or the Command Line Tools) on macOS 13 or later. There are no third-party dependencies.
 
-**Releases are automatic.** Every push to `main` is built by GitHub Actions. Pushing a tag such as `v0.2.0` publishes a GitHub Release with the `.dmg` and `.zip` attached:
+**Releases are automatic.** GitHub Actions builds every push to `main`. To publish a new downloadable version, do either of these:
+- On GitHub, go to **Actions → Build → Run workflow**, type a version such as `0.2.0`, and click **Run workflow**.
+- Or push a tag: `git tag v0.2.0 && git push origin v0.2.0`
 
-```bash
-git tag v0.2.0 && git push origin v0.2.0
-```
+Either way, a GitHub Release is published with the `.dmg` and `.zip` attached.
 
 ### Project layout
 
