@@ -459,20 +459,7 @@ public:
         RGBA glow{0.9f, 0.15f, 0.6f, 0.35f}, clear{0.9f, 0.15f, 0.6f, 0};
         over.quad({-w, horizon}, glow, {w, horizon}, glow, {w, horizon + 0.55f}, clear, {-w, horizon + 0.55f}, clear);
 
-        float r = 0.34f * (1 + 0.08f * bass);
-        float cy = horizon + 0.3f;
-        const int strips = 40;
-        for (int k = 0; k < strips; ++k) {
-            float frac = (float)k / (strips - 1);
-            float yTop = cy + r - k * (2 * r / strips);
-            float yBot = yTop - 2 * r / strips;
-            if (yBot < horizon) break;
-            if (frac > 0.45f && k % 4 == 3) continue;
-            if (frac > 0.7f && k % 4 == 2) continue;
-            float ym = (yTop + yBot) / 2;
-            float hw = std::sqrt(std::max(0.0f, r * r - (ym - cy) * (ym - cy)));
-            over.rect(-hw, yBot, hw, yTop, rgba(hsv(0.13f - frac * 0.21f, 0.85f, 1), 1));
-        }
+        drawSun(0.34f * (1 + 0.08f * bass), horizon + 0.3f, horizon, over);
         over.rect(-w, -1.05f, w, horizon, RGBA{0.02f, 0, 0.05f, 1});
 
         gridPhase_ += (0.45f + bass * 2.2f + (beatFired_ ? 0.6f : 0)) * f.dt;
@@ -502,6 +489,127 @@ public:
                 g.line({x, horizon}, {x, horizon + h}, 0.006f, rgba(c, 0.8f));
             }
         }
+    }
+
+    // Smooth striped synthwave sun: slices whose edges follow the circle, a smooth gradient and a
+    // soft feathered rim, so it never looks stair-stepped.
+    void drawSun(float r, float cy, float horizon, GeometryBuilder& over) {
+        float top = cy + r, bottom = std::max(cy - r, horizon);
+        auto halfW = [&](float y) { return std::sqrt(std::max(0.0f, r * r - (y - cy) * (y - cy))); };
+        auto col = [&](float y, float a) { return rgba(hsv(0.13f - (top - y) / (2 * r) * 0.21f, 0.85f, 1), a); };
+        std::vector<std::pair<float, float>> bands;
+        float stripeStart = top - 0.45f * 2 * r;
+        bands.push_back({top, stripeStart});
+        float period = 2 * r / 13, y = stripeStart;
+        while (y > bottom) {
+            float t = (stripeStart - y) / std::max(0.001f, stripeStart - (cy - r));
+            float gap = period * (0.16f + 0.42f * t);
+            float solidBottom = std::max(bottom, y - (period - gap));
+            bands.push_back({y - gap * 0.5f, solidBottom});
+            y = solidBottom - gap * 0.5f;
+        }
+        const float feather = 0.006f;
+        for (auto [y0, y1] : bands) {
+            if (y0 <= y1) continue;
+            int pieces = std::max(1, (int)std::ceil((y0 - y1) / 0.006f));
+            for (int k = 0; k < pieces; ++k) {
+                float ya = y0 - (y0 - y1) * k / pieces, yb = y0 - (y0 - y1) * (k + 1) / pieces;
+                float wa = halfW(ya), wb = halfW(yb);
+                RGBA ca = col(ya, 1), cb = col(yb, 1), ea = col(ya, 0), eb = col(yb, 0);
+                over.quad({-wb, yb}, cb, {wb, yb}, cb, {wa, ya}, ca, {-wa, ya}, ca);
+                over.quad({wb, yb}, cb, {wb + feather, yb}, eb, {wa + feather, ya}, ea, {wa, ya}, ca);
+                over.quad({-wb - feather, yb}, eb, {-wb, yb}, cb, {-wa, ya}, ca, {-wa - feather, ya}, ea);
+            }
+            float wt = halfW(y0), wbm = halfW(y1), fe = feather * 0.6f;
+            over.quad({-wt, y0}, col(y0, 1), {wt, y0}, col(y0, 1), {wt, y0 + fe}, col(y0, 0), {-wt, y0 + fe}, col(y0, 0));
+            over.quad({-wbm, y1 - fe}, col(y1, 0), {wbm, y1 - fe}, col(y1, 0), {wbm, y1}, col(y1, 1), {-wbm, y1}, col(y1, 1));
+        }
+    }
+
+    // ---- 21. Mirror Equalizer: bars up and down from a center line, sunset rainbow
+    void mirrorEqualizer(const FXFrame& f, GeometryBuilder& g) {
+        int n = f.bandCount;
+        float half = 0.94f * f.aspect, slot = half / n, mid = -0.02f, s = f.scene.waveScale;
+        float pulse = 1 + 0.12f * f.bass();
+        for (int i = 0; i < n; ++i) {
+            float v = (f.bands[std::max(0, i - 1)] + 2 * f.bands[i] + f.bands[std::min(n - 1, i + 1)]) / 4;
+            float h = (0.008f + std::pow(v, 1.2f) * 0.42f * s) * pulse;
+            float frac = (float)i / (n - 1);
+            Rgb c = hsv(0.93f + frac * 0.24f + 0.03f * std::sin(f.t * 0.4f), 0.9f, 1);
+            RGBA core = rgba(c, 1);
+            RGBA tip{std::min(1.0f, c.r + 0.35f), std::min(1.0f, c.g + 0.35f), std::min(1.0f, c.b + 0.35f), 1};
+            for (float side : {-1.0f, 1.0f}) {
+                float xa = side * (i * slot + slot * 0.16f), xb = side * (i * slot + slot * 0.84f);
+                float x0 = std::min(xa, xb), x1 = std::max(xa, xb);
+                g.quad({x0, mid}, core, {x1, mid}, core, {x1, mid + h}, tip, {x0, mid + h}, tip);
+                g.quad({x0, mid - h}, tip, {x1, mid - h}, tip, {x1, mid}, core, {x0, mid}, core);
+            }
+        }
+        g.rect(-half, mid - 0.0015f, half, mid + 0.0015f, rgba(hsv(0.95f, 0.4f, 1), 0.8f));
+    }
+
+    // ---- 22. LED Meter: segmented green-yellow-red LEDs with peak hold
+    void ledMeter(const FXFrame& f, GeometryBuilder& g) {
+        const int cols = 24, segs = 18;
+        int n = f.bandCount;
+        if ((int)ledPeaks_.size() != cols) { ledPeaks_.assign(cols, 0); ledHold_.assign(cols, 0); }
+        float total = 1.7f * f.aspect, slot = total / cols, left = -total / 2;
+        const float base = -0.62f, height = 1.18f, segH = height / segs;
+        for (int c = 0; c < cols; ++c) {
+            int a = c * n / cols, b = std::max(a + 1, (c + 1) * n / cols);
+            float v = 0;
+            for (int k = a; k < b; ++k) v = std::max(v, f.bands[k]);
+            float level = std::min(1.0f, std::pow(v, 1.1f) * 1.05f * f.scene.waveScale);
+            int lit = (int)std::lround(level * segs);
+            if ((float)lit >= ledPeaks_[c]) { ledPeaks_[c] = (float)lit; ledHold_[c] = 0.45f; }
+            else {
+                ledHold_[c] -= f.dt;
+                if (ledHold_[c] <= 0) ledPeaks_[c] = std::max(0.0f, ledPeaks_[c] - f.dt * 14);
+            }
+            float x0 = left + c * slot + slot * 0.12f, x1 = x0 + slot * 0.76f;
+            for (int k = 0; k < segs; ++k) {
+                float y0 = base + k * segH + segH * 0.12f, y1 = y0 + segH * 0.76f;
+                float frac = (float)k / (segs - 1);
+                float hue = frac < 0.6f ? 0.33f - frac / 0.6f * 0.12f : 0.21f - (frac - 0.6f) / 0.4f * 0.21f;
+                g.rect(x0, y0, x1, y1, rgba(hsv(hue, 0.95f, 1), k < lit ? 1.0f : 0.07f));
+            }
+            int pk = (int)ledPeaks_[c];
+            if (pk > 0 && pk <= segs) {
+                float y0 = base + (pk - 1) * segH + segH * 0.12f;
+                g.rect(x0, y0, x1, y0 + segH * 0.76f, RGBA{1, 1, 1, 0.95f});
+            }
+        }
+    }
+
+    // ---- 23. Rainbow Peaks: thin rainbow bars with bouncing glowing caps
+    void rainbowPeaks(const FXFrame& f, GeometryBuilder& g) {
+        int n = f.bandCount;
+        if ((int)capY_.size() != n) { capY_.assign(n, 0); capV_.assign(n, 0); }
+        float total = 1.86f * f.aspect, slot = total / n, left = -total / 2;
+        const float base = -0.5f;
+        std::vector<V2> tops;
+        tops.reserve(n);
+        for (int i = 0; i < n; ++i) {
+            float v = (f.bands[std::max(0, i - 1)] + 2 * f.bands[i] + f.bands[std::min(n - 1, i + 1)]) / 4;
+            float h = 0.01f + std::pow(v, 1.1f) * 0.75f * f.scene.waveScale;
+            float x = left + (i + 0.5f) * slot;
+            Rgb c = hsv((float)i / n + f.t * 0.08f, 0.9f, 1);
+            float bw = slot * 0.22f;
+            g.quad({x - bw, base}, rgba(c, 0.35f), {x + bw, base}, rgba(c, 0.35f), {x + bw, base + h}, rgba(c, 1),
+                   {x - bw, base + h}, rgba(c, 1));
+            capV_[i] -= 2.4f * f.dt;
+            capY_[i] += capV_[i] * f.dt;
+            if (capY_[i] < h + 0.012f) {
+                capY_[i] = h + 0.012f;
+                capV_[i] = std::max(capV_[i], (beatFired_ ? 0.9f : 0.25f) * v);
+            }
+            float cy = base + capY_[i];
+            g.softDot({x, cy}, slot * 0.55f, rgba(c, 0.35f), 10);
+            g.rect(x - slot * 0.32f, cy - 0.004f, x + slot * 0.32f, cy + 0.004f, RGBA{1, 1, 1, 0.95f});
+            tops.push_back({x, base + h});
+        }
+        g.polyline(tops, false, 0.004f, [&](int i) { return rgba(hsv((float)i / n + f.t * 0.08f + 0.5f, 0.6f, 1), 0.55f); });
+        g.rect(left, base - 0.002f, left + total, base + 0.002f, RGBA{1, 1, 1, 0.35f});
     }
 
     // ---- 15. Hyperspace
@@ -745,6 +853,7 @@ private:
     std::vector<RainColumn> rain_;
     float gridPhase_ = 0;
     float lavaTime_ = 0;
+    std::vector<float> ledPeaks_, ledHold_, capY_, capV_;
 };
 
 
@@ -782,6 +891,9 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::DigitalRain: fx.digitalRain(frame, g); break;
     case WaveStyle::LavaLamp: fx.lavaLamp(frame, g); break;
     case WaveStyle::Inferno: fx.inferno(frame, g); break;
+    case WaveStyle::MirrorEqualizer: fx.mirrorEqualizer(frame, g); break;
+    case WaveStyle::LedMeter: fx.ledMeter(frame, g); break;
+    case WaveStyle::RainbowPeaks: fx.rainbowPeaks(frame, g); break;
 
     case WaveStyle::Circle:
         ring(g, wave, waveCount, 2, 0, scene.centerRadius * s * (1 + 0.25f * bass), 0.12f * s, t * 0.2f, width,

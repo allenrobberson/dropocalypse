@@ -205,21 +205,7 @@ final class StyleFX {
         over.quad(SIMD2(-w, horizon), glow, SIMD2(w, horizon), glow, SIMD2(w, horizon + 0.55), clear,
                   SIMD2(-w, horizon + 0.55), clear)
 
-        let r = 0.34 * (1 + 0.08 * bass)
-        let cy = horizon + 0.3
-        let strips = 40
-        for k in 0..<strips {
-            let frac = Float(k) / Float(strips - 1)
-            let yTop = cy + r - Float(k) * (2 * r / Float(strips))
-            let yBot = yTop - 2 * r / Float(strips)
-            if yBot < horizon { break }
-            if frac > 0.45 && k % 4 == 3 { continue }
-            if frac > 0.7 && k % 4 == 2 { continue }
-            let ym = (yTop + yBot) / 2
-            let hw = sqrt(max(0, r * r - (ym - cy) * (ym - cy)))
-            let c = hsv(0.13 - frac * 0.21, 0.85, 1)
-            over.rect(x0: -hw, y0: yBot, x1: hw, y1: yTop, (c.0, c.1, c.2, 1))
-        }
+        drawSun(radius: 0.34 * (1 + 0.08 * bass), cy: horizon + 0.3, horizon: horizon, into: &over)
         over.rect(x0: -w, y0: -1.05, x1: w, y1: horizon, (0.02, 0, 0.05, 1))
 
         // Scrolling perspective grid.
@@ -253,6 +239,178 @@ final class StyleFX {
                 g.line(SIMD2(x, horizon), SIMD2(x, horizon + h), width: 0.006, (c.0, c.1, c.2, 0.8))
             }
         }
+    }
+
+    /// Smooth striped synthwave sun. Each solid band is cut into thin slices whose left and right
+    /// edges follow the circle exactly (no stair steps), colored with a smooth top-to-bottom
+    /// gradient, and edged with a soft feather so it stays smooth on any screen.
+    private func drawSun(radius r: Float, cy: Float, horizon: Float, into over: inout GeometryBuilder) {
+        let top = cy + r, bottom = max(cy - r, horizon)
+        func halfWidth(_ y: Float) -> Float { sqrt(max(0, r * r - (y - cy) * (y - cy))) }
+        func color(_ y: Float, _ a: Float) -> GeometryBuilder.RGBA {
+            let frac = (top - y) / (2 * r)
+            let c = hsv(0.13 - frac * 0.21, 0.85, 1)
+            return (c.0, c.1, c.2, a)
+        }
+        // Solid bands: unbroken on top, then gaps that widen toward the horizon.
+        var bands: [(Float, Float)] = []
+        let stripeStart = top - 0.45 * 2 * r
+        bands.append((top, stripeStart))
+        let period = 2 * r / 13
+        var y = stripeStart
+        while y > bottom {
+            let t = (stripeStart - y) / max(0.001, stripeStart - (cy - r))
+            let gap = period * (0.16 + 0.42 * t)
+            let solidBottom = max(bottom, y - (period - gap))
+            bands.append((y - gap * 0.5, solidBottom))
+            y = solidBottom - gap * 0.5
+        }
+        let feather: Float = 0.006
+        for (y0, y1) in bands where y0 > y1 {
+            let pieces = max(1, Int(ceil((y0 - y1) / 0.006)))
+            for k in 0..<pieces {
+                let ya = y0 - (y0 - y1) * Float(k) / Float(pieces)
+                let yb = y0 - (y0 - y1) * Float(k + 1) / Float(pieces)
+                let wa = halfWidth(ya), wb = halfWidth(yb)
+                let ca = color(ya, 1), cb = color(yb, 1)
+                over.quad(SIMD2(-wb, yb), cb, SIMD2(wb, yb), cb, SIMD2(wa, ya), ca, SIMD2(-wa, ya), ca)
+                // Soft anti-aliased rim on both sides.
+                let ea = color(ya, 0), eb = color(yb, 0)
+                over.quad(SIMD2(wb, yb), cb, SIMD2(wb + feather, yb), eb, SIMD2(wa + feather, ya), ea, SIMD2(wa, ya), ca)
+                over.quad(SIMD2(-wb - feather, yb), eb, SIMD2(-wb, yb), cb, SIMD2(-wa, ya), ca, SIMD2(-wa - feather, ya), ea)
+            }
+            // Feather the flat top and bottom of each band too.
+            let wt = halfWidth(y0), wbm = halfWidth(y1)
+            let ct = color(y0, 1), cbm = color(y1, 1)
+            over.quad(SIMD2(-wt, y0), ct, SIMD2(wt, y0), ct, SIMD2(wt, y0 + feather * 0.6), color(y0, 0),
+                      SIMD2(-wt, y0 + feather * 0.6), color(y0, 0))
+            over.quad(SIMD2(-wbm, y1 - feather * 0.6), color(y1, 0), SIMD2(wbm, y1 - feather * 0.6), color(y1, 0),
+                      SIMD2(wbm, y1), cbm, SIMD2(-wbm, y1), cbm)
+        }
+    }
+
+    // MARK: - 21. Mirror Equalizer
+
+    /// Bars grow up and down from a center line, bass in the middle and highs out to the edges,
+    /// in a sunset rainbow (pink → orange → gold).
+    func mirrorEqualizer(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        let n = f.bands.count
+        let half = 0.94 * f.aspect
+        let slot = half / Float(n)
+        let mid: Float = -0.02
+        let s = f.scene.waveScale
+        let pulse = 1 + 0.12 * f.bass
+        for i in 0..<n {
+            let prev = f.bands[max(0, i - 1)], next = f.bands[min(n - 1, i + 1)]
+            let v = (prev + 2 * f.bands[i] + next) / 4
+            let h = (0.008 + pow(v, 1.2) * 0.42 * s) * pulse
+            let frac = Float(i) / Float(n - 1)
+            let c = hsv(0.93 + frac * 0.24 + 0.03 * sin(f.t * 0.4), 0.9, 1)
+            let core: GeometryBuilder.RGBA = (c.0, c.1, c.2, 1)
+            let tip: GeometryBuilder.RGBA = (min(1, c.0 + 0.35), min(1, c.1 + 0.35), min(1, c.2 + 0.35), 1)
+            for side: Float in [-1, 1] {
+                let xa = side * (Float(i) * slot + slot * 0.16)
+                let xb = side * (Float(i) * slot + slot * 0.84)
+                let x0 = min(xa, xb), x1 = max(xa, xb)
+                g.quad(SIMD2(x0, mid), core, SIMD2(x1, mid), core, SIMD2(x1, mid + h), tip, SIMD2(x0, mid + h), tip)
+                g.quad(SIMD2(x0, mid - h), tip, SIMD2(x1, mid - h), tip, SIMD2(x1, mid), core, SIMD2(x0, mid), core)
+            }
+        }
+        let line = hsv(0.95, 0.4, 1)
+        g.rect(x0: -half, y0: mid - 0.0015, x1: half, y1: mid + 0.0015, (line.0, line.1, line.2, 0.8))
+    }
+
+    // MARK: - 22. LED Meter
+
+    private var ledPeaks: [Float] = []
+    private var ledHold: [Float] = []
+
+    /// A classic hardware spectrum analyzer: segmented LEDs from green through yellow to red,
+    /// with peak-hold caps that hang for a moment and then drop.
+    func ledMeter(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        let cols = 24, segs = 18
+        let n = f.bands.count
+        if ledPeaks.count != cols { ledPeaks = Array(repeating: 0, count: cols); ledHold = ledPeaks }
+        let total = 1.7 * f.aspect
+        let slot = total / Float(cols)
+        let left = -total / 2
+        let base: Float = -0.62, height: Float = 1.18
+        let segH = height / Float(segs)
+        let s = f.scene.waveScale
+        for c in 0..<cols {
+            let a = c * n / cols, b = max(a + 1, (c + 1) * n / cols)
+            var v: Float = 0
+            for k in a..<b { v = max(v, f.bands[k]) }
+            let level = min(1, pow(v, 1.1) * 1.05 * s)
+            let lit = Int((level * Float(segs)).rounded())
+            if Float(lit) >= ledPeaks[c] { ledPeaks[c] = Float(lit); ledHold[c] = 0.45 }
+            else {
+                ledHold[c] -= f.dt
+                if ledHold[c] <= 0 { ledPeaks[c] = max(0, ledPeaks[c] - f.dt * 14) }
+            }
+            let x0 = left + Float(c) * slot + slot * 0.12, x1 = x0 + slot * 0.76
+            for k in 0..<segs {
+                let y0 = base + Float(k) * segH + segH * 0.12, y1 = y0 + segH * 0.76
+                let frac = Float(k) / Float(segs - 1)
+                let hue: Float = frac < 0.6 ? 0.33 - frac / 0.6 * 0.12 : 0.21 - (frac - 0.6) / 0.4 * 0.21
+                let col = hsv(hue, 0.95, 1)
+                let on = k < lit
+                g.rect(x0: x0, y0: y0, x1: x1, y1: y1, (col.0, col.1, col.2, on ? 1 : 0.07))
+            }
+            let pk = Int(ledPeaks[c])
+            if pk > 0 && pk <= segs {
+                let y0 = base + Float(pk - 1) * segH + segH * 0.12
+                g.rect(x0: x0, y0: y0, x1: x1, y1: y0 + segH * 0.76, (1, 1, 1, 0.95))
+            }
+        }
+    }
+
+    // MARK: - 23. Rainbow Peaks
+
+    private var capY: [Float] = []
+    private var capV: [Float] = []
+
+    /// Thin full-spectrum bars that cycle through the rainbow, with glowing caps the bars knock
+    /// into the air and that fall back with gravity, and a light trail tracing the bar tops.
+    func rainbowPeaks(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        let n = f.bands.count
+        if capY.count != n { capY = Array(repeating: 0, count: n); capV = capY }
+        let total = 1.86 * f.aspect
+        let slot = total / Float(n)
+        let left = -total / 2
+        let base: Float = -0.5
+        let s = f.scene.waveScale
+        var tops: [SIMD2<Float>] = []
+        tops.reserveCapacity(n)
+        for i in 0..<n {
+            let prev = f.bands[max(0, i - 1)], next = f.bands[min(n - 1, i + 1)]
+            let v = (prev + 2 * f.bands[i] + next) / 4
+            let h = 0.01 + pow(v, 1.1) * 0.75 * s
+            let x = left + (Float(i) + 0.5) * slot
+            let hue = Float(i) / Float(n) + f.t * 0.08
+            let c = hsv(hue, 0.9, 1)
+            let foot: GeometryBuilder.RGBA = (c.0, c.1, c.2, 0.35)
+            let head: GeometryBuilder.RGBA = (c.0, c.1, c.2, 1)
+            let bw = slot * 0.22
+            g.quad(SIMD2(x - bw, base), foot, SIMD2(x + bw, base), foot, SIMD2(x + bw, base + h), head, SIMD2(x - bw, base + h), head)
+            // Cap physics: pushed up by the bar, pulled down by gravity.
+            capV[i] -= 2.4 * f.dt
+            capY[i] += capV[i] * f.dt
+            if capY[i] < h + 0.012 {
+                capY[i] = h + 0.012
+                capV[i] = max(capV[i], (beatFired ? 0.9 : 0.25) * v)
+            }
+            let cy = base + capY[i]
+            g.softDot(SIMD2(x, cy), radius: slot * 0.55, (c.0, c.1, c.2, 0.35), segments: 10)
+            g.rect(x0: x - slot * 0.32, y0: cy - 0.004, x1: x + slot * 0.32, y1: cy + 0.004, (1, 1, 1, 0.95))
+            tops.append(SIMD2(x, base + h))
+        }
+        let trail = tops
+        g.polyline(trail, closed: false, width: 0.004) { i in
+            let c = hsv(Float(i) / Float(n) + f.t * 0.08 + 0.5, 0.6, 1)
+            return (c.0, c.1, c.2, 0.55)
+        }
+        g.rect(x0: left, y0: base - 0.002, x1: left + total, y1: base + 0.002, (1, 1, 1, 0.35))
     }
 
     // MARK: - 15. Hyperspace

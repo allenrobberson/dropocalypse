@@ -7,7 +7,9 @@ enum class WaveStyle {
     Circle, Line, VerticalLine, Bars, RadialBars, SpiralDots, Lissajous, TwinRings,
     // Classic favorites
     BassRing, NeonEqualizer, PulsarRidges, OutrunGrid, Hyperspace, ParticleStorm, Lightning, DigitalRain, LavaLamp,
-    Inferno
+    Inferno,
+    // Equalizer family
+    MirrorEqualizer, LedMeter, RainbowPeaks
 };
 
 struct VisualScene {
@@ -24,9 +26,9 @@ struct VisualScene {
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
 };
 
-inline const std::array<VisualScene, 20>& builtInScenes() {
-    static const std::array<VisualScene, 20> scenes = [] {
-        std::array<VisualScene, 20> s{};
+inline const std::array<VisualScene, 23>& builtInScenes() {
+    static const std::array<VisualScene, 23> scenes = [] {
+        std::array<VisualScene, 23> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -126,6 +128,19 @@ inline const std::array<VisualScene, 20>& builtInScenes() {
         c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0.007f; c->warpScale = 10; c->warpSpeed = 2.5f; c->decay = 0.9f;
         c->driftY = -0.008f; c->hueShift = 0; c->wave = WaveStyle::Inferno; c->baseHue = 0.05f; c->hueSpeed = 0;
         c->saturation = 0.95f; c->vignette = 0.45f;
+
+        // ---- Equalizer family ----
+        c = &s[20]; c->name = "Mirror Equalizer";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.6f; c->hueShift = 0;
+        c->wave = WaveStyle::MirrorEqualizer; c->baseHue = 0.93f; c->hueSpeed = 0; c->vignette = 0.35f;
+
+        c = &s[21]; c->name = "LED Meter";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.35f; c->hueShift = 0;
+        c->wave = WaveStyle::LedMeter; c->baseHue = 0.33f; c->hueSpeed = 0; c->vignette = 0.3f;
+
+        c = &s[22]; c->name = "Rainbow Peaks";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.72f; c->hueShift = 0;
+        c->wave = WaveStyle::RainbowPeaks; c->baseHue = 0; c->hueSpeed = 0.08f; c->vignette = 0.3f;
         return s;
     }();
     return scenes;

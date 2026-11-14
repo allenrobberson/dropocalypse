@@ -133,6 +133,9 @@ enum WaveDrawer {
         case .digitalRain: fx.digitalRain(frame, &g)
         case .lavaLamp: fx.lavaLamp(frame, &g)
         case .inferno: fx.inferno(frame, &g)
+        case .mirrorEqualizer: fx.mirrorEqualizer(frame, &g)
+        case .ledMeter: fx.ledMeter(frame, &g)
+        case .rainbowPeaks: fx.rainbowPeaks(frame, &g)
 
         case .circle:
             ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.25 * bass), amplitude: 0.12 * s,

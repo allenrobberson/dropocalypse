@@ -21,6 +21,10 @@ enum WaveStyle: Int, CaseIterable {
     case digitalRain     // falling glyph columns
     case lavaLamp        // drifting soft blobs
     case inferno         // rising embers and flames
+    // Equalizer family (StyleFX.swift)
+    case mirrorEqualizer // bars mirrored up/down from a center line, sunset rainbow
+    case ledMeter        // segmented green-yellow-red LEDs with peak hold
+    case rainbowPeaks    // thin rainbow bars with bouncing glowing caps
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -152,5 +156,19 @@ extension VisualScene {
                     zoom: 1.0, zoomBass: 0, warpAmount: 0.007, warpScale: 10, warpSpeed: 2.5, decay: 0.9,
                     driftY: -0.008, hueShift: 0, wave: .inferno, baseHue: 0.05, hueSpeed: 0, saturation: 0.95,
                     vignette: 0.45),
+
+        // ---- Equalizer family ----
+
+        VisualScene(name: "Mirror Equalizer",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.6, hueShift: 0,
+                    wave: .mirrorEqualizer, baseHue: 0.93, hueSpeed: 0, vignette: 0.35),
+
+        VisualScene(name: "LED Meter",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.35, hueShift: 0,
+                    wave: .ledMeter, baseHue: 0.33, hueSpeed: 0, vignette: 0.3),
+
+        VisualScene(name: "Rainbow Peaks",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.72, hueShift: 0,
+                    wave: .rainbowPeaks, baseHue: 0, hueSpeed: 0.08, vignette: 0.3),
     ]
 }
