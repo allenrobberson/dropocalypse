@@ -15,8 +15,13 @@ on:
 permissions:
   contents: write
 
+env:
+  # Version for this run: the manual input, else the tag name, else empty (dev build).
+  RELEASE_VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
+
 jobs:
-  build:
+  macos:
+    name: macOS app
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -46,15 +51,14 @@ jobs:
           echo "Shaders OK"
 
       - name: Build app
-        env:
-          VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
         run: |
-          export VERSION="${VERSION#v}"
-          [ -z "$VERSION" ] && export VERSION="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          VERSION="${RELEASE_VERSION#v}"
+          [ -z "$VERSION" ] && VERSION="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          export VERSION
           chmod +x scripts/build-app.sh
           ./scripts/build-app.sh
 
-      - name: Upload build artifact
+      - name: Upload macOS build
         uses: actions/upload-artifact@v4
         with:
           name: Dropocalypse-macOS
@@ -62,8 +66,72 @@ jobs:
             dist/*.zip
             dist/*.dmg
 
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
+  windows:
+    name: Windows app (portable)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check HLSL shaders compile
+        shell: pwsh
+        run: |
+          $src = Get-Content windows/src/shaders.h -Raw
+          $hlsl = [regex]::Match($src, '(?s)// HLSL-BEGIN(.*)// HLSL-END').Groups[1].Value
+          Set-Content -Path "$env:RUNNER_TEMP/shaders.hlsl" -Value $hlsl
+          $fxc = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter fxc.exe |
+                 Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName | Select-Object -Last 1
+          if (-not $fxc) { Write-Host "fxc.exe not found; skipping offline shader check"; exit 0 }
+          $entries = @(
+            @('vs_fullscreen','vs_5_0'), @('vs_geom','vs_5_0'), @('vs_logo','vs_5_0'),
+            @('fs_warp','ps_5_0'), @('fs_geom','ps_5_0'), @('fs_present','ps_5_0'), @('fs_logo','ps_5_0'))
+          foreach ($e in $entries) {
+            & $fxc.FullName /nologo /T $e[1] /E $e[0] /Fo "$env:RUNNER_TEMP/$($e[0]).cso" "$env:RUNNER_TEMP/shaders.hlsl"
+            if ($LASTEXITCODE -ne 0) { throw "Shader $($e[0]) failed to compile" }
+          }
+          Write-Host "Shaders OK"
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          $v = "$env:RELEASE_VERSION".TrimStart('v')
+          if (-not $v) { $v = "0.0.0-dev.$env:GITHUB_RUN_NUMBER" }
+          "APP_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append
+          cmake -S windows -B build -A x64 "-DAPP_VERSION=$v"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package/Dropocalypse | Out-Null
+          Copy-Item build/Release/Dropocalypse.exe package/Dropocalypse/
+          Copy-Item windows/README.txt package/Dropocalypse/README.txt
+          Copy-Item LICENSE package/Dropocalypse/LICENSE.txt
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path package/Dropocalypse -DestinationPath "dist/Dropocalypse-$env:APP_VERSION-Windows-portable.zip" -Force
+          Get-ChildItem dist
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dropocalypse-Windows
+          path: dist/*.zip
+
+  release:
+    name: Publish release
+    needs: [macos, windows]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - run: ls -la dist
+
+      - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_version != '' && format('v{0}', inputs.release_version) || github.ref_name }}
@@ -76,10 +144,20 @@ jobs:
           body: |
             ## Download
 
-            Download the **.dmg** file under Assets below, open it, and drag **Dropocalypse** into Applications.
+            ### 🍎 Mac
+            Download the **macOS .dmg** below, open it, and drag **Dropocalypse** into Applications.
             Works on Apple Silicon and Intel Macs, macOS 13 Ventura or later.
 
-            **First launch:** the app is free and not notarized by Apple, so macOS will block it the first time.
-            Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to "Dropocalypse".
-            (On macOS 14 and earlier you can instead right-click the app → **Open**.)
-            When asked, allow microphone access so it can hear the music.
+            **First launch:** the app is free and not notarized by Apple, so macOS blocks it the first time.
+            Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
+            (On macOS 14 and earlier you can right-click the app → **Open** instead.)
+
+            ### 🪟 Windows (portable, no admin rights needed)
+            Download the **Windows-portable .zip** below, right-click it → **Extract All**, and run **Dropocalypse.exe**.
+            Nothing is installed. Works on Windows 10 and 11 (64-bit).
+
+            **First launch:** Windows may show "Windows protected your PC" because the app isn't code-signed.
+            Click **More info → Run anyway**.
+
+            By default the Windows version listens to **what your PC is playing** (Spotify, YouTube, DJ software), so no microphone is needed.
+            Switch to a mic or line-in under **Audio** in the toolbar.
