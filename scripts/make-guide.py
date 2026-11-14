@@ -441,7 +441,7 @@ def build():
         ["10", "<b>Black Hole</b>", "Everything is pulled inward and spirals into the center"],
         ["11", "<b>Bass Ring</b>", "A circular spectrum wrapped around your logo, with sparks on every kick"],
         ["12", "<b>Neon Equalizer</b>", "Smooth neon bars across the screen with a glassy reflection"],
-        ["13", "<b>Pulsar Ridges</b>", "Stacked white ridgelines scrolling upward, the classic “joy plot” look"],
+        ["13", "<b>Pulsar Ridges</b>", "Stacked white ridgelines that span the full screen and scroll upward, the classic “joy plot” look"],
         ["14", "<b>Outrun Grid</b>", "A synthwave sunset: striped sun and a neon grid that races with the bass"],
         ["15", "<b>Hyperspace</b>", "A starfield that jumps to warp speed on the drops"],
         ["16", "<b>Particle Storm</b>", "Hundreds of glowing particles flowing in currents, scattering on beats"],
@@ -458,9 +458,9 @@ def build():
     # ---- Shortcuts
     s += section(7, "Keyboard shortcuts")
     s.append(table(["Action", "Mac", "Windows"], [
-        ["Full screen on / off", "F", "F or F11"],
+        ["Full screen on / off", f"F or Ctrl+{CMD}F (or the green window button)", "F or F11"],
         ["Show / hide the toolbar", "T or S", "T or S"],
-        ["Hide the toolbar", "Esc", "Esc (press again to exit full screen)"],
+        ["Hide the toolbar", "Esc (press again to exit full screen)", "Esc (press again to exit full screen)"],
         ["Choose a logo", f"L or {CMD}O", "L or Ctrl+O"],
         ["Show / hide the logo", "G", "G"],
         ["Previous / next style", f"{LEFT} / {RIGHT}  (or {CMD}{LEFT} / {CMD}{RIGHT})", f"{LEFT} / {RIGHT}"],
@@ -468,7 +468,7 @@ def build():
     ], [2.4 * inch, 2.0 * inch, 2.1 * inch]))
     s.append(Spacer(1, 6))
     s.append(P(f"On the Mac, the menu bar has the same actions under <b>File</b> and <b>Visualizer</b>, including "
-               f"<b>Restart Audio</b>.", small))
+               f"<b>Full Screen</b> and <b>Restart Audio</b>.", small))
 
     # ---- Live show
     s += section(8, "Setting up for a live show")
@@ -482,7 +482,9 @@ def build():
         "if crowd noise is driving the visuals.",
         "<b>Tune the beat.</b> Watch the logo during a track with a clear kick. If it misses kicks, lower Beat "
         "threshold. If it jumps on hi-hats or vocals, raise it.",
-        "<b>Go full screen</b> on the projector or TV: drag the window onto that screen and press F.",
+        "<b>Go full screen</b> on the projector or TV: drag the window onto that screen and press F. Full screen "
+        "covers every pixel, edge to edge. On the Mac the menu bar and Dock disappear, and on MacBooks with a "
+        "camera notch the visuals fill the strip beside the notch too.",
         "Turn on <b>auto-cycle</b> with 30 to 60 seconds per style so the show keeps changing on its own.",
     ])
 
@@ -533,6 +535,10 @@ def build():
           "including commercially. The full source code, the latest downloads and the online version of this "
           "guide are at <b>github.com/allenrobberson/dropocalypse</b>.", body),
         P("Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals are original code.", small),
+        sub("Questions, ideas and bug reports"),
+        P("Ask questions, suggest new styles or show off your setup in <b>Discussions</b> at "
+          "<b>github.com/allenrobberson/dropocalypse/discussions</b>. Found a bug? Open an issue at "
+          "<b>github.com/allenrobberson/dropocalypse/issues</b>.", body),
         sub("Support Dropocalypse"),
         P("Dropocalypse is free and always will be. If you enjoy it, please consider sponsoring the project at "
           "<b>github.com/sponsors/allenrobberson</b>. The first goal is the $99/year Apple Developer membership, "

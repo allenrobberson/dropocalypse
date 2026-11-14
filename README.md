@@ -19,9 +19,9 @@ Play music and the visuals swirl, zoom and pulse. It listens through a microphon
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any input**: built-in mic, USB mic, audio interface or line-in, with a device picker. On Windows it can also capture **what the PC is playing**, with no mic needed.
-- 🖥 **Full screen**, with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
+- 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Build from source](#building-from-source)**
+**→ [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
 
 ## Download
 
@@ -182,7 +182,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 |---|---|---|
 | 11 | **Bass Ring** | A circular spectrum that wraps around your logo and follows it, with sparks bursting off on every kick. It sizes itself to your logo automatically. |
 | 12 | **Neon Equalizer** | Smooth neon spectrum bars across the screen with a glassy reflection underneath |
-| 13 | **Pulsar Ridges** | Stacked white ridgelines that scroll up the screen, with the bass rising in the middle: the classic "joy plot" look |
+| 13 | **Pulsar Ridges** | Stacked white ridgelines that span the full width of the screen and scroll upward, with the bass rising in the middle: the classic "joy plot" look |
 | 14 | **Outrun Grid** | A synthwave sunset: striped sun, glowing horizon and a neon grid floor that races toward you faster when the bass hits |
 | 15 | **Hyperspace** | A starfield that jumps to warp speed on the drops |
 | 16 | **Particle Storm** | Hundreds of glowing particles flowing in currents around the logo, scattering outward on every beat |
@@ -210,7 +210,7 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
 
-On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Show/Hide Toolbar (⌘,), Restart Audio**.
+On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Restart Audio**.
 
 ### Setting up for a live show
 
@@ -311,6 +311,11 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
 - [ ] App icon, notarized Mac builds and code-signed Windows builds
+
+## Questions, ideas and bug reports
+
+- 💬 **[Discussions](../../discussions)**: ask questions, suggest new styles, or show off your setup and logo.
+- 🐞 **[Issues](../../issues)**: report a bug. Please include your OS version, which style you were on, and your audio input.
 
 ## Support the project
 

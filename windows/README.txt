@@ -38,4 +38,6 @@ WHERE THINGS ARE SAVED
   To remove Dropocalypse completely, delete this folder and that one.
 
 Full user guide: https://github.com/allenrobberson/dropocalypse#user-guide
+Questions and ideas: https://github.com/allenrobberson/dropocalypse/discussions
+Report a bug: https://github.com/allenrobberson/dropocalypse/issues
 Free and open source under the MIT License (see LICENSE.txt).
