@@ -201,7 +201,8 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 |---|---|
 | `F` | Full screen on / off |
 | `T` or `S` | Show / hide the toolbar |
-| `Esc` | Hide the toolbar (Windows: press again to exit full screen) |
+| `Esc` | Hide the toolbar; press again to exit full screen |
+| `⌃⌘F` | Full screen (Mac menu shortcut; the green window button works too) |
 | `F11` | Full screen (Windows) |
 | `Ctrl+O` | Choose a logo (Windows) |
 | `L` | Choose a logo |
@@ -217,7 +218,7 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio → Input**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
-5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. In full screen, the Mac's menu bar and Dock are hidden so they don't cover the visuals.
+5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
 6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it.
 
 ### Troubleshooting
