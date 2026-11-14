@@ -9,8 +9,10 @@ struct GeometryBuilder {
     let aspect: Float
     private(set) var count = 0
 
-    init(buffer: MTLBuffer, capacity: Int, aspect: Float) {
-        ptr = buffer.contents().bindMemory(to: GeomVertex.self, capacity: capacity)
+    /// `start` is the first vertex slot this builder may write; `capacity` is how many it may use.
+    init(buffer: MTLBuffer, start: Int = 0, capacity: Int, aspect: Float) {
+        let base = buffer.contents().bindMemory(to: GeomVertex.self, capacity: start + capacity)
+        ptr = base + start
         self.capacity = capacity
         self.aspect = aspect
     }
@@ -25,6 +27,36 @@ struct GeometryBuilder {
     mutating func triangle(_ a: SIMD2<Float>, _ b: SIMD2<Float>, _ c: SIMD2<Float>, _ col: RGBA) {
         guard count + 3 <= capacity else { return }
         v(a.x, a.y, col); v(b.x, b.y, col); v(c.x, c.y, col)
+    }
+
+    /// Triangle with a separate color per corner (for gradients and soft edges).
+    mutating func triangle(_ a: SIMD2<Float>, _ ca: RGBA, _ b: SIMD2<Float>, _ cb: RGBA, _ c: SIMD2<Float>, _ cc: RGBA) {
+        guard count + 3 <= capacity else { return }
+        v(a.x, a.y, ca); v(b.x, b.y, cb); v(c.x, c.y, cc)
+    }
+
+    /// Quad with per-corner colors, corners in order a-b-c-d around the edge.
+    mutating func quad(_ a: SIMD2<Float>, _ ca: RGBA, _ b: SIMD2<Float>, _ cb: RGBA,
+                       _ c: SIMD2<Float>, _ cc: RGBA, _ d: SIMD2<Float>, _ cd: RGBA) {
+        triangle(a, ca, b, cb, c, cc)
+        triangle(a, ca, c, cc, d, cd)
+    }
+
+    /// Disc that fades from `col` in the middle to transparent at the rim.
+    mutating func softDot(_ center: SIMD2<Float>, radius: Float, _ col: RGBA, segments: Int = 16) {
+        let rim: RGBA = (col.0, col.1, col.2, 0)
+        var prev = center + SIMD2(radius, 0)
+        for i in 1...segments {
+            let a = Float(i) / Float(segments) * 2 * .pi
+            let p = center + SIMD2(cos(a), sin(a)) * radius
+            triangle(center, col, prev, rim, p, rim)
+            prev = p
+        }
+    }
+
+    /// Cheap 4-sided dot for large particle counts.
+    mutating func spark(_ c: SIMD2<Float>, radius r: Float, _ col: RGBA) {
+        quad(c + SIMD2(r, 0), c + SIMD2(0, r), c + SIMD2(-r, 0), c + SIMD2(0, -r), col)
     }
 
     mutating func quad(_ a: SIMD2<Float>, _ b: SIMD2<Float>, _ c: SIMD2<Float>, _ d: SIMD2<Float>, _ col: RGBA) {
@@ -67,8 +99,11 @@ struct GeometryBuilder {
 
 /// Draws the foreground shape for each scene's wave style.
 enum WaveDrawer {
+    /// `g` is blended additively (glowing light); `over` is drawn first with normal alpha blending,
+    /// for solid shapes that need to hide what's behind them.
     static func draw(scene: VisualScene, audio: AudioAnalysis.Snapshot, spectrum: Spectrum,
-                     time t: Float, into g: inout GeometryBuilder) {
+                     time t: Float, dt: Float, logoCenter: SIMD2<Float>, logoRadius: Float, fx: StyleFX,
+                     into g: inout GeometryBuilder, over: inout GeometryBuilder) {
         let bass = min(audio.bass, 1.4)
         let width = 0.0065 * scene.thickness * (1 + bass * 0.6)
         let alpha = 0.55 + 0.45 * min(1, max(bass, audio.mid))
@@ -83,7 +118,22 @@ enum WaveDrawer {
         let s = scene.waveScale
         let aspect = g.aspect
 
+        let frame = FXFrame(scene: scene, audio: audio, bands: bands, wave: wave, t: t, dt: dt, aspect: aspect,
+                            logoCenter: logoCenter, logoRadius: logoRadius, color: { color($0, $1) })
+        fx.begin(frame)
+
         switch scene.wave {
+        case .bassRing: fx.bassRing(frame, &g)
+        case .neonEqualizer: fx.neonEqualizer(frame, &g)
+        case .pulsarRidges: fx.pulsarRidges(frame, &over)
+        case .outrunGrid: fx.outrunGrid(frame, &g, &over)
+        case .hyperspace: fx.hyperspace(frame, &g)
+        case .particleStorm: fx.particleStorm(frame, &g)
+        case .lightning: fx.lightning(frame, &g)
+        case .digitalRain: fx.digitalRain(frame, &g)
+        case .lavaLamp: fx.lavaLamp(frame, &g)
+        case .inferno: fx.inferno(frame, &g)
+
         case .circle:
             ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.25 * bass), amplitude: 0.12 * s,
                  rotation: t * 0.2, width: width, into: &g) { color($0) }

@@ -10,6 +10,17 @@ enum WaveStyle: Int, CaseIterable {
     case spiralDots      // spectrum dots on a spinning spiral
     case lissajous       // phase-portrait scope
     case twinRings       // two counter-rotating rings
+    // Classic favorites (StyleFX.swift)
+    case bassRing        // circular spectrum hugging the logo, with sparks
+    case neonEqualizer   // mirrored neon bars with reflections
+    case pulsarRidges    // stacked ridgelines (joy plot)
+    case outrunGrid      // synthwave grid and striped sun
+    case hyperspace      // warp-speed starfield
+    case particleStorm   // flowing particle swarm
+    case lightning       // lightning bolts on the beat
+    case digitalRain     // falling glyph columns
+    case lavaLamp        // drifting soft blobs
+    case inferno         // rising embers and flames
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -98,5 +109,48 @@ extension VisualScene {
               zoom: 0.975, zoomBass: -0.03, rotation: -0.012, rotationBass: -0.02,
               warpAmount: 0.003, decay: 0.965, hueShift: -0.006,
               wave: .twinRings, centerRadius: 0.2, waveScale: 1.25, thickness: 1, baseHue: 0.02, hueSpeed: 0.02, vignette: 0.5),
+
+        // ---- Classic favorites ----
+
+        VisualScene(name: "Bass Ring",
+                    zoom: 1.006, zoomBass: 0.01, warpAmount: 0, decay: 0.8, hueShift: 0.002,
+                    wave: .bassRing, baseHue: 0.55, hueSpeed: 0.03, saturation: 0.85, vignette: 0.45),
+
+        VisualScene(name: "Neon Equalizer",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.55, hueShift: 0,
+                    wave: .neonEqualizer, baseHue: 0.8, hueSpeed: 0.02, vignette: 0.3),
+
+        VisualScene(name: "Pulsar Ridges",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.25, hueShift: 0,
+                    wave: .pulsarRidges, baseHue: 0, hueSpeed: 0, saturation: 0, vignette: 0.3),
+
+        VisualScene(name: "Outrun Grid",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.55, hueShift: 0,
+                    wave: .outrunGrid, baseHue: 0.86, hueSpeed: 0, vignette: 0.35),
+
+        VisualScene(name: "Hyperspace",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.7, hueShift: 0,
+                    wave: .hyperspace, baseHue: 0.6, hueSpeed: 0.01, saturation: 0.35, vignette: 0.4),
+
+        VisualScene(name: "Particle Storm",
+                    zoom: 1.0, zoomBass: 0.004, warpAmount: 0.002, decay: 0.88, hueShift: 0.003,
+                    wave: .particleStorm, baseHue: 0.5, hueSpeed: 0.04, saturation: 0.8),
+
+        VisualScene(name: "Lightning Storm",
+                    zoom: 1.006, zoomBass: 0.01, warpAmount: 0.003, decay: 0.78, hueShift: 0, plasma: 0.35,
+                    wave: .lightning, baseHue: 0.66, hueSpeed: 0.01, saturation: 0.6, vignette: 0.5),
+
+        VisualScene(name: "Digital Rain",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.6, hueShift: 0,
+                    wave: .digitalRain, baseHue: 0.33, hueSpeed: 0),
+
+        VisualScene(name: "Lava Lamp",
+                    zoom: 1.0, zoomBass: 0.004, warpAmount: 0.012, warpScale: 3, warpSpeed: 0.5, decay: 0.9,
+                    hueShift: 0.002, wave: .lavaLamp, baseHue: 0.95, hueSpeed: 0.015, saturation: 0.85, vignette: 0.4),
+
+        VisualScene(name: "Inferno",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0.007, warpScale: 10, warpSpeed: 2.5, decay: 0.9,
+                    driftY: -0.008, hueShift: 0, wave: .inferno, baseHue: 0.05, hueSpeed: 0, saturation: 0.95,
+                    vignette: 0.45),
     ]
 }

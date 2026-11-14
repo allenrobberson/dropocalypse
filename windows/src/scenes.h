@@ -1,9 +1,14 @@
-// Dropocalypse for Windows - the 10 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 20 built-in styles (same values as the macOS Scenes.swift).
 #pragma once
 
 #include <array>
 
-enum class WaveStyle { Circle, Line, VerticalLine, Bars, RadialBars, SpiralDots, Lissajous, TwinRings };
+enum class WaveStyle {
+    Circle, Line, VerticalLine, Bars, RadialBars, SpiralDots, Lissajous, TwinRings,
+    // Classic favorites
+    BassRing, NeonEqualizer, PulsarRidges, OutrunGrid, Hyperspace, ParticleStorm, Lightning, DigitalRain, LavaLamp,
+    Inferno
+};
 
 struct VisualScene {
     const char* name = "";
@@ -19,9 +24,9 @@ struct VisualScene {
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
 };
 
-inline const std::array<VisualScene, 10>& builtInScenes() {
-    static const std::array<VisualScene, 10> scenes = [] {
-        std::array<VisualScene, 10> s{};
+inline const std::array<VisualScene, 20>& builtInScenes() {
+    static const std::array<VisualScene, 20> scenes = [] {
+        std::array<VisualScene, 20> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -78,6 +83,49 @@ inline const std::array<VisualScene, 10>& builtInScenes() {
         c->warpAmount = 0.003f; c->decay = 0.965f; c->hueShift = -0.006f;
         c->wave = WaveStyle::TwinRings; c->centerRadius = 0.2f; c->waveScale = 1.25f;
         c->baseHue = 0.02f; c->hueSpeed = 0.02f; c->vignette = 0.5f;
+
+        // ---- Classic favorites ----
+        c = &s[10]; c->name = "Bass Ring";
+        c->zoom = 1.006f; c->zoomBass = 0.01f; c->warpAmount = 0; c->decay = 0.8f; c->hueShift = 0.002f;
+        c->wave = WaveStyle::BassRing; c->baseHue = 0.55f; c->hueSpeed = 0.03f; c->saturation = 0.85f; c->vignette = 0.45f;
+
+        c = &s[11]; c->name = "Neon Equalizer";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.55f; c->hueShift = 0;
+        c->wave = WaveStyle::NeonEqualizer; c->baseHue = 0.8f; c->hueSpeed = 0.02f; c->vignette = 0.3f;
+
+        c = &s[12]; c->name = "Pulsar Ridges";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.25f; c->hueShift = 0;
+        c->wave = WaveStyle::PulsarRidges; c->baseHue = 0; c->hueSpeed = 0; c->saturation = 0; c->vignette = 0.3f;
+
+        c = &s[13]; c->name = "Outrun Grid";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.55f; c->hueShift = 0;
+        c->wave = WaveStyle::OutrunGrid; c->baseHue = 0.86f; c->hueSpeed = 0; c->vignette = 0.35f;
+
+        c = &s[14]; c->name = "Hyperspace";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.7f; c->hueShift = 0;
+        c->wave = WaveStyle::Hyperspace; c->baseHue = 0.6f; c->hueSpeed = 0.01f; c->saturation = 0.35f; c->vignette = 0.4f;
+
+        c = &s[15]; c->name = "Particle Storm";
+        c->zoom = 1.0f; c->zoomBass = 0.004f; c->warpAmount = 0.002f; c->decay = 0.88f; c->hueShift = 0.003f;
+        c->wave = WaveStyle::ParticleStorm; c->baseHue = 0.5f; c->hueSpeed = 0.04f; c->saturation = 0.8f;
+
+        c = &s[16]; c->name = "Lightning Storm";
+        c->zoom = 1.006f; c->zoomBass = 0.01f; c->warpAmount = 0.003f; c->decay = 0.78f; c->hueShift = 0; c->plasma = 0.35f;
+        c->wave = WaveStyle::Lightning; c->baseHue = 0.66f; c->hueSpeed = 0.01f; c->saturation = 0.6f; c->vignette = 0.5f;
+
+        c = &s[17]; c->name = "Digital Rain";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.6f; c->hueShift = 0;
+        c->wave = WaveStyle::DigitalRain; c->baseHue = 0.33f; c->hueSpeed = 0;
+
+        c = &s[18]; c->name = "Lava Lamp";
+        c->zoom = 1.0f; c->zoomBass = 0.004f; c->warpAmount = 0.012f; c->warpScale = 3; c->warpSpeed = 0.5f; c->decay = 0.9f;
+        c->hueShift = 0.002f; c->wave = WaveStyle::LavaLamp; c->baseHue = 0.95f; c->hueSpeed = 0.015f; c->saturation = 0.85f;
+        c->vignette = 0.4f;
+
+        c = &s[19]; c->name = "Inferno";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0.007f; c->warpScale = 10; c->warpSpeed = 2.5f; c->decay = 0.9f;
+        c->driftY = -0.008f; c->hueShift = 0; c->wave = WaveStyle::Inferno; c->baseHue = 0.05f; c->hueSpeed = 0;
+        c->saturation = 0.95f; c->vignette = 0.45f;
         return s;
     }();
     return scenes;

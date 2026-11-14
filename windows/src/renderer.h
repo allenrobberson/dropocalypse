@@ -11,6 +11,7 @@
 #include <wrl/client.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -80,8 +81,13 @@ private:
 
 // ---------------------------------------------------------------------------------------------
 
+class StyleFX; // renderer.cpp
+
 class Renderer {
 public:
+    Renderer();
+    ~Renderer();
+
     bool init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring& error);
     void setLogo(const LogoImage& image);
 
@@ -125,6 +131,7 @@ private:
 
     Spectrum spectrum_;
     LogoMotion motion_;
+    std::unique_ptr<StyleFX> fx_;
     LARGE_INTEGER qpcFreq_{}, qpcStart_{}, qpcLast_{};
     float flash_ = 0;
     int lastFlashBeat_ = 0;
@@ -134,5 +141,6 @@ private:
     int activeScene_ = -1;
     double sceneStart_ = 0;
 
-    static constexpr int MaxVertices = 60000;
+    static constexpr int MaxVertices = 80000;
+    static constexpr int AdditiveCapacity = 52000; // the rest is for the alpha-blended "over" batch
 };

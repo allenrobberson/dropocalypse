@@ -41,6 +41,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     private var warpPipeline: MTLRenderPipelineState!
     private var geomPipeline: MTLRenderPipelineState!
+    private var geomOverPipeline: MTLRenderPipelineState!
     private var presentPipeline: MTLRenderPipelineState!
     private var logoPipeline: MTLRenderPipelineState!
     private var logoGlowPipeline: MTLRenderPipelineState!
@@ -50,7 +51,8 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var feedbackIndex = 0
     private let feedbackFormat: MTLPixelFormat = .rgba16Float
 
-    private static let maxVertices = 60_000
+    private static let maxVertices = 80_000
+    private static let additiveCapacity = 52_000 // the rest is for the alpha-blended "over" batch
     private var vertexBuffers: [MTLBuffer] = []
     private var bufferIndex = 0
     private let inflight = DispatchSemaphore(value: 3)
@@ -59,6 +61,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var logoAspect: Float = 1
 
     private let spectrum = Spectrum()
+    private let fx = StyleFX()
     private var motion = LogoMotion()
     private var lastTime = CACurrentMediaTime()
     private var startTime = CACurrentMediaTime()
@@ -168,6 +171,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         warpPipeline = try make("vs_fullscreen", "fs_warp", feedbackFormat, .none)
         geomPipeline = try make("vs_geom", "fs_geom", feedbackFormat, .additive)
+        geomOverPipeline = try make("vs_geom", "fs_geom", feedbackFormat, .premultiplied)
         logoTrailPipeline = try make("vs_logo", "fs_logo", feedbackFormat, .premultiplied)
         presentPipeline = try make("vs_fullscreen", "fs_present", pixelFormat, .none)
         logoGlowPipeline = try make("vs_logo", "fs_logo", pixelFormat, .additive)
@@ -246,6 +250,26 @@ final class Renderer: NSObject, MTKViewDelegate {
         let src = feedback[feedbackIndex]
         let dst = feedback[1 - feedbackIndex]
 
+        // ---- Logo motion.
+        let amounts = LogoMotion.Amounts(pulse: Float(settings.pulse), squash: Float(settings.squash),
+                                         bounce: Float(settings.bounce), slide: Float(settings.slide),
+                                         wobble: Float(settings.wobble))
+        let pose = motion.update(dt: dt, audio: audio, amounts: amounts)
+        let color = hsv(scene.baseHue + t * scene.hueSpeed + 0.5, 0.8, 1)
+
+        var lu = LogoUniforms()
+        let size01 = Float(settings.logoSize)
+        // Fit inside size01 (fraction of screen height) whichever side is longer.
+        let baseH = logoAspect >= 1 ? size01 / logoAspect : size01
+        let baseW = baseH * logoAspect
+        lu.hx = baseW * pose.scaleX
+        lu.hy = baseH * pose.scaleY
+        lu.cx = pose.x
+        lu.cy = pose.y - 0.08 * Float(settings.bounce)
+        lu.rotation = pose.rotation
+        lu.aspect = aspect
+        lu.r = color.0; lu.g = color.1; lu.b = color.2
+
         guard let cb = queue.makeCommandBuffer() else { inflight.signal(); return }
         let sem = inflight
         cb.addCompletedHandler { _ in sem.signal() }
@@ -285,38 +309,27 @@ final class Renderer: NSObject, MTKViewDelegate {
             enc.setFragmentBytes(&wu, length: MemoryLayout<WarpUniforms>.stride, index: 0)
             enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
 
-            // Shapes.
+            // Shapes: solid "over" shapes first, then glowing additive ones.
             let vb = vertexBuffers[bufferIndex]
             bufferIndex = (bufferIndex + 1) % vertexBuffers.count
-            var builder = GeometryBuilder(buffer: vb, capacity: Self.maxVertices, aspect: aspect)
-            WaveDrawer.draw(scene: scene, audio: audio, spectrum: spectrum, time: t, into: &builder)
+            var builder = GeometryBuilder(buffer: vb, capacity: Self.additiveCapacity, aspect: aspect)
+            var overBuilder = GeometryBuilder(buffer: vb, start: Self.additiveCapacity,
+                                              capacity: Self.maxVertices - Self.additiveCapacity, aspect: aspect)
+            let logoRadius = settings.showLogo ? max(baseW, baseH) * 0.9 : 0
+            WaveDrawer.draw(scene: scene, audio: audio, spectrum: spectrum, time: t, dt: dt,
+                            logoCenter: SIMD2(lu.cx, lu.cy), logoRadius: logoRadius, fx: fx,
+                            into: &builder, over: &overBuilder)
+            enc.setVertexBuffer(vb, offset: 0, index: 0)
+            if overBuilder.count > 0 {
+                enc.setRenderPipelineState(geomOverPipeline)
+                enc.drawPrimitives(type: .triangle, vertexStart: Self.additiveCapacity, vertexCount: overBuilder.count)
+            }
             if builder.count > 0 {
                 enc.setRenderPipelineState(geomPipeline)
-                enc.setVertexBuffer(vb, offset: 0, index: 0)
                 enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: builder.count)
             }
             enc.endEncoding()
         }
-
-        // ---- Logo motion.
-        let amounts = LogoMotion.Amounts(pulse: Float(settings.pulse), squash: Float(settings.squash),
-                                         bounce: Float(settings.bounce), slide: Float(settings.slide),
-                                         wobble: Float(settings.wobble))
-        let pose = motion.update(dt: dt, audio: audio, amounts: amounts)
-        let color = hsv(scene.baseHue + t * scene.hueSpeed + 0.5, 0.8, 1)
-
-        var lu = LogoUniforms()
-        let size01 = Float(settings.logoSize)
-        // Fit inside size01 (fraction of screen height) whichever side is longer.
-        let baseH = logoAspect >= 1 ? size01 / logoAspect : size01
-        let baseW = baseH * logoAspect
-        lu.hx = baseW * pose.scaleX
-        lu.hy = baseH * pose.scaleY
-        lu.cx = pose.x
-        lu.cy = pose.y - 0.08 * Float(settings.bounce)
-        lu.rotation = pose.rotation
-        lu.aspect = aspect
-        lu.r = color.0; lu.g = color.1; lu.b = color.2
 
         // ---- Optional logo trail into the feedback buffer.
         if settings.showLogo, settings.logoTrails, let logo = logoTexture {
