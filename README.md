@@ -303,6 +303,10 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [ ] Syphon / NDI output for VJ software
 - [ ] App icon, notarized Mac builds and code-signed Windows builds
 
+## Support the project
+
+Dropocalypse is free and always will be. If it livens up your shows or streams, consider **[sponsoring it on GitHub](https://github.com/sponsors/allenrobberson)**. The first goal is the $99/year Apple Developer membership, so Mac downloads can be signed and notarized and open without a security warning.
+
 ## License
 
 [MIT](LICENSE): free to use, modify and share, including commercially.
