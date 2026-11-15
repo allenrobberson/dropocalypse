@@ -31,4 +31,4 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 - **For developers:** [[How It Works]] · [[Building from Source]] · [[Adding a Style]]
 - **Project:** [[Changelog]] · [[Support the Project]]
 
-Current version: **0.9.0**. The app tells you when a newer one is out.
+Current version: **0.9.2**. The app tells you when a newer one is out.

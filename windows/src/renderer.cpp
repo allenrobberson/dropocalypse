@@ -168,10 +168,18 @@ LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const Rende
         if (fresh) {
             float st = audio.beatStrength;
             side_ = -side_;
-            squash_.v += s.squash * 7.5f * st;
-            if (bounceY_ < 0.05f) bounceV_ += s.bounce * 1.8f * st;
-            slide_.v += s.slide * 1.6f * st * side_;
-            wobble_.v += s.wobble * 4.0f * st * side_;
+            // Snap on the hit: part of every kick moves the logo this frame (direct displacement),
+            // the rest goes into the spring's velocity for the follow-through.
+            squash_.x += s.squash * 0.22f * st;
+            squash_.v += s.squash * 3.5f * st;
+            if (bounceY_ < 0.05f) {
+                bounceY_ += s.bounce * 0.05f * st;
+                bounceV_ += s.bounce * 1.7f * st;
+            }
+            slide_.x += s.slide * 0.09f * st * side_;
+            slide_.v += s.slide * 1.1f * st * side_;
+            wobble_.x += s.wobble * 0.22f * st * side_;
+            wobble_.v += s.wobble * 2.2f * st * side_;
         }
     }
 

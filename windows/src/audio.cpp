@@ -306,6 +306,12 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         std::wstring openedId;
         UINT32 periodFrames = 0;
         bool useEvent = true;
+        // Loopback low-latency helper: a silent render stream on the same output at the driver's
+        // smallest engine period. While it runs, Windows mixes (and so delivers loopback audio) in
+        // e.g. ~3 ms chunks instead of the default 10 ms, cutting System-audio latency several-fold.
+        ComPtr<IAudioClient3> fastRender;
+        ComPtr<IAudioRenderClient> fastRenderOut;
+        UINT32 fastRenderFrames = 0, fastPeriod = 0;
         HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&en));
         if (SUCCEEDED(hr)) {
             hr = followDefault ? en->GetDefaultAudioEndpoint(loopback ? eRender : eCapture, eConsole, &dev)
@@ -317,6 +323,24 @@ void AudioCapture::run(std::wstring id, bool loopback) {
             hr = dev->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)client.GetAddressOf());
         }
         if (SUCCEEDED(hr)) hr = client->GetMixFormat(&wf);
+
+        if (SUCCEEDED(hr) && loopback) {
+            ComPtr<IAudioClient3> rc;
+            UINT32 def = 0, fund = 0, minP = 0, maxP = 0;
+            if (SUCCEEDED(dev->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, nullptr, (void**)rc.GetAddressOf())) &&
+                SUCCEEDED(rc->GetSharedModeEnginePeriod(wf, &def, &fund, &minP, &maxP)) && minP > 0 && minP < def &&
+                SUCCEEDED(rc->InitializeSharedAudioStream(0, minP, wf, nullptr)) &&
+                SUCCEEDED(rc->GetBufferSize(&fastRenderFrames)) &&
+                SUCCEEDED(rc->GetService(IID_PPV_ARGS(&fastRenderOut)))) {
+                BYTE* p = nullptr;
+                if (SUCCEEDED(fastRenderOut->GetBuffer(fastRenderFrames, &p)))
+                    fastRenderOut->ReleaseBuffer(fastRenderFrames, AUDCLNT_BUFFERFLAGS_SILENT);
+                if (SUCCEEDED(rc->Start())) { fastRender = rc; fastPeriod = minP; }
+                else fastRenderOut.Reset();
+            } else {
+                fastRenderOut.Reset();
+            }
+        }
 
         if (SUCCEEDED(hr)) {
             HRESULT init = E_FAIL;
@@ -347,6 +371,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
                     REFERENCE_TIME defPeriod = 0, minPeriod = 0;
                     if (SUCCEEDED(client->GetDevicePeriod(&defPeriod, &minPeriod)))
                         periodFrames = (UINT32)(defPeriod * wf->nSamplesPerSec / 10000000);
+                    if (fastPeriod > 0) periodFrames = fastPeriod;   // the engine now runs at this period
                 }
             }
             hr = init;
@@ -359,6 +384,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         if (SUCCEEDED(hr)) hr = client->Start();
 
         if (FAILED(hr)) {
+            if (fastRender) fastRender->Stop();
             running_ = false;
             if (hr == E_ACCESSDENIED)
                 setStatus(L"Microphone access is off. Turn on Settings → Privacy & security → Microphone → "
@@ -392,7 +418,17 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         bool restart = false;
 
         while (!stopRequested_ && !restart) {
-            if (useEvent) WaitForSingleObject(ev, loopback ? 4 : 20); else Sleep(2);
+            if (useEvent) WaitForSingleObject(ev, loopback ? (fastRender ? 2 : 4) : 20); else Sleep(2);
+
+            // Keep the low-latency helper stream topped up with silence (inaudible either way).
+            if (fastRenderOut) {
+                UINT32 padding = 0;
+                if (SUCCEEDED(fastRender->GetCurrentPadding(&padding)) && padding < fastRenderFrames) {
+                    BYTE* p = nullptr;
+                    UINT32 n = fastRenderFrames - padding;
+                    if (SUCCEEDED(fastRenderOut->GetBuffer(n, &p))) fastRenderOut->ReleaseBuffer(n, AUDCLNT_BUFFERFLAGS_SILENT);
+                }
+            }
 
             UINT32 packet = 0;
             bool gotData = false;
@@ -440,6 +476,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         }
 
         client->Stop();
+        if (fastRender) fastRender->Stop();
         if (wf) CoTaskMemFree(wf);
         running_ = false;
         if (restart && !stopRequested_) {

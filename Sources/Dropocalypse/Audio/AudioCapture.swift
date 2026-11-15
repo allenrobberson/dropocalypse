@@ -29,7 +29,7 @@ final class AudioCapture: ObservableObject {
     @Published private(set) var sampleRate: Double = 0
 
     /// Preferred hardware buffer size. 256 frames ≈ 5.3 ms at 48 kHz.
-    var preferredBufferFrames: UInt32 = 256
+    var preferredBufferFrames: UInt32 = 128     // ~2.7 ms at 48 kHz; the HAL clamps to what the device allows
 
     private var engine: AVAudioEngine?
     private var configObserver: NSObjectProtocol?

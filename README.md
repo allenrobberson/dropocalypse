@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 0.9.2: faster reactions
+- ⚡ **Lower latency on Mac and Windows.** Kicks now move your logo on the very frame they're detected, instead of the motion peaking a few frames later. The Mac asks for audio in 2.7 ms chunks (was 5.3 ms), and on Windows, *System audio* now arrives in about 3 ms chunks instead of 10 ms on most PCs. Everything feels tighter, especially squash, bounce and wobble.
+
 ### 0.9.0: update notifications
 - 🔔 **Know when there's a new version.** Once a day Dropocalypse checks GitHub for a newer release. When one is out, a pink **Update available** button appears in the toolbar. Click it and choose **Download** to open the download page, or **Ignore for 24 hours** to hide it until tomorrow. Nothing downloads or installs on its own, and no information about you is sent. Turn it off, or **Check now**, in the **Look** panel. On a Mac there's also **Dropocalypse → Check for Updates…**.
 - 👀 Want an email for every release too? Click **Watch → Custom → Releases** at the top of this page (needs a free GitHub account).
@@ -298,12 +301,12 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 
 Most visualizers feel laggy because of how they listen and analyze. This one:
 
-1. **Reads each hardware audio buffer directly** with `AVAudioSinkNode` and asks Core Audio for 256-frame buffers (about 5 ms). The common `installTap` approach delivers audio in 100–400 ms chunks.
+1. **Reads each hardware audio buffer directly** with `AVAudioSinkNode` (or a Core Audio process tap for app audio) and asks Core Audio for 128-frame buffers (about 2.7 ms). The common `installTap` approach delivers audio in 100–400 ms chunks.
 2. **Tracks bass sample by sample** using a 4th-order 140 Hz low-pass filter and an envelope follower with a 1 ms attack. Logo motion never waits for an FFT window to fill. The FFT is only used for drawing spectrum bars.
-3. **Jumps instantly on a hit and only smooths the release**, with beat impulses driving stiff, damped springs.
+3. **Jumps instantly on a hit and only smooths the release.** On each detected beat, part of the logo's squash, bounce, slide and wobble is applied on that very frame, and stiff, damped springs carry the follow-through, so the motion peaks on the kick instead of a few frames later.
 4. **Renders at the display's refresh rate**, up to 120 Hz on ProMotion. It reads the newest audio values right before each frame and uses only two drawables to avoid an extra frame of queueing.
 
-On Windows the same design uses **WASAPI**: `IAudioClient3` asks for the smallest shared-mode period the driver allows, and the capture thread is registered with MMCSS ("Pro Audio") so it isn't starved. Rendering uses a flip-model **Direct3D 11** swap chain with a frame-latency waitable object and a maximum latency of one frame.
+On Windows the same design uses **WASAPI**: `IAudioClient3` asks for the smallest shared-mode period the driver allows, and the capture thread is registered with MMCSS ("Pro Audio") so it isn't starved. For **System audio**, Dropocalypse also opens a silent helper stream on the same output at the driver's smallest engine period, so Windows mixes, and delivers loopback audio, in chunks of about 3 ms instead of the default 10 ms (on drivers that support it). Rendering uses a flip-model **Direct3D 11** swap chain with a frame-latency waitable object and a maximum latency of one frame.
 
 ## Building from source
 

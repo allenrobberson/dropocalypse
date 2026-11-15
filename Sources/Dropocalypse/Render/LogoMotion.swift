@@ -53,10 +53,19 @@ struct LogoMotion {
             if fresh {
                 let s = audio.beatStrength
                 side = -side
-                squash.v += a.squash * 7.5 * s
-                if bounceY < 0.05 { bounceV += a.bounce * 1.8 * s }
-                slide.v += a.slide * 1.6 * s * side
-                wobble.v += a.wobble * 4.0 * s * side
+                // Snap on the hit: part of every kick moves the logo *this frame* (a direct
+                // displacement), the rest goes into the spring's velocity for the follow-through.
+                // Pushing only velocity made the visible peak land ~60-70 ms after the beat.
+                squash.x += a.squash * 0.22 * s
+                squash.v += a.squash * 3.5 * s
+                if bounceY < 0.05 {
+                    bounceY += a.bounce * 0.05 * s
+                    bounceV += a.bounce * 1.7 * s
+                }
+                slide.x += a.slide * 0.09 * s * side
+                slide.v += a.slide * 1.1 * s * side
+                wobble.x += a.wobble * 0.22 * s * side
+                wobble.v += a.wobble * 2.2 * s * side
             }
         }
 

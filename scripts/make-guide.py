@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 0.9.2: faster reactions.</b> Kicks move your logo on the very frame they're detected, with "
+        "smaller audio buffers on Mac and about 3 ms System-audio chunks on Windows.",
         "<b>Version 0.9: update notifications.</b> When a new version is out, a pink <b>Update available</b> "
         "button appears in the toolbar: choose Download, or Ignore for 24 hours. Turn it off or check now in the Look panel.",
         "<b>Version 0.8: new Tesseract style</b> (24 in total): a glowing 4D hypercube that turns itself "

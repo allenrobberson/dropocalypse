@@ -2,6 +2,12 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 0.9.2
+- ⚡ **Faster reactions:** the logo's squash, bounce, slide and wobble now hit on the frame the beat is detected; Mac audio buffers halved to ~2.7 ms; Windows *System audio* delivered in ~3 ms chunks instead of 10 ms (low-latency helper stream).
+
+## 0.9.1
+- 🧪 Rebuild to test update notifications.
+
 ## 0.9.0
 - 🔔 **Update notifications:** a daily check for new versions, with an **Update available** button in the toolbar (**Download** or **Ignore for 24 hours**) (Look panel: on/off and **Check now**; Mac: **Check for Updates…** menu item).
 
