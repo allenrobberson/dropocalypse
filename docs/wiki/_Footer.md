@@ -1,0 +1,1 @@
+Dropocalypse is free and open source (MIT). [Download](https://github.com/allenrobberson/dropocalypse/releases/latest) · [Discussions](https://github.com/allenrobberson/dropocalypse/discussions) · [Report a bug](https://github.com/allenrobberson/dropocalypse/issues) · [❤️ Sponsor](https://github.com/sponsors/allenrobberson)
