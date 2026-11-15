@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 0.7.0: choose which styles auto-cycle plays
+- ☑️ **Checkboxes in the style list**: click the style name in the toolbar and you'll see a checkbox to the left of every style. When **auto-cycle** is on, it rotates only through the styles you've checked and skips the rest. **All** and **None** check or clear every box at once. Your picks are saved, and any new styles added in future versions start out checked.
+
 ### 0.6.1: Outrun Grid meter goes edge to edge
 - 🌇 The spectrum meter sitting on the **Outrun Grid** horizon now runs the **full width of the screen**, with bass meeting in the middle and highs at the edges. Its bars are colored to match the scene, from the sun's gold through pink and magenta to the grid's purple, and they reflect on the floor.
 
@@ -113,7 +116,7 @@ From left to right:
 | Control | What it does |
 |---|---|
 | 🖼 **Add Logo / logo name** | Opens the [Logo menu](#logo-menu) |
-| **‹  Style name  ›** | Previous style, pick any of the 23 styles from the list, next style |
+| **‹  Style name  ›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
@@ -140,8 +143,8 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Click it to jump straight to any of the [23 styles](#the-23-styles) |
-| ⟳ **Auto-cycle** | When on, the app moves to the next style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Choosing a style by hand restarts the timer. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [23 styles](#the-23-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
 
@@ -256,7 +259,7 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
 5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
-6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it.
+6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it. Uncheck any styles in the style list that don't fit the night.
 
 ### Troubleshooting
 

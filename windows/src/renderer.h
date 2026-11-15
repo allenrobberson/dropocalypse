@@ -19,6 +19,11 @@ struct RenderSettings {
     int sceneIndex = 0;
     bool autoCycle = true;
     float cycleSeconds = 30;
+    /// Bit i set = style i is left out of auto-cycle (unchecked in the style list).
+    /// Stored as "skipped" so styles added in later versions are included automatically.
+    uint32_t cycleSkip = 0;
+    bool inCycle(int i) const { return (cycleSkip & (1u << i)) == 0; }
+    void setInCycle(int i, bool on) { if (on) cycleSkip &= ~(1u << i); else cycleSkip |= (1u << i); }
     bool showLogo = true;
     float logoSize = 0.32f;
     float pulse = 0.7f, squash = 0.6f, bounce = 0.5f, slide = 0.4f, wobble = 0.35f;

@@ -12,6 +12,37 @@ final class AppSettings: ObservableObject {
     @AppStorage("autoCycle") var autoCycle: Bool = true
     @AppStorage("cycleSeconds") var cycleSeconds: Double = 30
     @AppStorage("changeSceneOnDrop") var changeSceneOnDrop: Bool = false
+    /// Names of styles left out of auto-cycle (unchecked in the style list). Stored as names, so
+    /// styles added in later versions are included automatically.
+    @AppStorage("cycleSkip") var cycleSkip: String = ""
+
+    private var skipped: Set<String> {
+        Set(cycleSkip.split(separator: "\n").map(String.init))
+    }
+
+    func isInCycle(_ name: String) -> Bool { !skipped.contains(name) }
+
+    func setInCycle(_ name: String, _ on: Bool) {
+        var s = skipped
+        if on { s.remove(name) } else { s.insert(name) }
+        cycleSkip = s.sorted().joined(separator: "\n")
+    }
+
+    func setAllInCycle(_ on: Bool) {
+        cycleSkip = on ? "" : VisualScene.builtIn.map(\.name).joined(separator: "\n")
+    }
+
+    /// The next checked style after `index`. If nothing is checked, cycles through all of them.
+    func nextCycleIndex(after index: Int) -> Int {
+        let scenes = VisualScene.builtIn
+        let n = scenes.count
+        let skip = skipped
+        for k in 1...n {
+            let candidate = (index + k) % n
+            if !skip.contains(scenes[candidate].name) { return candidate }
+        }
+        return (index + 1) % n
+    }
 
     // Logo
     @AppStorage("showLogo") var showLogo: Bool = true

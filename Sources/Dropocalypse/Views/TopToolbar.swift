@@ -66,15 +66,7 @@ struct TopToolbar: View {
     private var styleControls: some View {
         HStack(spacing: 2) {
             toolbarButton(nil, icon: "chevron.left", help: "Previous style (←)") { model.nextScene(-1) }
-            Menu {
-                ForEach(Array(VisualScene.builtIn.enumerated()), id: \.offset) { index, scene in
-                    Button("\(index + 1). \(scene.name)") { settings.sceneIndex = index }
-                }
-            } label: {
-                Text(model.currentSceneName).frame(minWidth: 110)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            styleListButton
             toolbarButton(nil, icon: "chevron.right", help: "Next style (→)") { model.nextScene(1) }
             Toggle(isOn: $settings.autoCycle) {
                 Image(systemName: "arrow.triangle.2.circlepath")
@@ -82,6 +74,87 @@ struct TopToolbar: View {
             .toggleStyle(.button)
             .help("Auto-cycle styles (A)")
         }
+    }
+
+    /// The style name opens a list: click a name to show it now, and use the checkboxes to choose
+    /// which styles auto-cycle rotates through.
+    private var styleListButton: some View {
+        let isOpen = Binding<Bool>(
+            get: { model.openPopover == "styles" },
+            set: { open in
+                if open { model.openPopover = "styles" } else if model.openPopover == "styles" { model.openPopover = nil }
+            })
+        return Button {
+            isOpen.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                Text(model.currentSceneName)
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+            }
+            .frame(minWidth: 110)
+        }
+        .buttonStyle(.borderless)
+        .help("Pick a style, and check which ones auto-cycle rotates through")
+        .popover(isPresented: isOpen, arrowEdge: .bottom) {
+            styleList.environment(\.colorScheme, .dark)
+        }
+    }
+
+    private var styleList: some View {
+        let scenes = VisualScene.builtIn
+        let current = ((settings.sceneIndex % scenes.count) + scenes.count) % scenes.count
+        let checked = scenes.filter { settings.isInCycle($0.name) }.count
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Styles").font(.headline)
+            Text("Click a name to show it. Checked styles are the ones auto-cycle rotates through.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Toggle("Auto-cycle", isOn: $settings.autoCycle)
+                Spacer()
+                Button("All") { settings.setAllInCycle(true) }
+                Button("None") { settings.setAllInCycle(false) }
+            }
+            .font(.caption)
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(scenes.enumerated()), id: \.offset) { index, scene in
+                        HStack(spacing: 8) {
+                            Toggle("", isOn: Binding(
+                                get: { settings.isInCycle(scene.name) },
+                                set: { settings.setInCycle(scene.name, $0) }))
+                                .toggleStyle(.checkbox)
+                                .labelsHidden()
+                                .help("Include \(scene.name) in auto-cycle")
+                            Button {
+                                settings.sceneIndex = index
+                            } label: {
+                                HStack {
+                                    Text("\(index + 1).").monospacedDigit().foregroundStyle(.secondary)
+                                        .frame(width: 24, alignment: .trailing)
+                                    Text(scene.name).fontWeight(index == current ? .bold : .regular)
+                                    Spacer()
+                                    if index == current { Image(systemName: "play.fill").font(.caption2) }
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.vertical, 3)
+                        .padding(.horizontal, 6)
+                        .background(index == current ? Color.white.opacity(0.1) : Color.clear,
+                                    in: RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
+            .frame(height: 420)
+            Text(checked == 0 ? "Nothing checked, so auto-cycle uses every style."
+                              : "Auto-cycle: \(checked) of \(scenes.count) styles")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 300)
     }
 
     // MARK: Popover contents

@@ -407,7 +407,8 @@ final class Renderer: NSObject, MTKViewDelegate {
         var requested = ((settings.sceneIndex % scenes.count) + scenes.count) % scenes.count
 
         if settings.autoCycle, now - sceneStartTime > max(5, settings.cycleSeconds) {
-            requested = (requested + 1) % scenes.count
+            requested = settings.nextCycleIndex(after: requested)
+            sceneStartTime = now
             settings.sceneIndex = requested // draw(in:) runs on the main thread
         }
 

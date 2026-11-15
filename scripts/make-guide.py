@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 0.7: choose which styles auto-cycle plays.</b> Open the style list from the toolbar and use the "
+        "<b>checkboxes</b> beside each style. Auto-cycle rotates only through the checked ones.",
         "<b>Version 0.6: three new equalizer styles</b> (23 in total): <b>Mirror Equalizer</b>, <b>LED Meter</b> "
         "and <b>Rainbow Peaks</b>. See section 6.",
         "<b>Outrun Grid</b>: smoother sun with no stair-stepped edge, and the horizon meter now runs the full width of the screen in sunset colors (0.6.1).",
@@ -388,8 +390,8 @@ def build():
     s.append(Spacer(1, 6))
     s.append(table(["Control", "What it does"], [
         ["<b>Add Logo</b> / logo name", "Opens the Logo menu: choose, remove, show or hide your logo"],
-        ["<b>‹  Style name  ›</b>", "Previous style, pick any of the 23 styles from the list, next style"],
-        ["<b>Auto-cycle</b> (⟳ on Mac)", "Moves to the next style automatically, with a smooth crossfade"],
+        ["<b>‹  Style name  ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
+        ["<b>Auto-cycle</b> (⟳ on Mac)", "Moves to the next <b>checked</b> style automatically, with a smooth crossfade. Unchecked styles are skipped; with nothing checked it uses them all"],
         ["<b>Motion</b>", "How your logo reacts to the bass"],
         ["<b>Logo</b>", "Logo size, glow, color tint and trails"],
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],

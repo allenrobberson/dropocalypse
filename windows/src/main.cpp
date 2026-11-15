@@ -70,6 +70,7 @@ static std::string serialize(const AppSettings& s) {
                   r.squash, r.bounce, r.slide, r.wobble, r.glow, r.logoTint, r.logoTrails ? 1 : 0, r.beatFlash,
                   r.brightness, s.sensitivity, s.beatThreshold);
     std::string out = buf;
+    out += "cycleSkip=" + std::to_string(r.cycleSkip) + "\n";
     out += "audioSource=" + s.audioSource + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
@@ -100,6 +101,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     RenderSettings& r = s.r;
     if (kv.count("sceneIndex")) r.sceneIndex = std::max(0, std::atoi(kv["sceneIndex"].c_str()));
     flag("autoCycle", r.autoCycle);
+    if (kv.count("cycleSkip")) r.cycleSkip = (uint32_t)std::strtoul(kv["cycleSkip"].c_str(), nullptr, 10);
     num("cycleSeconds", r.cycleSeconds, 5, 120);
     flag("showLogo", r.showLogo);
     num("logoSize", r.logoSize, 0.08f, 0.8f);
@@ -460,12 +462,29 @@ static void drawToolbar(float dt) {
     int n = (int)scenes.size();
     int cur = ((r.sceneIndex % n) + n) % n;
     ImGui::SetNextItemWidth(170 * g.dpi);
-    if (ImGui::BeginCombo("##style", scenes[cur].name)) {
+    if (ImGui::BeginCombo("##style", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
+        // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
+        ImGui::TextDisabled("Checked = included in auto-cycle");
+        if (ImGui::SmallButton("All")) r.cycleSkip = 0;
+        ImGui::SameLine();
+        if (ImGui::SmallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
+        ImGui::Separator();
+        int checked = 0;
         for (int i = 0; i < n; ++i) {
+            ImGui::PushID(i);
+            bool on = r.inCycle(i);
+            if (ImGui::Checkbox("##cycle", &on)) r.setInCycle(i, on);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Include %s in auto-cycle", scenes[i].name);
+            ImGui::SameLine();
             char label[64];
             std::snprintf(label, sizeof(label), "%d. %s", i + 1, scenes[i].name);
             if (ImGui::Selectable(label, i == cur)) r.sceneIndex = i;
+            ImGui::PopID();
+            if (on) ++checked;
         }
+        ImGui::Separator();
+        if (checked == 0) ImGui::TextDisabled("Nothing checked: auto-cycle uses every style");
+        else ImGui::TextDisabled("Auto-cycle: %d of %d styles", checked, n);
         ImGui::EndCombo();
     }
     ImGui::SameLine();
