@@ -20,7 +20,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](Your-Logo-and-Motion#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](Audio-Sources#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](Controls-and-Settings#look-panel): flash, brightness, auto-cycle timing |
-| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it to open the download page, then download the new version and replace the old one. Your logo and settings are kept. |
+| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Download** to open the download page, or **Ignore for 24 hours** to hide the button until tomorrow. Download the new version and replace the old one; your logo and settings are kept. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | ⤢ / **Full screen** | Full screen on / off |

@@ -13,6 +13,15 @@ final class UpdateChecker: ObservableObject {
 
     @Published private(set) var available: Release?
     @Published private(set) var checking = false
+    /// "Ignore for 24 hours": the toolbar button stays hidden until this time.
+    @Published private(set) var snoozedUntil: Date?
+
+    /// Whether the toolbar should show the "Update" button right now.
+    var showBadge: Bool {
+        guard available != nil else { return false }
+        if let until = snoozedUntil, Date() < until { return false }
+        return true
+    }
 
     static let releasesPage = URL(string: "https://github.com/allenrobberson/dropocalypse/releases/latest")!
     private static let api = URL(string: "https://api.github.com/repos/allenrobberson/dropocalypse/releases/latest")!
@@ -28,8 +37,11 @@ final class UpdateChecker: ObservableObject {
     private let lastCheckKey = "updateLastCheck"
     private let latestKey = "updateLatestVersion"
     private let latestURLKey = "updateLatestURL"
+    private let snoozeKey = "updateSnoozeUntil"
 
     init() {
+        let until = defaults.double(forKey: snoozeKey)
+        if until > Date().timeIntervalSince1970 { snoozedUntil = Date(timeIntervalSince1970: until) }
         // Show a previously found update right away, without waiting for the network.
         if let v = defaults.string(forKey: latestKey), let u = defaults.string(forKey: latestURLKey),
            let url = URL(string: u), Self.isNewer(v, than: currentVersion) {
@@ -76,6 +88,18 @@ final class UpdateChecker: ObservableObject {
                 if userInitiated { self.report(found: found, failure: failure) }
             }
         }.resume()
+    }
+
+    /// Hide the toolbar button for a day. A manual "Check now" still reports the update.
+    func ignoreForADay() {
+        let until = Date().addingTimeInterval(24 * 3600)
+        snoozedUntil = until
+        defaults.set(until.timeIntervalSince1970, forKey: snoozeKey)
+        // Make the button come back on its own when the day is up.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 24 * 3600 + 1) { [weak self] in
+            guard let self, let s = self.snoozedUntil, Date() >= s else { return }
+            self.snoozedUntil = nil
+        }
     }
 
     func openDownloadPage() {

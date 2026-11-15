@@ -26,7 +26,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 ## 🆕 What's new
 
 ### 0.9.0: update notifications
-- 🔔 **Know when there's a new version.** Once a day Dropocalypse checks GitHub for a newer release. When one is out, a pink **Update available** button appears in the toolbar; click it to open the download page. Nothing downloads or installs on its own, and no information about you is sent. Turn it off, or **Check now**, in the **Look** panel. On a Mac there's also **Dropocalypse → Check for Updates…**.
+- 🔔 **Know when there's a new version.** Once a day Dropocalypse checks GitHub for a newer release. When one is out, a pink **Update available** button appears in the toolbar. Click it and choose **Download** to open the download page, or **Ignore for 24 hours** to hide it until tomorrow. Nothing downloads or installs on its own, and no information about you is sent. Turn it off, or **Check now**, in the **Look** panel. On a Mac there's also **Dropocalypse → Check for Updates…**.
 - 👀 Want an email for every release too? Click **Watch → Custom → Releases** at the top of this page (needs a free GitHub account).
 
 ### 0.8.0: new Tesseract style
@@ -129,7 +129,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
-| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it to open the download page, then download the new version and replace the old one. Your logo and settings are kept. |
+| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Download** to open the download page, or **Ignore for 24 hours** to hide the button until tomorrow. Download the new version and replace the old one; your logo and settings are kept. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | ⤢ / **Full screen** | Full screen on / off |

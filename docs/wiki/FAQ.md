@@ -7,7 +7,7 @@ Yes. No account, no ads, no tracking, no watermark, no paid tier. It's MIT licen
 No. Audio is analyzed live on your computer and thrown away. The only thing Dropocalypse ever connects to is GitHub, once a day, to see whether a newer version is out. That request sends nothing about you or your audio, and you can turn it off under **Look → Check for updates automatically**.
 
 **How do I know when there's an update?**
-From 0.9.0 on, a pink **Update available** button appears in the toolbar when a new version is out; click it to open the download page. You can also click **Watch → Custom → Releases** on the GitHub page to get an email for each release.
+From 0.9.0 on, a pink **Update available** button appears in the toolbar when a new version is out. Click it and choose **Download**, or **Ignore for 24 hours** to hide it until tomorrow. You can also click **Watch → Custom → Releases** on the GitHub page to get an email for each release.
 
 **Can I use it on stream (OBS, Twitch, YouTube)?**
 Yes. Capture the Dropocalypse window in OBS (Window Capture on Windows, macOS Screen Capture on a Mac). Hide the toolbar with **Esc** first.

@@ -21,9 +21,9 @@ struct TopToolbar: View {
 
             Spacer(minLength: 12)
 
-            if let update = updates.available {
+            if updates.showBadge, let update = updates.available {
                 Button {
-                    updates.openDownloadPage()
+                    model.openPopover = model.openPopover == "update" ? nil : "update"
                 } label: {
                     Label("Update \(update.version)", systemImage: "arrow.down.circle.fill")
                         .font(.system(size: 11, weight: .semibold))
@@ -33,7 +33,13 @@ struct TopToolbar: View {
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
-                .help("Dropocalypse \(update.version) is available (you have \(updates.currentVersion)). Click to open the download page.")
+                .help("Dropocalypse \(update.version) is available (you have \(updates.currentVersion))")
+                .popover(isPresented: Binding(
+                    get: { model.openPopover == "update" },
+                    set: { if !$0 && model.openPopover == "update" { model.openPopover = nil } }),
+                         arrowEdge: .bottom) {
+                    updatePopover(update).environment(\.colorScheme, .dark)
+                }
             }
 
             Text(capture.isRunning ? capture.statusText : "Audio off")
@@ -90,6 +96,29 @@ struct TopToolbar: View {
             .toggleStyle(.button)
             .help("Auto-cycle styles (A)")
         }
+    }
+
+    private func updatePopover(_ update: UpdateChecker.Release) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Dropocalypse \(update.version) is available").font(.headline)
+            Text("You have version \(updates.currentVersion). Download the new version and replace this one; your logo and settings are kept.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Button("Ignore for 24 hours") {
+                    updates.ignoreForADay()
+                    model.openPopover = nil
+                }
+                Spacer()
+                Button("Download") {
+                    updates.openDownloadPage()
+                    model.openPopover = nil
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14)
+        .frame(width: 300)
     }
 
     /// The style name opens a list: click a name to show it now, and use the checkboxes to choose

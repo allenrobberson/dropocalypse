@@ -53,6 +53,7 @@ struct AppSettings {
     long long lastUpdateCheck = 0;    // unix time of the last successful check
     std::string latestVersion;        // newest version GitHub reported
     std::string latestUrl;            // its release page
+    long long updateSnoozeUntil = 0;  // "Ignore for 24 hours": hide the toolbar button until then
 };
 
 static std::wstring appDataDir() {
@@ -85,6 +86,7 @@ static std::string serialize(const AppSettings& s) {
     out += "lastUpdateCheck=" + std::to_string(s.lastUpdateCheck) + "\n";
     out += "latestVersion=" + s.latestVersion + "\n";
     out += "latestUrl=" + s.latestUrl + "\n";
+    out += "updateSnoozeUntil=" + std::to_string(s.updateSnoozeUntil) + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
     return out;
@@ -135,6 +137,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("lastUpdateCheck")) s.lastUpdateCheck = std::atoll(kv["lastUpdateCheck"].c_str());
     if (kv.count("latestVersion")) s.latestVersion = kv["latestVersion"];
     if (kv.count("latestUrl")) s.latestUrl = kv["latestUrl"];
+    if (kv.count("updateSnoozeUntil")) s.updateSnoozeUntil = std::atoll(kv["updateSnoozeUntil"].c_str());
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
 }
@@ -730,17 +733,30 @@ static void drawToolbar(float dt) {
         ImGui::EndPopup();
     }
 
-    // ---- Update available: a bright button that opens the download page
-    if (updateAvailable()) {
+    // ---- Update available: a bright button with Download / Ignore for 24 hours
+    if (updateAvailable() && (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil) {
         ImGui::SameLine(0, 12 * g.dpi);
         std::string label = "Update " + g.settings.latestVersion + " available";
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
-        if (ImGui::Button(label.c_str())) openDownloadPage();
+        if (ImGui::Button(label.c_str())) ImGui::OpenPopup("update");
         ImGui::PopStyleColor(3);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("You have %s. Click to open the download page.", APP_VERSION_STR);
+        if (ImGui::BeginPopup("update")) {
+            beginPanel(("Dropocalypse " + g.settings.latestVersion + " is available").c_str());
+            ImGui::TextDisabled("You have version %s.", APP_VERSION_STR);
+            ImGui::TextDisabled("Download the new version and replace this folder;");
+            ImGui::TextDisabled("your logo and settings are kept.");
+            ImGui::Spacing();
+            if (ImGui::Button("Download")) { openDownloadPage(); ImGui::CloseCurrentPopup(); }
+            ImGui::SameLine();
+            if (ImGui::Button("Ignore for 24 hours")) {
+                g.settings.updateSnoozeUntil = (long long)std::time(nullptr) + 24 * 3600;
+                ImGui::CloseCurrentPopup();
+            }
+            endPanel();
+            ImGui::EndPopup();
+        }
     }
 
     // ---- Right side: status, shortcuts, full screen
