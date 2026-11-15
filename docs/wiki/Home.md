@@ -8,7 +8,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 
 ## Highlights
 
-| | |
+| Feature | What you get |
 |---|---|
 | 🎛 **24 styles** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers and a 4D Tesseract. See [[Styles]]. |
 | 🖼 **Your logo** | Drag any image onto the window. It reacts to the bass with five separate motions plus glow, tint and trails. See [[Your Logo and Motion]]. |

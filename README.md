@@ -21,7 +21,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
+**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
 
 ## 🆕 What's new
 
