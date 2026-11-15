@@ -25,6 +25,10 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 0.9.0: update notifications
+- 🔔 **Know when there's a new version.** Once a day Dropocalypse checks GitHub for a newer release. When one is out, a pink **Update available** button appears in the toolbar; click it to open the download page. Nothing downloads or installs on its own, and no information about you is sent. Turn it off, or **Check now**, in the **Look** panel. On a Mac there's also **Dropocalypse → Check for Updates…**.
+- 👀 Want an email for every release too? Click **Watch → Custom → Releases** at the top of this page (needs a free GitHub account).
+
 ### 0.8.0: new Tesseract style
 - 🧊 **Tesseract** (style 24): a glowing neon 4D hypercube that rotates through the fourth dimension, turning itself inside out. It spins harder on every beat, swells with the bass and leaves light trails.
 
@@ -59,7 +63,7 @@ You still hear everything normally; Dropocalypse only listens along. If the app 
 
 ## Download
 
-Get both versions from the **[latest release](../../releases/latest)**. Each release also includes **Dropocalypse-User-Guide.pdf**, a printable guide for Mac and Windows. You can [read it here](docs/Dropocalypse-User-Guide.pdf) too.
+Get both versions from the **[latest release](../../releases/latest)**. From 0.9.0 on, the app tells you when a newer version is out. Want an email for each release? Click **Watch → Custom → Releases** at the top of this page. Each release also includes **Dropocalypse-User-Guide.pdf**, a printable guide for Mac and Windows. You can [read it here](docs/Dropocalypse-User-Guide.pdf) too.
 
 ### 🍎 Mac
 
@@ -125,6 +129,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
+| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it to open the download page, then download the new version and replace the old one. Your logo and settings are kept. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | ⤢ / **Full screen** | Full screen on / off |
@@ -195,6 +200,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
+| **Check for updates automatically** | On | Once a day, asks GitHub whether a newer version is out. If so, a pink **Update available** button appears in the toolbar. **Check now** checks right away; the panel also shows which version you have. |
 
 ### The 24 styles
 
@@ -361,6 +367,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [x] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone (macOS 14.2+)
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
+- [x] Update notifications inside the app
 - [ ] App icon, notarized Mac builds and code-signed Windows builds
 
 ## Questions, ideas and bug reports

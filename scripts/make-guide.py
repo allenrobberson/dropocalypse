@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 0.9: update notifications.</b> When a new version is out, a pink <b>Update available</b> "
+        "button appears in the toolbar; click it to open the download page. Turn it off or check now in the Look panel.",
         "<b>Version 0.8: new Tesseract style</b> (24 in total): a glowing 4D hypercube that turns itself "
         "inside out, spinning on the beat.",
         "<b>Version 0.7: choose which styles auto-cycle plays.</b> Open the style list from the toolbar and use the "
@@ -467,6 +469,7 @@ def build():
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 120 s)"],
+        ["<b>Check for updates automatically</b>", "On", "Once a day, checks GitHub for a newer version and shows a pink <b>Update available</b> button in the toolbar that opens the download page. <b>Check now</b> checks right away."],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles

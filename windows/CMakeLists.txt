@@ -39,4 +39,4 @@ target_include_directories(Dropocalypse PRIVATE src ${imgui_SOURCE_DIR} ${imgui_
 target_compile_definitions(Dropocalypse PRIVATE UNICODE _UNICODE APP_VERSION_STR="${APP_VERSION}")
 target_compile_options(Dropocalypse PRIVATE /W3 /permissive- /utf-8 /MP)
 target_link_libraries(Dropocalypse PRIVATE
-    d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys)
+    d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp)

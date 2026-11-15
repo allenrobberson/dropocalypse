@@ -19,7 +19,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             if model.toolbarVisible {
-                TopToolbar(model: model, settings: settings, capture: capture)
+                TopToolbar(model: model, settings: settings, capture: capture, updates: model.updates)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
             }

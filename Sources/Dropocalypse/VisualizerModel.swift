@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 final class VisualizerModel: NSObject, ObservableObject {
     let settings = AppSettings()
     let capture = AudioCapture()
+    let updates = UpdateChecker()
 
     // Top toolbar auto-hide.
     @Published private(set) var toolbarVisible = true
@@ -33,6 +34,7 @@ final class VisualizerModel: NSObject, ObservableObject {
         logoName = UserDefaults.standard.string(forKey: "logoName")
         installKeyMonitor()
         startHideTimer()
+        updates.checkAutomatically(enabled: settings.checkForUpdates)
     }
 
     // MARK: Toolbar auto-hide

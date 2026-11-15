@@ -30,6 +30,9 @@ struct DropocalypseApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 720)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { model.updates.check(userInitiated: true) }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("Choose Logo…") { model.chooseLogo() }
                     .keyboardShortcut("o")

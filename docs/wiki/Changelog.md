@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 0.9.0
+- 🔔 **Update notifications:** a daily check for new versions, with an **Update available** button in the toolbar that opens the download page (Look panel: on/off and **Check now**; Mac: **Check for Updates…** menu item).
+
 ## 0.8.0
 - 🧊 New **Tesseract** style (24): a glowing neon 4D hypercube rotating through the fourth dimension, spinning harder on every beat.
 

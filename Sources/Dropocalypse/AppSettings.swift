@@ -15,6 +15,8 @@ final class AppSettings: ObservableObject {
     /// Names of styles left out of auto-cycle (unchecked in the style list). Stored as names, so
     /// styles added in later versions are included automatically.
     @AppStorage("cycleSkip") var cycleSkip: String = ""
+    /// Check GitHub for a newer version once a day and show "Update available" in the toolbar.
+    @AppStorage("checkForUpdates") var checkForUpdates: Bool = true
 
     private var skipped: Set<String> {
         Set(cycleSkip.split(separator: "\n").map(String.init))

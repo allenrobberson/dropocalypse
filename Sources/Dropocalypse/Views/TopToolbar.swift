@@ -6,6 +6,7 @@ struct TopToolbar: View {
     @ObservedObject var model: VisualizerModel
     @ObservedObject var settings: AppSettings
     @ObservedObject var capture: AudioCapture
+    @ObservedObject var updates: UpdateChecker
 
     var body: some View {
         HStack(spacing: 4) {
@@ -19,6 +20,21 @@ struct TopToolbar: View {
             popoverButton("Look", icon: "sun.max", id: "look") { lookControls }
 
             Spacer(minLength: 12)
+
+            if let update = updates.available {
+                Button {
+                    updates.openDownloadPage()
+                } label: {
+                    Label("Update \(update.version)", systemImage: "arrow.down.circle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color(red: 0.92, green: 0.29, blue: 0.67), in: Capsule())
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .help("Dropocalypse \(update.version) is available (you have \(updates.currentVersion)). Click to open the download page.")
+            }
 
             Text(capture.isRunning ? capture.statusText : "Audio off")
                 .font(.system(size: 11))
@@ -237,6 +253,18 @@ struct TopToolbar: View {
             slider("Beat flash", $settings.beatFlash, 0...1)
             slider("Brightness", $settings.brightness, 0.4...1.6)
             slider("Auto-cycle every", $settings.cycleSeconds, 5...120) { "\(Int($0)) s" }
+            Divider()
+            Toggle("Check for updates automatically", isOn: $settings.checkForUpdates)
+                .onChange(of: settings.checkForUpdates) { on in
+                    if on { updates.check(userInitiated: false) }
+                }
+            HStack {
+                Button(updates.checking ? "Checking…" : "Check now") { updates.check(userInitiated: true) }
+                    .disabled(updates.checking)
+                Spacer()
+                Text("Version \(updates.currentVersion)").foregroundStyle(.secondary)
+            }
+            .font(.caption)
         }
     }
 

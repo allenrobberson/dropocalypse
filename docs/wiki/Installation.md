@@ -31,6 +31,8 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 
 ## Updating
 
+From version 0.9.0, Dropocalypse tells you when a new version is out: a pink **Update available** button appears in the toolbar. Click it to open the download page. For an email on every release, click **Watch → Custom → Releases** on the GitHub page.
+
 Download the new version and replace the old one: drag the new app into **Applications** on a Mac (choose **Replace**), or swap in the new folder on Windows. Your logo, style and settings are kept.
 
 ## Uninstalling

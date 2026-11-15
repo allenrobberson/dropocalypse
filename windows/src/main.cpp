@@ -15,6 +15,7 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <shobjidl.h>
+#include <winhttp.h>
 #include <wrl/client.h>
 
 #include "imgui.h"
@@ -22,6 +23,10 @@
 #include "imgui_impl_win32.h"
 
 #include <algorithm>
+#include <atomic>
+#include <ctime>
+#include <mutex>
+#include <thread>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -44,6 +49,10 @@ struct AppSettings {
     float beatThreshold = 1.35f;
     std::wstring logoFile;
     std::wstring logoName;
+    bool checkForUpdates = true;      // ask GitHub for a newer version once a day
+    long long lastUpdateCheck = 0;    // unix time of the last successful check
+    std::string latestVersion;        // newest version GitHub reported
+    std::string latestUrl;            // its release page
 };
 
 static std::wstring appDataDir() {
@@ -72,6 +81,10 @@ static std::string serialize(const AppSettings& s) {
     std::string out = buf;
     out += "cycleSkip=" + std::to_string(r.cycleSkip) + "\n";
     out += "audioSource=" + s.audioSource + "\n";
+    out += std::string("checkForUpdates=") + (s.checkForUpdates ? "1" : "0") + "\n";
+    out += "lastUpdateCheck=" + std::to_string(s.lastUpdateCheck) + "\n";
+    out += "latestVersion=" + s.latestVersion + "\n";
+    out += "latestUrl=" + s.latestUrl + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
     return out;
@@ -118,6 +131,10 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     num("sensitivity", s.sensitivity, 0.2f, 4);
     num("beatThreshold", s.beatThreshold, 1.1f, 2.2f);
     if (kv.count("audioSource")) s.audioSource = kv["audioSource"];
+    flag("checkForUpdates", s.checkForUpdates);
+    if (kv.count("lastUpdateCheck")) s.lastUpdateCheck = std::atoll(kv["lastUpdateCheck"].c_str());
+    if (kv.count("latestVersion")) s.latestVersion = kv["latestVersion"];
+    if (kv.count("latestUrl")) s.latestUrl = kv["latestUrl"];
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
 }
@@ -174,6 +191,148 @@ struct App {
 };
 
 static App g;
+
+// ---------------------------------------------------------------------------------------------
+// Update check: one HTTPS request to GitHub for the latest release (at most once a day). If it's
+// newer than this copy, the toolbar shows "Update X.Y.Z", which opens the download page. Nothing
+// is downloaded or installed automatically, and nothing about the user is sent.
+
+static const char* kReleasesPage = "https://github.com/allenrobberson/dropocalypse/releases/latest";
+
+struct UpdateState {
+    std::mutex m;
+    std::atomic<bool> checking{false};
+    bool resultReady = false;
+    bool userInitiated = false;
+    bool ok = false;
+    std::string version, url, error;
+    std::string message;   // shown in the Look panel after "Check now"
+};
+static UpdateState gUpdate;
+
+static bool isDevVersion(const char* v) {
+    return std::string(v).find("dev") != std::string::npos || std::string(v) == "0.0.0";
+}
+
+/// Dotted versions compared numerically (0.10.0 > 0.9.2); anything after "-" is ignored.
+static bool versionIsNewer(const std::string& a, const std::string& b) {
+    auto parts = [](const std::string& s) {
+        std::vector<int> v;
+        std::string core = s.substr(0, s.find('-'));
+        size_t i = 0;
+        while (i <= core.size()) {
+            size_t j = core.find('.', i);
+            if (j == std::string::npos) j = core.size();
+            v.push_back(std::atoi(core.substr(i, j - i).c_str()));
+            i = j + 1;
+        }
+        return v;
+    };
+    auto x = parts(a), y = parts(b);
+    for (size_t i = 0; i < std::max(x.size(), y.size()); ++i) {
+        int p = i < x.size() ? x[i] : 0, q = i < y.size() ? y[i] : 0;
+        if (p != q) return p > q;
+    }
+    return false;
+}
+
+static bool httpsGet(const wchar_t* host, const wchar_t* path, std::string& out, std::string& error) {
+    HINTERNET session = WinHttpOpen(L"Dropocalypse-update-check", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+                                    WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!session) { error = "Couldn't start the network request."; return false; }
+    WinHttpSetTimeouts(session, 8000, 8000, 10000, 10000);
+    HINTERNET connect = WinHttpConnect(session, host, INTERNET_DEFAULT_HTTPS_PORT, 0);
+    HINTERNET request = connect ? WinHttpOpenRequest(connect, L"GET", path, nullptr, WINHTTP_NO_REFERER,
+                                                     WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE)
+                                : nullptr;
+    bool ok = request &&
+              WinHttpSendRequest(request, L"Accept: application/vnd.github+json\r\n", (DWORD)-1L,
+                                 WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+              WinHttpReceiveResponse(request, nullptr);
+    if (!ok) error = "Couldn't reach GitHub. Check your internet connection.";
+    if (ok) {
+        DWORD status = 0, size = sizeof(status);
+        WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                            WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX);
+        if (status != 200) { ok = false; error = "GitHub didn't answer (" + std::to_string(status) + "). Try again later."; }
+    }
+    while (ok) {
+        DWORD avail = 0;
+        if (!WinHttpQueryDataAvailable(request, &avail) || avail == 0) break;
+        std::string buf(avail, '\0');
+        DWORD read = 0;
+        if (!WinHttpReadData(request, buf.data(), avail, &read)) { ok = false; error = "Download interrupted."; break; }
+        out.append(buf.data(), read);
+        if (out.size() > 2'000'000) break;
+    }
+    if (request) WinHttpCloseHandle(request);
+    if (connect) WinHttpCloseHandle(connect);
+    WinHttpCloseHandle(session);
+    return ok;
+}
+
+/// Pulls a string value out of GitHub's JSON without a full parser: "key": "value".
+static std::string jsonString(const std::string& json, const char* key) {
+    std::string k = std::string("\"") + key + "\"";
+    size_t p = json.find(k);
+    if (p == std::string::npos) return {};
+    p = json.find(':', p + k.size());
+    if (p == std::string::npos) return {};
+    p = json.find('"', p);
+    if (p == std::string::npos) return {};
+    size_t e = json.find('"', p + 1);
+    return e == std::string::npos ? std::string() : json.substr(p + 1, e - p - 1);
+}
+
+static void startUpdateCheck(bool userInitiated) {
+    if (gUpdate.checking.exchange(true)) return;
+    {
+        std::lock_guard<std::mutex> lock(gUpdate.m);
+        gUpdate.userInitiated = userInitiated;
+        if (userInitiated) gUpdate.message = "Checking...";
+    }
+    std::thread([] {
+        std::string body, error;
+        bool ok = httpsGet(L"api.github.com", L"/repos/allenrobberson/dropocalypse/releases/latest", body, error);
+        std::string tag = ok ? jsonString(body, "tag_name") : std::string();
+        if (ok && tag.empty()) { ok = false; error = "Unexpected answer from GitHub."; }
+        std::lock_guard<std::mutex> lock(gUpdate.m);
+        gUpdate.ok = ok;
+        gUpdate.version = (!tag.empty() && tag[0] == 'v') ? tag.substr(1) : tag;
+        gUpdate.url = ok ? jsonString(body, "html_url") : std::string();
+        if (gUpdate.url.empty()) gUpdate.url = kReleasesPage;
+        gUpdate.error = error;
+        gUpdate.resultReady = true;
+        gUpdate.checking = false;
+    }).detach();
+}
+
+/// Called once per frame on the UI thread: stores a finished check's result.
+static void pollUpdateCheck() {
+    std::lock_guard<std::mutex> lock(gUpdate.m);
+    if (!gUpdate.resultReady) return;
+    gUpdate.resultReady = false;
+    AppSettings& s = g.settings;
+    if (gUpdate.ok) {
+        s.lastUpdateCheck = (long long)std::time(nullptr);
+        s.latestVersion = gUpdate.version;
+        s.latestUrl = gUpdate.url;
+    }
+    if (gUpdate.userInitiated) {
+        if (!gUpdate.ok) gUpdate.message = gUpdate.error;
+        else if (versionIsNewer(gUpdate.version, APP_VERSION_STR)) gUpdate.message = "Version " + gUpdate.version + " is available!";
+        else gUpdate.message = "You're up to date.";
+    }
+}
+
+static bool updateAvailable() {
+    return !g.settings.latestVersion.empty() && versionIsNewer(g.settings.latestVersion, APP_VERSION_STR);
+}
+
+static void openDownloadPage() {
+    std::string url = g.settings.latestUrl.rfind("https://github.com/", 0) == 0 ? g.settings.latestUrl : kReleasesPage;
+    ShellExecuteW(nullptr, L"open", widen(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
 
 static double nowSeconds() {
     using namespace std::chrono;
@@ -556,8 +715,32 @@ static void drawToolbar(float dt) {
         slider("Beat flash", &r.beatFlash, 0, 1);
         slider("Brightness", &r.brightness, 0.4f, 1.6f);
         slider("Auto-cycle every", &r.cycleSeconds, 5, 120, "%.0f s");
+        ImGui::Separator();
+        if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
+            startUpdateCheck(false);
+        if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
+        ImGui::SameLine();
+        ImGui::TextDisabled("Version %s", APP_VERSION_STR);
+        {
+            std::lock_guard<std::mutex> lock(gUpdate.m);
+            if (!gUpdate.message.empty()) ImGui::TextUnformatted(gUpdate.message.c_str());
+        }
+        if (updateAvailable() && ImGui::Button("Open download page")) openDownloadPage();
         endPanel();
         ImGui::EndPopup();
+    }
+
+    // ---- Update available: a bright button that opens the download page
+    if (updateAvailable()) {
+        ImGui::SameLine(0, 12 * g.dpi);
+        std::string label = "Update " + g.settings.latestVersion + " available";
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
+        if (ImGui::Button(label.c_str())) openDownloadPage();
+        ImGui::PopStyleColor(3);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("You have %s. Click to open the download page.", APP_VERSION_STR);
     }
 
     // ---- Right side: status, shortcuts, full screen
@@ -780,6 +963,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
 
     g.sources = AudioCapture::listSources();
     startAudio();
+    if (g.settings.checkForUpdates && !isDevVersion(APP_VERSION_STR) &&
+        (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
+        startUpdateCheck(false);
     noteActivity(true);
 
     double lastFrame = nowSeconds();
@@ -787,6 +973,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     bool running = true;
 
     while (running) {
+        pollUpdateCheck();
         // Wait until DXGI is ready for a new frame, *then* read input and audio, so what we draw is
         // as fresh as possible when it reaches the screen.
         if (g.frameWaitable && !g.occluded) WaitForSingleObjectEx(g.frameWaitable, 100, TRUE);
