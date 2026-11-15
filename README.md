@@ -14,7 +14,7 @@ A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Wind
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **23 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers: mirrored, LED meter and rainbow peaks. Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **24 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks) and a 4D Tesseract. Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
@@ -24,6 +24,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
 
 ## 🆕 What's new
+
+### 0.8.0: new Tesseract style
+- 🧊 **Tesseract** (style 24): a glowing neon 4D hypercube that rotates through the fourth dimension, turning itself inside out. It spins harder on every beat, swells with the bass and leaves light trails.
 
 ### 0.7.0: choose which styles auto-cycle plays
 - ☑️ **Checkboxes in the style list**: click the style name in the toolbar and you'll see a checkbox to the left of every style. When **auto-cycle** is on, it rotates only through the styles you've checked and skips the rest. **All** and **None** check or clear every box at once. Your picks are saved, and any new styles added in future versions start out checked.
@@ -88,7 +91,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 23 styles](#the-23-styles)
+- [The 24 styles](#the-24-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -143,7 +146,7 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Opens the style list. Click a name to jump straight to any of the [23 styles](#the-23-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [24 styles](#the-24-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
@@ -193,7 +196,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
 
-### The 23 styles
+### The 24 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -230,6 +233,12 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | 21 | **Mirror Equalizer** | Bars grow up and down from a glowing center line, bass in the middle and highs at the edges, in a sunset rainbow (pink → orange → gold) |
 | 22 | **LED Meter** | A classic hardware spectrum analyzer: segmented LEDs from green through yellow to red, with peak markers that hang and then drop |
 | 23 | **Rainbow Peaks** | Thin bars cycling through the rainbow, with glowing caps that the bass knocks into the air and that fall back with gravity |
+
+**4D:**
+
+| # | Style | What it looks like |
+|---|---|---|
+| 24 | **Tesseract** | A glowing neon hypercube (a 4D cube) rotating through the fourth dimension, so the inner cube keeps turning itself inside out through the outer one. It spins harder on every beat, swells with the bass and leaves light trails. Tip: a smaller logo **Size** lets you see the inner cube. |
 
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
@@ -326,7 +335,7 @@ Sources/Dropocalypse/
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 23 built-in styles (add your own here!)
+  Render/Scenes.swift         the 24 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble

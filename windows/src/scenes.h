@@ -1,4 +1,4 @@
-// Dropocalypse for Windows - the 23 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 24 built-in styles (same values as the macOS Scenes.swift).
 #pragma once
 
 #include <array>
@@ -9,7 +9,8 @@ enum class WaveStyle {
     BassRing, NeonEqualizer, PulsarRidges, OutrunGrid, Hyperspace, ParticleStorm, Lightning, DigitalRain, LavaLamp,
     Inferno,
     // Equalizer family
-    MirrorEqualizer, LedMeter, RainbowPeaks
+    MirrorEqualizer, LedMeter, RainbowPeaks,
+    Tesseract
 };
 
 struct VisualScene {
@@ -26,9 +27,9 @@ struct VisualScene {
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
 };
 
-inline const std::array<VisualScene, 23>& builtInScenes() {
-    static const std::array<VisualScene, 23> scenes = [] {
-        std::array<VisualScene, 23> s{};
+inline const std::array<VisualScene, 24>& builtInScenes() {
+    static const std::array<VisualScene, 24> scenes = [] {
+        std::array<VisualScene, 24> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -141,6 +142,11 @@ inline const std::array<VisualScene, 23>& builtInScenes() {
         c = &s[22]; c->name = "Rainbow Peaks";
         c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.72f; c->hueShift = 0;
         c->wave = WaveStyle::RainbowPeaks; c->baseHue = 0; c->hueSpeed = 0.08f; c->vignette = 0.3f;
+
+        c = &s[23]; c->name = "Tesseract";
+        c->zoom = 1.012f; c->zoomBass = 0.03f; c->rotation = 0.0015f; c->warpAmount = 0.002f; c->decay = 0.86f;
+        c->hueShift = 0.002f; c->wave = WaveStyle::Tesseract; c->baseHue = 0.55f; c->hueSpeed = 0.02f;
+        c->saturation = 0.9f; c->vignette = 0.4f;
         return s;
     }();
     return scenes;

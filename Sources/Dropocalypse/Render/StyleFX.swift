@@ -429,6 +429,63 @@ final class StyleFX {
         g.rect(x0: left, y0: base - 0.002, x1: left + total, y1: base + 0.002, (1, 1, 1, 0.35))
     }
 
+    // MARK: - 24. Tesseract
+
+    private var tessAngles = SIMD4<Float>(0.3, 0.8, 0.2, 0.5)   // rotation in the XW, YW, ZW and XY planes
+    private var tessKick: Float = 0
+
+    /// A 4D hypercube: 16 corners and 32 edges rotating through the fourth dimension, projected
+    /// down to the screen, so the inner cube keeps turning itself inside out through the outer one.
+    /// It spins harder on every beat and swells with the bass.
+    func tesseract(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        if beatFired { tessKick = min(3, tessKick + 0.9 + beatStrength * 0.6) }
+        tessKick *= exp(-f.dt * 2.5)
+        let spin = (0.22 + 0.55 * f.bass + tessKick) * f.dt
+        tessAngles += SIMD4<Float>(0.9, 0.65, 0.4, 0.25) * spin
+
+        func rotate(_ p: inout SIMD4<Float>, _ i: Int, _ j: Int, _ a: Float) {
+            let c = cos(a), s = sin(a)
+            let pi = p[i], pj = p[j]
+            p[i] = pi * c - pj * s
+            p[j] = pi * s + pj * c
+        }
+
+        let scale = 1.55 * (1 + 0.14 * f.bass) * f.scene.waveScale
+        var pts = [SIMD2<Float>](repeating: .zero, count: 16)
+        var w = [Float](repeating: 0, count: 16)
+        for i in 0..<16 {
+            var p = SIMD4<Float>(i & 1 == 0 ? -1 : 1, i & 2 == 0 ? -1 : 1, i & 4 == 0 ? -1 : 1, i & 8 == 0 ? -1 : 1)
+            rotate(&p, 0, 3, tessAngles.x)
+            rotate(&p, 1, 3, tessAngles.y)
+            rotate(&p, 2, 3, tessAngles.z)
+            rotate(&p, 0, 1, tessAngles.w)
+            let k4 = 1 / (2.6 - p.w)                       // 4D -> 3D perspective
+            let q = SIMD3<Float>(p.x, p.y, p.z) * k4
+            let k3 = 1 / (2.8 - q.z)                       // 3D -> 2D perspective
+            pts[i] = SIMD2(q.x, q.y) * k3 * scale
+            w[i] = p.w
+        }
+
+        let width = 0.0045 * f.scene.thickness * (1 + 0.6 * f.bass)
+        for i in 0..<16 {
+            for bit in 0..<4 {
+                let j = i ^ (1 << bit)
+                guard j > i else { continue }
+                let near = ((w[i] + w[j]) / 2 + 2) / 4         // 0 = deep in 4D, 1 = closest
+                let col = f.color(near * 0.85 + Float(bit) * 0.04, 1)
+                let lw = width * (0.6 + 0.8 * near)
+                g.line(pts[i], pts[j], width: lw * 4, (col.0, col.1, col.2, 0.16))   // glow
+                g.line(pts[i], pts[j], width: lw, (col.0, col.1, col.2, min(1, 0.55 + 0.45 * near)))
+            }
+        }
+        for i in 0..<16 {
+            let near = (w[i] + 2) / 4
+            let col = f.color(near * 0.85, 1)
+            g.softDot(pts[i], radius: 0.014 * (1 + f.bass) * (0.6 + 0.8 * near), (col.0, col.1, col.2, 0.5), segments: 12)
+            g.dot(pts[i], radius: 0.005 * (0.6 + 0.8 * near), (1, 1, 1, 0.9))
+        }
+    }
+
     // MARK: - 15. Hyperspace
 
     func hyperspace(_ f: FXFrame, _ g: inout GeometryBuilder) {

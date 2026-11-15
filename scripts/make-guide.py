@@ -264,7 +264,7 @@ def later_pages(canvas, doc):
 # Signature color of each style (its base hue in the app), used for the swatches in section 6.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
-              0.97, 0.25, 0.7]
+              0.97, 0.25, 0.7, 0.55]
 
 
 def build():
@@ -274,7 +274,7 @@ def build():
     # ---- Contents
     s.append(P("Contents", h1))
     items = ["Install on Mac", "Install on Windows", "Quick start", "The toolbar",
-             "Logo, Motion, Audio and Look settings", "The 23 visual styles", "Keyboard shortcuts",
+             "Logo, Motion, Audio and Look settings", "The 24 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
     for i, name in enumerate(items, 1):
@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 0.8: new Tesseract style</b> (24 in total): a glowing 4D hypercube that turns itself "
+        "inside out, spinning on the beat.",
         "<b>Version 0.7: choose which styles auto-cycle plays.</b> Open the style list from the toolbar and use the "
         "<b>checkboxes</b> beside each style. Auto-cycle rotates only through the checked ones.",
         "<b>Version 0.6: three new equalizer styles</b> (23 in total): <b>Mirror Equalizer</b>, <b>LED Meter</b> "
@@ -468,7 +470,7 @@ def build():
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles
-    s += section(6, "The 23 visual styles")
+    s += section(6, "The 24 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(table(["#", "Style", "What it looks like"], [
@@ -495,6 +497,7 @@ def build():
         ["21", "<b>Mirror Equalizer</b>", "Bars grow up and down from a center line, in a sunset rainbow"],
         ["22", "<b>LED Meter</b>", "A classic analyzer: green-yellow-red LED segments with peak markers"],
         ["23", "<b>Rainbow Peaks</b>", "Thin rainbow bars with glowing caps that bounce on the beat"],
+        ["24", "<b>Tesseract</b>", "A neon 4D hypercube turning itself inside out, spinning harder on every beat"],
     ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "

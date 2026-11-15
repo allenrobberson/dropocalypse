@@ -620,6 +620,53 @@ public:
         g.rect(left, base - 0.002f, left + total, base + 0.002f, RGBA{1, 1, 1, 0.35f});
     }
 
+    // ---- 24. Tesseract: a 4D hypercube rotating through the fourth dimension
+    void tesseract(const FXFrame& f, GeometryBuilder& g) {
+        if (beatFired_) tessKick_ = std::min(3.0f, tessKick_ + 0.9f + beatStrength_ * 0.6f);
+        tessKick_ *= std::exp(-f.dt * 2.5f);
+        float spin = (0.22f + 0.55f * f.bass() + tessKick_) * f.dt;
+        const float rate[4] = {0.9f, 0.65f, 0.4f, 0.25f};
+        for (int k = 0; k < 4; ++k) tessAngles_[k] += rate[k] * spin;
+        auto rotate = [](float* p, int i, int j, float a) {
+            float c = std::cos(a), s = std::sin(a), pi = p[i], pj = p[j];
+            p[i] = pi * c - pj * s;
+            p[j] = pi * s + pj * c;
+        };
+        float scale = 1.55f * (1 + 0.14f * f.bass()) * f.scene.waveScale;
+        V2 pts[16];
+        float w[16];
+        for (int i = 0; i < 16; ++i) {
+            float p[4] = {(i & 1) ? 1.0f : -1.0f, (i & 2) ? 1.0f : -1.0f, (i & 4) ? 1.0f : -1.0f, (i & 8) ? 1.0f : -1.0f};
+            rotate(p, 0, 3, tessAngles_[0]);
+            rotate(p, 1, 3, tessAngles_[1]);
+            rotate(p, 2, 3, tessAngles_[2]);
+            rotate(p, 0, 1, tessAngles_[3]);
+            float k4 = 1 / (2.6f - p[3]);
+            float qx = p[0] * k4, qy = p[1] * k4, qz = p[2] * k4;
+            float k3 = 1 / (2.8f - qz);
+            pts[i] = V2{qx * k3 * scale, qy * k3 * scale};
+            w[i] = p[3];
+        }
+        float width = 0.0045f * f.scene.thickness * (1 + 0.6f * f.bass());
+        for (int i = 0; i < 16; ++i) {
+            for (int bit = 0; bit < 4; ++bit) {
+                int j = i ^ (1 << bit);
+                if (j <= i) continue;
+                float nearness = ((w[i] + w[j]) / 2 + 2) / 4;
+                RGBA col = f.color(nearness * 0.85f + bit * 0.04f, 1);
+                float lw = width * (0.6f + 0.8f * nearness);
+                g.line(pts[i], pts[j], lw * 4, RGBA{col.r, col.g, col.b, 0.16f});
+                g.line(pts[i], pts[j], lw, RGBA{col.r, col.g, col.b, std::min(1.0f, 0.55f + 0.45f * nearness)});
+            }
+        }
+        for (int i = 0; i < 16; ++i) {
+            float nearness = (w[i] + 2) / 4;
+            RGBA col = f.color(nearness * 0.85f, 1);
+            g.softDot(pts[i], 0.014f * (1 + f.bass()) * (0.6f + 0.8f * nearness), RGBA{col.r, col.g, col.b, 0.5f}, 12);
+            g.softDot(pts[i], 0.005f * (0.6f + 0.8f * nearness), RGBA{1, 1, 1, 0.9f}, 8);
+        }
+    }
+
     // ---- 15. Hyperspace
     void hyperspace(const FXFrame& f, GeometryBuilder& g) {
         if (stars_.empty()) {
@@ -862,6 +909,8 @@ private:
     float gridPhase_ = 0;
     float lavaTime_ = 0;
     std::vector<float> ledPeaks_, ledHold_, capY_, capV_;
+    float tessAngles_[4] = {0.3f, 0.8f, 0.2f, 0.5f};
+    float tessKick_ = 0;
 };
 
 
@@ -902,6 +951,7 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::MirrorEqualizer: fx.mirrorEqualizer(frame, g); break;
     case WaveStyle::LedMeter: fx.ledMeter(frame, g); break;
     case WaveStyle::RainbowPeaks: fx.rainbowPeaks(frame, g); break;
+    case WaveStyle::Tesseract: fx.tesseract(frame, g); break;
 
     case WaveStyle::Circle:
         ring(g, wave, waveCount, 2, 0, scene.centerRadius * s * (1 + 0.25f * bass), 0.12f * s, t * 0.2f, width,

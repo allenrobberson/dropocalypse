@@ -25,6 +25,7 @@ enum WaveStyle: Int, CaseIterable {
     case mirrorEqualizer // bars mirrored up/down from a center line, sunset rainbow
     case ledMeter        // segmented green-yellow-red LEDs with peak hold
     case rainbowPeaks    // thin rainbow bars with bouncing glowing caps
+    case tesseract       // a 4D hypercube rotating through the fourth dimension
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -170,5 +171,9 @@ extension VisualScene {
         VisualScene(name: "Rainbow Peaks",
                     zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.72, hueShift: 0,
                     wave: .rainbowPeaks, baseHue: 0, hueSpeed: 0.08, vignette: 0.3),
+
+        VisualScene(name: "Tesseract",
+                    zoom: 1.012, zoomBass: 0.03, rotation: 0.0015, warpAmount: 0.002, decay: 0.86, hueShift: 0.002,
+                    wave: .tesseract, baseHue: 0.55, hueSpeed: 0.02, saturation: 0.9, vignette: 0.4),
     ]
 }
