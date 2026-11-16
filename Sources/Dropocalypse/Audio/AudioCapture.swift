@@ -35,6 +35,9 @@ final class AudioCapture: ObservableObject {
 
     private var engine: AVAudioEngine?
     private var configObserver: NSObjectProtocol?
+    private var engineSignature = ""            // device + format the engine was built for
+    private var configWork: DispatchWorkItem?
+    private var lastRebuild = Date.distantPast
     private var extractorBox: ExtractorBox?
     private var selectedUID: String?
     private var tap: AnyObject?            // ProcessTap (macOS 14.2+)
@@ -90,6 +93,8 @@ final class AudioCapture: ObservableObject {
     func stop() {
         restartWork?.cancel()
         restartWork = nil
+        configWork?.cancel()
+        configWork = nil
         if #available(macOS 14.2, *) { (tap as? ProcessTap)?.stop() }
         tap = nil
         tapWatcher = nil
@@ -181,13 +186,49 @@ final class AudioCapture: ObservableObject {
         let ms = ioBufferFrames > 0 ? String(format: " · %.1f ms buffer", Double(ioBufferFrames) / format.sampleRate * 1000) : ""
         statusText = "Listening: \(deviceName) · \(Int(format.sampleRate)) Hz\(ms)"
 
-        // Restart if the hardware changes (device unplugged, sample rate change…).
+        engineSignature = Self.signature(unit: unit, format: format)
+
+        // Core Audio posts configuration changes for many reasons (other apps changing the shared
+        // buffer size, power states, routing), sometimes several times a second for a while after
+        // launch. Rebuilding the engine each time froze the visuals (it runs on the main thread),
+        // so: coalesce the notices, just restart the engine if the device and format are the same,
+        // and only rebuild (at most every 2 s) when they really changed.
         configObserver = NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            self.start(deviceUID: self.selectedUID)
+            self.configWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.handleConfigChange() }
+            self.configWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
         }
+    }
+
+    private static func signature(unit: AudioUnit, format: AVAudioFormat) -> String {
+        "\(currentDevice(of: unit) ?? 0)|\(format.sampleRate)|\(format.channelCount)"
+    }
+
+    private func handleConfigChange() {
+        guard let engine, let unit = engine.inputNode.audioUnit else { return }
+        let format = engine.inputNode.outputFormat(forBus: 0)
+        let same = format.sampleRate > 0 && Self.signature(unit: unit, format: format) == engineSignature
+        if same {
+            // Same device and format: the engine only needs to be running again.
+            if !engine.isRunning {
+                DispatchQueue.global(qos: .userInitiated).async { try? engine.start() }
+            }
+            return
+        }
+        let wait = 2 - Date().timeIntervalSince(lastRebuild)
+        if wait > 0 {
+            configWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.handleConfigChange() }
+            configWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait, execute: work)
+            return
+        }
+        lastRebuild = Date()
+        start(deviceUID: selectedUID)
     }
 
     // MARK: Mac audio (process tap)
@@ -300,6 +341,10 @@ final class AudioCapture: ObservableObject {
         var addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyBufferFrameSize,
                                               mScope: kAudioObjectPropertyScopeGlobal,
                                               mElement: kAudioObjectPropertyElementMain)
+        // Setting it, even to the same value, makes Core Audio notify every client of a change.
+        var current: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        if AudioObjectGetPropertyData(device, &addr, 0, nil, &size, &current) == noErr, current == frames { return }
         var value = frames
         _ = AudioObjectSetPropertyData(device, &addr, 0, nil, UInt32(MemoryLayout<UInt32>.size), &value)
     }
