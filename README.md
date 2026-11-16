@@ -3,7 +3,7 @@
 </p>
 <p align="center">
   <b>💖 Dropocalypse is free and open source. If it makes your shows, streams or parties better, please <a href="https://github.com/sponsors/allenrobberson">become a sponsor</a>.</b><br>
-  Sponsorships keep the project going. The first goal is the $99/year Apple Developer membership so Mac downloads open without a security warning.
+  Sponsorships keep the project going: they cover the yearly Apple Developer membership that lets Mac downloads open without a security warning, and the time that goes into new styles and features.
 </p>
 
 # Dropocalypse
@@ -19,11 +19,18 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
-- 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
+- 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
+- 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
+- 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok.
+- ⬇ **One-click updates**: the **Updates** menu tells you when a new version is out and installs it for you.
+- 🔏 **Signed and notarized Mac app** that opens without a security warning.
 
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
 
 ## 🆕 What's new
+
+### 1.2.5: refreshed guide
+- 📖 Updated README, wiki and printable User Guide for everything added in 1.x.
 
 ### 1.2.4: longer auto-cycle
 - ⏱ **Auto-cycle every** now goes up to 6 minutes (360 seconds) per style.
@@ -106,11 +113,9 @@ Get both versions from the **[latest release](../../releases/latest)**. From 1.0
 ### 🍎 Mac
 
 1. Download the `macOS.dmg`, open it, and drag **Dropocalypse** into **Applications**.
-2. **First launch:** the app is free and isn't notarized by Apple, so macOS blocks it the first time.
-   - **macOS 15 Sequoia and later:** try to open it once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
-   - **macOS 13–14:** right-click the app → **Open** → **Open**.
-   - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Dropocalypse.app"`
-3. Click **Audio** in the toolbar and choose what to listen to: an app like **Spotify** or **All Mac audio** (macOS 14.2+), or a mic or line-in. macOS asks once for permission: *system audio recording* for apps, *microphone* for a mic. Audio is analyzed live and is never recorded or sent anywhere.
+2. **Open it.** Dropocalypse is signed and notarized by Apple (since 1.0.1), so it opens like any other app with no security warning.
+   - Still on a version before 1.0.1? macOS may block it the first time. On macOS 15 Sequoia and later, try to open it once, then click **Open Anyway** in **System Settings → Privacy & Security**; on macOS 13–14, right-click the app → **Open** → **Open**. Updating to the latest version fixes this for good.
+3. Click **Audio** in the toolbar and choose what to listen to: an app like **Spotify** or **All Mac audio** (macOS 14.2+), or a mic or line-in. macOS asks once for permission: *system audio recording* for apps, *microphone* for a mic. Audio is analyzed live and never sent anywhere; it's only saved if you press **Record**, and then only to your own computer.
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
@@ -118,7 +123,7 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
 1. Download the `Windows-portable.zip`, right-click it → **Extract All**, and open the folder.
 2. Double-click **Dropocalypse.exe**. Nothing gets installed, and you can keep the folder anywhere, even on a USB stick.
-3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the free app isn't code-signed.
+3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the Windows app isn't code-signed yet; free code signing through the SignPath Foundation is being set up.
 4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
@@ -166,16 +171,18 @@ From left to right:
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
-| **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
+| **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing (5 seconds to 6 minutes) |
 | ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window). Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
-| 🔴 **Record** / **Stop** | Records the visuals and the music to an MP4 video; shows the running time while recording. The **▾** next to it sets the video size and where to save. |
-| 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor) |
+| ⏺ **Record** / **Stop** | Grey until you press it, red while recording. Records the visuals and the music to an MP4 video and shows the running time. The **▾** next to it sets the video size and where to save. |
+| 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor). Appears when more than one display is connected. |
 | ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen |
 | ⤢ / **Full screen** | Full screen on / off |
 
-> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Record**, **Updates**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+>
+> In full screen on a MacBook with a camera notch, the toolbar sits just below the notch so no button hides behind it, while the visuals still fill the whole screen.
 
 ### Logo menu
 
@@ -193,7 +200,7 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [24 styles](#the-24-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
-| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
+| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
 
@@ -226,7 +233,7 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 |---|---|---|
 | **Listen to** (Mac) | System default input | A drop-down of everything you can listen to. **Mac audio** (macOS 14.2+): *All Mac audio*, or any open app such as **Spotify**, Music, Safari or Chrome. Apps playing right now are listed first and marked ♪. Dropocalypse hears exactly what that app plays, at full quality, with no mic or extra software. If the app hasn't played anything yet, it starts the moment it does. **Microphone or line-in**: built-in mic, USB mic, audio interface or line-in. |
 | **Input** (Windows) | System audio | *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. You can also pick a mic, audio interface or line-in. |
-| **Refresh devices** | | Updates the list after you plug something in |
+| **Refresh list** (Windows: **Refresh devices**) | | Updates the list after you open an app or plug something in |
 | **Restart audio** | | Restarts listening. Use it if the visuals stop reacting after a device change or sleep. |
 | **Sensitivity** | 1.00 | How easily quiet audio drives the visuals (0.2 to 4). Raise it in a quiet room or when the mic is far from the speakers. Lower it if room noise makes things twitch when no music is playing. |
 | **Beat threshold** | 1.35× | How much the bass has to jump above its recent average to count as a "beat" for squash, bounce, slide, wobble and flash (1.1× to 2.2×). **Lower = more beats**, so it reacts to more of the music. **Higher = only big kicks** count. |
@@ -307,10 +314,10 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 | `D` | Detach / attach the controls window |
 | `R` | Start / stop recording |
 
-On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Detach Controls (⇧⌘D), Start/Stop Recording (⇧⌘R), Restart Audio**.
+On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Detach Controls (⇧⌘D), Start/Stop Recording (⇧⌘R), Restart Audio**, plus **Dropocalypse → Check for Updates…**.
 
 ### Recording a video
-1. Click the red **Record** button in the toolbar (or press **R**). It turns into **Stop** with a running timer.
+1. Click **Record** in the toolbar (or press **R**). It turns red and becomes **Stop** with a running timer.
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
 3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
 
@@ -328,22 +335,27 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
-5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
-6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it. Uncheck any styles in the style list that don't fit the night.
+5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**, or **Detach** the controls and pick the screen so you can keep adjusting things from your laptop (see [Two screens](#two-screens-controls-on-one-visuals-on-the-other)). Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
+6. Turn **auto-cycle** on so the show keeps changing without you touching it: 30 to 60 seconds per style keeps things lively, and up to 6 minutes suits a slower, ambient night. Uncheck any styles in the style list that don't fit the night.
+7. **Want a clip of the night?** Press **R** to record the visuals and the music, and **R** again to stop.
 
 ### Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| **Mac: "Dropocalypse can't be opened"** on first launch | The app isn't notarized by Apple. See [Download → Mac](#-mac). |
-| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The app isn't code-signed. |
+| **Mac: "Dropocalypse can't be opened"** on first launch | Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. On an older version, see [Download → Mac](#-mac). |
+| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The Windows app isn't code-signed yet. |
 | **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
 | **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
 | **Nothing reacts when listening to an app** (Mac) | Make sure the app is actually playing, then allow Dropocalypse in **System Settings → Privacy & Security → Screen & System Audio Recording** (under *System Audio Recording Only*) and click **Restart audio**. Needs macOS 14.2 or later. |
 | **Nothing reacts to the music** | Check that microphone access is on. **Mac:** System Settings → Privacy & Security → Microphone → Dropocalypse. **Windows:** Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. Then use **Audio → Restart audio** and make sure the right input is selected. |
 | **It reacts, but only a little** | Raise **Sensitivity** and lower **Beat threshold**. Check that the input's level isn't turned down in **System Settings → Sound → Input**. |
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
-| **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** in the Audio panel |
+| **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** (Windows: **Refresh devices**) in the Audio panel |
+| **Visuals stutter for the first few minutes** (Mac, with a microphone) | Fixed in 1.2.2. Click **Updates → Update now**. |
+| **Update now doesn't work** | Mac: keep Dropocalypse in **Applications** (or another folder you can edit). Windows: keep the app folder somewhere you can edit, such as Documents or Desktop. Or use **Download page** to get it yourself. |
+| **I can't find my recording** | It's in your **Movies** (Mac) or **Videos** (Windows) folder unless you chose another one under **Record ▾**. Click **Show in Finder / Explorer** in the message after you stop. |
+| **Recording has black bars** | The video is 16:9. Go full screen on a 16:9 display, or make the window 16:9, to fill the frame. |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
 | **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
 | **The toolbar won't appear** | Move the mouse to the very top of the window, click anywhere, or press **T** |
@@ -394,19 +406,24 @@ Sources/Dropocalypse/
   Audio/AudioCapture.swift    mic / line-in capture, device list, small hardware buffers
   Audio/ProcessTap.swift      Core Audio process tap: listen to one app or all Mac audio (14.2+)
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
+  Recorder.swift              MP4 recording (AVAssetWriter, H.264 + AAC)
+  UpdateChecker.swift         update check, download, verify and one-click install
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
   Render/Scenes.swift         the 24 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
-  Views/                      SwiftUI window and auto-hiding toolbar
+  Views/                      SwiftUI window, auto-hiding toolbar, detached controls
 
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
+  src/scenes.h                the 24 styles (Windows copy)
   src/shaders.h               HLSL port of the Metal shaders
-  src/main.cpp                window, swap chain, auto-hiding toolbar, settings
+  src/logo.cpp                logo loading (PNG, JPG, …)
+  src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
+  src/main.cpp                windows, swap chains, toolbar, detached controls, updater, settings
   app.manifest                "asInvoker": runs without admin rights
 ```
 
@@ -422,8 +439,13 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [x] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone (macOS 14.2+)
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
-- [x] Update notifications inside the app
-- [ ] App icon, notarized Mac builds and code-signed Windows builds
+- [x] Update notifications and one-click updates inside the app
+- [x] App icon
+- [x] Signed and notarized Mac builds
+- [x] Detachable controls and a screen picker for two-screen shows
+- [x] Record videos with sound
+- [ ] Code-signed Windows builds (SignPath Foundation, in progress)
+- [ ] Mac App Store edition (in review)
 
 ## Questions, ideas and bug reports
 
@@ -432,11 +454,11 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 
 ## Support the project
 
-Dropocalypse is free and always will be. If it livens up your shows or streams, consider **[sponsoring it on GitHub](https://github.com/sponsors/allenrobberson)**. The first goal is the $99/year Apple Developer membership, so Mac downloads can be signed and notarized and open without a security warning.
+Dropocalypse is free and always will be. If it livens up your shows or streams, consider **[sponsoring it on GitHub](https://github.com/sponsors/allenrobberson)**. Sponsorships cover the yearly $99 Apple Developer membership that keeps Mac downloads signed and notarized, and the time spent on new styles and features.
 
 ## Privacy and code signing
 
-- **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer. The only network use is a daily update check with GitHub (which you can turn off) and downloading an update when you click **Update now**.
+- **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer, and recordings are only made when you press **Record** and saved only to the folder you choose. The only network use is a daily update check with GitHub (which you can turn off in the **Updates** menu) and downloading an update when you click **Update now**.
 - **[Code signing policy](CODE_SIGNING_POLICY.md):** Windows releases are being set up for free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 ## License

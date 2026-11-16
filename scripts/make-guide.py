@@ -298,7 +298,7 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
-        "<b>Version 1.2: record videos.</b> Click the red <b>Record</b> button (or press R) to save the visuals and "
+        "<b>Version 1.2: record videos.</b> Click <b>Record</b> (or press R; it turns red while recording) to save the visuals and "
         "the music as an MP4; click <b>Stop</b> when you're done. The ▾ next to it sets the size (720p, 1080p, 4K) and folder.",
         "<b>Version 1.1: two screens.</b> Click <b>Detach</b> (or press D) to move the controls into their own window, "
         "stacked top to bottom, and use <b>Screen</b> to send the visuals full screen to a TV, projector or second monitor.",
@@ -307,7 +307,7 @@ def build():
         "<b>Version 0.9.2: faster reactions.</b> Kicks move your logo on the very frame they're detected, with "
         "smaller audio buffers on Mac and about 3 ms System-audio chunks on Windows.",
         "<b>Version 0.9: update notifications.</b> When a new version is out, a pink <b>Update available</b> "
-        "button appears in the toolbar: choose Download, or Ignore for 24 hours. Turn it off or check now in the Look panel.",
+        "button appears in the toolbar: choose Download, or Ignore for 24 hours. Turn it off or check now in the Updates menu.",
         "<b>Version 0.8: new Tesseract style</b> (24 in total): a glowing 4D hypercube that turns itself "
         "inside out, spinning on the beat.",
         "<b>Version 0.7: choose which styles auto-cycle plays.</b> Open the style list from the toolbar and use the "
@@ -336,13 +336,14 @@ def build():
         "Open Dropocalypse from Applications.",
     ])
     s.append(sub("First launch"))
-    s.append(P("Dropocalypse is free and isn't notarized by Apple, so macOS blocks it the first time you open it. "
-               "This is normal for free open-source apps. To allow it:", body))
+    s.append(P("Since version 1.0.1 Dropocalypse is signed and notarized by Apple, so it opens like any other app "
+               "with no security warning. If you still have an older copy that macOS blocks:", body))
     s += bullets([
         f"<b>macOS 15 Sequoia and later:</b> try to open the app once and close the warning. Then open "
         f"<b>System Settings {ARROW} Privacy &amp; Security</b>, scroll down, and click <b>Open Anyway</b> next to "
         f"Dropocalypse.",
         f"<b>macOS 13 and 14:</b> right-click (or Control-click) the app {ARROW} <b>Open</b> {ARROW} <b>Open</b>.",
+        "Then update to the latest version and it won't happen again.",
     ])
     s.append(sub("Listening to music on the Mac"))
     s.append(P("Click <b>Audio</b> in the toolbar and open the <b>Listen to</b> drop-down. On macOS 14.2 or later "
@@ -560,10 +561,10 @@ def build():
     s += section(9, "Troubleshooting")
     s.append(table(["Problem", "Fix"], [
         ["<b>Mac: “Dropocalypse can't be opened”</b>",
-         f"The app isn't notarized by Apple. Open System Settings {ARROW} Privacy &amp; Security and click "
-         "<b>Open Anyway</b> (see section 1)."],
+         "Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. "
+         "For older copies, see section 1."],
         ["<b>Windows: “Windows protected your PC”</b>",
-         f"Click <b>More info {ARROW} Run anyway</b>. The app isn't code-signed."],
+         f"Click <b>More info {ARROW} Run anyway</b>. The Windows app isn't code-signed yet."],
         ["<b>Windows: nothing happens when I double-click</b>",
          "Extract the zip first; don't run the app from inside it. On work or school PCs, IT policies can block "
          "unapproved apps, so ask your IT team."],

@@ -32,7 +32,7 @@ From left to right:
 
 ## Recording
 
-1. Click the red **Record** button in the toolbar (or press **R**). It turns into **Stop** with a running timer.
+1. Click **Record** in the toolbar (or press **R**). It turns red and becomes **Stop** with a running timer.
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
 3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
 
@@ -44,7 +44,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [24 styles](Styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
-| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
+| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ## Look panel
 

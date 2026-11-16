@@ -19,7 +19,7 @@ That's the point! Use any logo you have the right to use. Transparent PNGs look 
 Yes. On a Mac (macOS 14.2+) pick **Spotify** under **Audio → Listen to**. On Windows the default *System audio* already hears it. See [[Audio Sources]].
 
 **Why does my Mac say it can't open the app?**
-The free app isn't notarized by Apple yet. See [[Installation]] for the one-time fix.
+Since 1.0.1 the Mac app is signed and notarized by Apple and opens normally. If you have an older copy, download the latest version; see [[Installation]].
 
 **Do I need admin rights on Windows?**
 No. The Windows version is portable: unzip and run, nothing is installed.

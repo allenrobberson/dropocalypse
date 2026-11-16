@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.5
+- 📖 Refreshed README, wiki and User Guide: signed Mac app (no more "Open Anyway"), two screens, recording, the Updates menu and new troubleshooting tips.
+
 ## 1.2.4
 - ⏱ Auto-cycle can now hold each style for up to 6 minutes (360 seconds), up from 2 minutes.
 

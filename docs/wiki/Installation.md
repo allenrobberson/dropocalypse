@@ -12,11 +12,9 @@ Get both versions from the **[latest release](https://github.com/allenrobberson/
 ## 🍎 Mac
 
 1. Download the `macOS.dmg`, open it, and drag **Dropocalypse** into **Applications**.
-2. **First launch:** the app is free and isn't notarized by Apple, so macOS blocks it the first time.
-   - **macOS 15 Sequoia and later:** try to open it once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
-   - **macOS 13–14:** right-click the app → **Open** → **Open**.
-   - Or run this in Terminal: `xattr -dr com.apple.quarantine "/Applications/Dropocalypse.app"`
-3. Click **Audio** in the toolbar and choose what to listen to: an app like **Spotify** or **All Mac audio** (macOS 14.2+), or a mic or line-in. macOS asks once for permission: *system audio recording* for apps, *microphone* for a mic. Audio is analyzed live and is never recorded or sent anywhere.
+2. **Open it.** Dropocalypse is signed and notarized by Apple (since 1.0.1), so it opens like any other app with no security warning.
+   - Still on a version before 1.0.1? macOS may block it the first time. On macOS 15 Sequoia and later, try to open it once, then click **Open Anyway** in **System Settings → Privacy & Security**; on macOS 13–14, right-click the app → **Open** → **Open**. Updating to the latest version fixes this for good.
+3. Click **Audio** in the toolbar and choose what to listen to: an app like **Spotify** or **All Mac audio** (macOS 14.2+), or a mic or line-in. macOS asks once for permission: *system audio recording* for apps, *microphone* for a mic. Audio is analyzed live and never sent anywhere; it's only saved if you press **Record**, and then only to your own computer.
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
