@@ -20,6 +20,8 @@ final class AudioCapture: ObservableObject {
     @Published private(set) var devices: [AudioInputDevice] = []
     /// Open apps you can listen to directly (macOS 14.2+).
     @Published private(set) var audioApps: [AudioApp] = []
+    private var watchWork: DispatchWorkItem?
+    private var pendingOutputChange = false
     /// True while the selected source is Mac audio rather than a mic or line-in.
     @Published private(set) var isTapSource = false
     @Published private(set) var statusText: String = "Starting…"
@@ -240,16 +242,36 @@ final class AudioCapture: ObservableObject {
     /// Restart the tap when the chosen app starts/stops audio or the output device changes.
     @available(macOS 14.2, *)
     private func watchTap() {
+        // Core Audio can report process changes many times a second (apps opening and closing
+        // audio streams). Coalesce them and do the scanning off the main thread, so the main
+        // thread, which also draws the visuals, never stalls.
         tapWatcher = TapWatcher { [weak self] change in
-            guard let self, let uid = self.selectedUID, uid.hasPrefix("tap:") else { return }
-            self.audioApps = ProcessTap.audioApps()
-            switch change {
-            case .output:
-                self.scheduleRestart()
-            case .processes:
-                guard uid != Self.allMacAudioTag else { return }
+            guard let self else { return }
+            if change == .output { self.pendingOutputChange = true }
+            self.watchWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.handleTapChange() }
+            self.watchWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+        }
+    }
+
+    @available(macOS 14.2, *)
+    private func handleTapChange() {
+        guard let uid = selectedUID, uid.hasPrefix("tap:") else { return }
+        let outputChanged = pendingOutputChange
+        pendingOutputChange = false
+        let current = tapProcesses
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let apps = ProcessTap.audioApps()
+            var processesChanged = false
+            if uid != Self.allMacAudioTag {
                 let bundleID = String(uid.dropFirst("tap:app:".count))
-                if Set(ProcessTap.processObjects(forApp: bundleID)) != self.tapProcesses { self.scheduleRestart() }
+                processesChanged = Set(ProcessTap.processObjects(forApp: bundleID)) != current
+            }
+            DispatchQueue.main.async {
+                guard let self, self.selectedUID == uid else { return }
+                if apps != self.audioApps { self.audioApps = apps }
+                if outputChanged || processesChanged { self.scheduleRestart() }
             }
         }
     }
