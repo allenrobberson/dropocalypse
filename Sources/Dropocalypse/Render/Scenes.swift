@@ -26,6 +26,7 @@ enum WaveStyle: Int, CaseIterable {
     case ledMeter        // segmented green-yellow-red LEDs with peak hold
     case rainbowPeaks    // thin rainbow bars with bouncing glowing caps
     case tesseract       // a 4D hypercube rotating through the fourth dimension
+    case fullKaleidoscope // full-frame 4-way / 8-way mandala
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -47,6 +48,8 @@ struct VisualScene {
     var mirror: Int32 = 0           // 0 none, 1 left/right, 2 four-way
     var hueShift: Float = 0.004     // hue rotation per frame
     var plasma: Float = 0
+    /// 0 = ordinary feedback. 1 = the Full Kaleidoscope field (see the warp shader).
+    var generative: Float = 0
 
     // Foreground drawing.
     var wave: WaveStyle = .circle
@@ -175,5 +178,11 @@ extension VisualScene {
         VisualScene(name: "Tesseract",
                     zoom: 1.012, zoomBass: 0.03, rotation: 0.0015, warpAmount: 0.002, decay: 0.86, hueShift: 0.002,
                     wave: .tesseract, baseHue: 0.55, hueSpeed: 0.02, saturation: 0.9, vignette: 0.4),
+
+        VisualScene(name: "Full Kaleidoscope",
+                    zoom: 1.008, zoomBass: 0.048, rotation: 0.0012, rotationBass: 0.016,
+                    warpAmount: 0.004, warpScale: 3.4, warpSpeed: 0.55, decay: 0.91,
+                    mirror: 2, hueShift: 0.0015, generative: 1,
+                    wave: .fullKaleidoscope, baseHue: 0.52, hueSpeed: 0.015, saturation: 1, vignette: 0.48),
     ]
 }

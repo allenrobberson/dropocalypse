@@ -1,4 +1,4 @@
-// Dropocalypse for Windows - the 24 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 25 built-in styles (same values as the macOS Scenes.swift).
 #pragma once
 
 #include <array>
@@ -10,7 +10,8 @@ enum class WaveStyle {
     Inferno,
     // Equalizer family
     MirrorEqualizer, LedMeter, RainbowPeaks,
-    Tesseract
+    Tesseract,
+    FullKaleidoscope
 };
 
 struct VisualScene {
@@ -20,16 +21,16 @@ struct VisualScene {
     float warpAmount = 0.004f, warpScale = 6, warpSpeed = 0.8f, decay = 0.955f;
     float driftX = 0, driftY = 0, kaleido = 0;
     int mirror = 0;
-    float hueShift = 0.004f, plasma = 0;
+    float hueShift = 0.004f, plasma = 0, generative = 0;
     // Foreground drawing.
     WaveStyle wave = WaveStyle::Circle;
     float centerRadius = 0.32f, waveScale = 1, thickness = 1;
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
 };
 
-inline const std::array<VisualScene, 24>& builtInScenes() {
-    static const std::array<VisualScene, 24> scenes = [] {
-        std::array<VisualScene, 24> s{};
+inline const std::array<VisualScene, 25>& builtInScenes() {
+    static const std::array<VisualScene, 25> scenes = [] {
+        std::array<VisualScene, 25> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -147,6 +148,13 @@ inline const std::array<VisualScene, 24>& builtInScenes() {
         c->zoom = 1.012f; c->zoomBass = 0.03f; c->rotation = 0.0015f; c->warpAmount = 0.002f; c->decay = 0.86f;
         c->hueShift = 0.002f; c->wave = WaveStyle::Tesseract; c->baseHue = 0.55f; c->hueSpeed = 0.02f;
         c->saturation = 0.9f; c->vignette = 0.4f;
+
+        c = &s[24]; c->name = "Full Kaleidoscope";
+        c->zoom = 1.008f; c->zoomBass = 0.048f; c->rotation = 0.0012f; c->rotationBass = 0.016f;
+        c->warpAmount = 0.004f; c->warpScale = 3.4f; c->warpSpeed = 0.55f; c->decay = 0.91f;
+        c->mirror = 2; c->hueShift = 0.0015f; c->generative = 1;
+        c->wave = WaveStyle::FullKaleidoscope; c->baseHue = 0.52f; c->hueSpeed = 0.015f;
+        c->saturation = 1; c->vignette = 0.48f;
         return s;
     }();
     return scenes;

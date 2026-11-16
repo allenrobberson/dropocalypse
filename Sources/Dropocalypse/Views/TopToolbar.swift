@@ -1,3 +1,4 @@
+import DropocalypseCore
 import SwiftUI
 
 /// Slim auto-hiding toolbar pinned to the top edge. Every control lives here; sliders open
@@ -421,7 +422,9 @@ struct TopToolbar: View {
     private var recordSettings: some View {
         PopoverForm(title: "Recording") {
             Picker("Video size", selection: $settings.recordQuality) {
-                ForEach(Recorder.Quality.allCases) { q in Text(q.detail).tag(q.rawValue) }
+                ForEach(Recorder.Quality.allCases) { q in
+                    Text(recordSizeLabel(q)).tag(q.rawValue)
+                }
             }
             .pickerStyle(.radioGroup)
             .disabled(model.isRecording)
@@ -442,10 +445,15 @@ struct TopToolbar: View {
             if model.lastRecordingURL != nil {
                 Button("Show last recording") { model.showLastRecording() }.font(.caption)
             }
-            Text("Records the visuals and the music you're listening to, without the toolbar. Sizes other than your window are letterboxed.")
+            Text("Records the visuals and the music you're listening to, without the toolbar. Landscape follows the window (letterboxed into 16:9 when it isn't). Portrait records the centered 9:16 frame. Set that under Look.")
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private func recordSizeLabel(_ quality: Recorder.Quality) -> String {
+        let pixels = FrameLayout.recordingSize(quality: quality.rawValue, portrait: settings.pictureOrientation != 0)
+        return "\(quality.label)  (\(pixels.width) × \(pixels.height), \(quality.fps) fps)"
     }
 
     // MARK: Popover contents
@@ -527,6 +535,17 @@ struct TopToolbar: View {
         PopoverForm(title: "Look") {
             slider("Beat flash", $settings.beatFlash, 0...1)
             slider("Brightness", $settings.brightness, 0.4...1.6)
+            Picker("Frame", selection: $settings.pictureOrientation) {
+                Text("Landscape").tag(0)
+                Text("Portrait").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .disabled(model.isRecording)
+            Text(settings.pictureOrientation == 0
+                 ? "Landscape fills the window."
+                 : "Portrait is a 9:16 frame, centered on screen. Recordings are 720×1280, 1080×1920, or 2160×3840.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             slider("Auto-cycle every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
             if !UpdateChecker.isEnabled {
                 Divider()

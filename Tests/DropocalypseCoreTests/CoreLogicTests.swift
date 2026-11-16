@@ -49,6 +49,51 @@ final class CoreLogicTests: XCTestCase {
         XCTAssertEqual(SceneCycle.nextIndex(after: 5, names: [], skipped: []), 0)
     }
 
+    func testRecordingSizeFollowsOrientation() {
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 0, portrait: false), FrameLayout.Size(width: 1280, height: 720))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 1, portrait: false), FrameLayout.Size(width: 1920, height: 1080))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 2, portrait: false), FrameLayout.Size(width: 3840, height: 2160))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 0, portrait: true), FrameLayout.Size(width: 720, height: 1280))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 1, portrait: true), FrameLayout.Size(width: 1080, height: 1920))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 2, portrait: true), FrameLayout.Size(width: 2160, height: 3840))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: -4, portrait: false), FrameLayout.Size(width: 1280, height: 720))
+        XCTAssertEqual(FrameLayout.recordingSize(quality: 9, portrait: true), FrameLayout.Size(width: 2160, height: 3840))
+        for quality in 0...2 {
+            let portrait = FrameLayout.recordingSize(quality: quality, portrait: true)
+            XCTAssertEqual(portrait.width * 16, portrait.height * 9)
+            let landscape = FrameLayout.recordingSize(quality: quality, portrait: false)
+            XCTAssertEqual(landscape.width, portrait.height)
+            XCTAssertEqual(landscape.height, portrait.width)
+        }
+    }
+
+    func testPortraitFrameIsCenteredNineBySixteen() {
+        let full = FrameLayout.contentRect(viewWidth: 1600, viewHeight: 900, portrait: false)
+        XCTAssertEqual(full, FrameLayout.Rect(x: 0, y: 0, width: 1600, height: 900))
+
+        let wide = FrameLayout.contentRect(viewWidth: 1920, viewHeight: 1080, portrait: true)
+        XCTAssertEqual(wide.y, 0, accuracy: 0.001)
+        XCTAssertEqual(wide.height, 1080, accuracy: 0.001)
+        XCTAssertEqual(wide.width, 1080.0 * 9.0 / 16.0, accuracy: 0.001)
+        XCTAssertEqual(wide.x, (1920 - wide.width) / 2, accuracy: 0.001)
+        XCTAssertEqual(wide.aspect, 9.0 / 16.0, accuracy: 0.0001)
+
+        let exact = FrameLayout.contentRect(viewWidth: 1080, viewHeight: 1920, portrait: true)
+        XCTAssertEqual(exact.x, 0, accuracy: 0.001)
+        XCTAssertEqual(exact.y, 0, accuracy: 0.001)
+        XCTAssertEqual(exact.width, 1080, accuracy: 0.001)
+        XCTAssertEqual(exact.height, 1920, accuracy: 0.001)
+
+        let tall = FrameLayout.contentRect(viewWidth: 900, viewHeight: 2000, portrait: true)
+        XCTAssertEqual(tall.x, 0, accuracy: 0.001)
+        XCTAssertEqual(tall.width, 900, accuracy: 0.001)
+        XCTAssertEqual(tall.height, 900 / (9.0 / 16.0), accuracy: 0.001)
+        XCTAssertEqual(tall.y, (2000 - tall.height) / 2, accuracy: 0.001)
+
+        let empty = FrameLayout.contentRect(viewWidth: 0, viewHeight: 100, portrait: true)
+        XCTAssertEqual(empty, FrameLayout.Rect(x: 0, y: 0, width: 0, height: 100))
+    }
+
     func testSignaturePolicy() {
         let signed = observation(teamID: "TEAMID1234")
         XCTAssertEqual(

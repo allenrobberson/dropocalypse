@@ -99,6 +99,55 @@ struct UpdateSignatureFacts {
     std::string updatePublisher;
 };
 
+/// Recording pixels for a quality index. 0 = 720p, 1 = 1080p, 2 = 4K; anything else clamps.
+/// Landscape is 16:9. Portrait is the same frame turned 9:16 (720x1280, 1080x1920, 2160x3840).
+/// This matches FrameLayout.recordingSize in Sources/DropocalypseCore/FrameLayout.swift.
+struct RecordingPixels {
+    int width = 0;
+    int height = 0;
+};
+
+inline RecordingPixels recordingPixels(int quality, bool portrait) {
+    const int q = quality < 0 ? 0 : (quality > 2 ? 2 : quality);
+    const int landscape[3][2] = {{1280, 720}, {1920, 1080}, {3840, 2160}};
+    RecordingPixels s;
+    s.width = portrait ? landscape[q][1] : landscape[q][0];
+    s.height = portrait ? landscape[q][0] : landscape[q][1];
+    return s;
+}
+
+/// On-screen rectangle for the visuals. Origin is the top-left, in view pixels.
+/// Landscape fills the view. Portrait is the largest 9:16 frame centered in it.
+/// Matches FrameLayout.contentRect on the Mac.
+struct ContentRect {
+    float x = 0;
+    float y = 0;
+    float width = 0;
+    float height = 0;
+};
+
+inline ContentRect fitContentRect(float viewWidth, float viewHeight, bool portrait) {
+    const float vw = viewWidth > 0 ? viewWidth : 0;
+    const float vh = viewHeight > 0 ? viewHeight : 0;
+    ContentRect r;
+    if (!portrait || vw < 1.0f || vh < 1.0f) {
+        r.width = vw;
+        r.height = vh;
+        return r;
+    }
+    const float target = 9.0f / 16.0f;
+    if (vw / vh > target) {
+        r.height = vh;
+        r.width = vh * target;
+        r.x = (vw - r.width) * 0.5f;
+        return r;
+    }
+    r.width = vw;
+    r.height = vw / target;
+    r.y = (vh - r.height) * 0.5f;
+    return r;
+}
+
 /// nullptr means the update may be installed.
 /// An unsigned running copy does not require a signature, so today's unsigned builds still update.
 /// Once the running exe has a trusted Authenticode signature, the download must be trusted and

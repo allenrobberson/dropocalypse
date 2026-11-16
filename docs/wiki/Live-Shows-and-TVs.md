@@ -6,7 +6,7 @@
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
-5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
+5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. In landscape, full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too. In portrait, full screen centers the 9:16 frame and leaves the sides black.
 6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it. Uncheck any styles in the style list that don't fit the night.
 
 ## Two screens: controls on one, visuals on the other

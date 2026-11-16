@@ -29,7 +29,7 @@ struct WarpCB {
     float plasma, bass, mid, treble;
     float texelX, texelY;
     int32_t mirror;
-    float pad;
+    float generative;
 };
 static_assert(sizeof(WarpCB) == 80, "WarpCB layout");
 
@@ -628,6 +628,41 @@ public:
         g.rect(left, base - 0.002f, left + total, base + 0.002f, RGBA{1, 1, 1, 0.35f});
     }
 
+    // ---- 25. Full Kaleidoscope: symmetric rings and spokes over the shader mandala.
+    void fullKaleidoscope(const FXFrame& f, GeometryBuilder& g) {
+        const float bass = f.bass();
+        const float pulse = 1 + bass * 0.22f;
+        const float reach = std::min(0.92f, f.aspect * 0.92f);
+        const float hues[5] = {0.50f, 0.92f, 0.62f, 0.11f, 0.30f};
+        auto neon = [&](int i, float alpha) {
+            Rgb c = hsv(hues[i % 5] + f.audio.mid * 0.04f, 1, 1);
+            return rgba(c, alpha);
+        };
+        const int segments = 72;
+        for (int i = 0; i < 3; ++i) {
+            float radius = std::min(reach, (0.16f + i * 0.22f) * pulse);
+            std::vector<V2> pts;
+            pts.reserve(segments);
+            for (int k = 0; k < segments; ++k) {
+                float a = (float)k / segments * 2 * kPi + f.t * 0.04f * (i + 1);
+                pts.push_back(V2{std::cos(a), std::sin(a)} * radius);
+            }
+            RGBA col = neon(i, 0.28f + bass * 0.22f);
+            g.polyline(pts, true, 0.0035f + bass * 0.003f, [&](int) { return col; });
+        }
+        const int arms = 8;
+        const int n = f.bandCount;
+        for (int arm = 0; arm < arms && n > 0; ++arm) {
+            float a = (float)arm / arms * 2 * kPi;
+            V2 dir{std::cos(a), std::sin(a)};
+            float band = f.bands[(arm * n / arms) % n];
+            float inner = std::min(reach * 0.18f, 0.08f * pulse);
+            float outer = std::min(reach, inner + 0.1f + band * (0.55f + f.audio.treble * 0.4f));
+            g.line(dir * inner, dir * outer, 0.005f + band * 0.008f, neon(arm, 0.4f + band * 0.45f));
+            g.softDot(dir * outer, 0.012f + band * 0.02f, neon(arm + 1, 0.35f + band * 0.4f), 8);
+        }
+    }
+
     // ---- 24. Tesseract: a 4D hypercube rotating through the fourth dimension
     void tesseract(const FXFrame& f, GeometryBuilder& g) {
         if (beatFired_) tessKick_ = std::min(3.0f, tessKick_ + 0.9f + beatStrength_ * 0.6f);
@@ -960,6 +995,7 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::LedMeter: fx.ledMeter(frame, g); break;
     case WaveStyle::RainbowPeaks: fx.rainbowPeaks(frame, g); break;
     case WaveStyle::Tesseract: fx.tesseract(frame, g); break;
+    case WaveStyle::FullKaleidoscope: fx.fullKaleidoscope(frame, g); break;
 
     case WaveStyle::Circle:
         ring(g, wave, waveCount, 2, 0, scene.centerRadius * s * (1 + 0.25f * bass), 0.12f * s, t * 0.2f, width,
@@ -1233,6 +1269,7 @@ VisualScene Renderer::blendedScene() const {
     s.driftY = mix(a.driftY, b.driftY);
     s.hueShift = mix(a.hueShift, b.hueShift);
     s.plasma = mix(a.plasma, b.plasma);
+    s.generative = mix(a.generative, b.generative);
     s.vignette = mix(a.vignette, b.vignette);
     s.saturation = mix(a.saturation, b.saturation);
     s.centerRadius = mix(a.centerRadius, b.centerRadius);
@@ -1261,7 +1298,10 @@ void Renderer::updateScene(double now, float dt, RenderSettings& st) {
 void Renderer::render(ID3D11RenderTargetView* target, int width, int height, AudioAnalysis& analysis,
                       double sampleRate, RenderSettings& st) {
     if (width <= 0 || height <= 0) return;
-    ensureFeedback(width, height);
+    const ContentRect frame = fitContentRect((float)width, (float)height, st.portrait);
+    const int contentW = std::max(1, (int)std::lround(frame.width));
+    const int contentH = std::max(1, (int)std::lround(frame.height));
+    ensureFeedback(contentW, contentH);
     if (!feedback_[0].rtv || !feedback_[1].rtv) return;
 
     LARGE_INTEGER nowQ;
@@ -1284,7 +1324,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     }
     flash_ *= std::pow(0.02f, dt);
 
-    const float aspect = (float)width / (float)height;
+    const float aspect = frame.height > 0.5f ? frame.width / frame.height : 1.0f;
     Target& src = feedback_[feedbackIndex_];
     Target& dst = feedback_[1 - feedbackIndex_];
 
@@ -1322,6 +1362,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     wu.texelX = 1.0f / fbWidth_;
     wu.texelY = 1.0f / fbHeight_;
     wu.mirror = scene.mirror;
+    wu.generative = scene.generative;
     updateCB(ctx_, warpCB_.Get(), wu);
 
     ctx_->IASetInputLayout(nullptr);
@@ -1402,8 +1443,10 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         drawLogo(tu, blendPremul_.Get());
     }
 
-    // ---- Pass 3: composite to the screen ----
-    D3D11_VIEWPORT svp{0, 0, (float)width, (float)height, 0, 1};
+    // ---- Pass 3: composite to the screen. Portrait is a centered 9:16 viewport; bars stay black. ----
+    const float black[4] = {0, 0, 0, 1};
+    ctx_->ClearRenderTargetView(target, black);
+    D3D11_VIEWPORT svp{frame.x, frame.y, std::max(frame.width, 1.0f), std::max(frame.height, 1.0f), 0, 1};
     ctx_->RSSetViewports(1, &svp);
     ctx_->OMSetRenderTargets(1, &target, nullptr);
     ctx_->OMSetBlendState(blendNone_.Get(), nullptr, 0xffffffff);
@@ -1435,5 +1478,8 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     }
 
     ctx_->PSSetShaderResources(0, 1, nullSRV);
+    // The toolbar is drawn into this same target afterwards, so give it the full window again.
+    D3D11_VIEWPORT full{0, 0, (float)width, (float)height, 0, 1};
+    ctx_->RSSetViewports(1, &full);
     feedbackIndex_ = 1 - feedbackIndex_;
 }

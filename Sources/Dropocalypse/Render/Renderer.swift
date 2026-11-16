@@ -1,6 +1,7 @@
 import MetalKit
 import AppKit
 import QuartzCore
+import DropocalypseCore
 
 // Uniform layouts. Plain Float/Int32 fields only, matching the structs in ShaderSource.swift.
 
@@ -11,7 +12,7 @@ private struct WarpUniforms {
     var plasma: Float = 0, bass: Float = 0, mid: Float = 0, treble: Float = 0
     var texelX: Float = 0, texelY: Float = 0
     var mirror: Int32 = 0
-    var pad: Float = 0
+    var generative: Float = 0
 }
 
 private struct PresentUniforms {
@@ -213,14 +214,19 @@ final class Renderer: NSObject, MTKViewDelegate {
     // MARK: MTKViewDelegate
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        ensureFeedback(for: size)
+        let content = FrameLayout.contentRect(viewWidth: Double(size.width), viewHeight: Double(size.height),
+                                              portrait: settings.pictureOrientation != 0)
+        ensureFeedback(for: CGSize(width: content.width, height: content.height))
     }
 
     func draw(in view: MTKView) {
         guard shaderError == nil, warpPipeline != nil else { return }
         let size = view.drawableSize
         guard size.width > 0, size.height > 0 else { return }
-        ensureFeedback(for: size)
+        let content = FrameLayout.contentRect(viewWidth: Double(size.width), viewHeight: Double(size.height),
+                                              portrait: settings.pictureOrientation != 0)
+        guard content.width >= 1, content.height >= 1 else { return }
+        ensureFeedback(for: CGSize(width: content.width, height: content.height))
         guard feedback.count == 2, !vertexBuffers.isEmpty else { return }
 
         inflight.wait()
@@ -248,7 +254,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
         flash *= pow(0.02, dt) // fast fade
 
-        let aspect = Float(size.width / size.height)
+        let aspect = Float(content.aspect)
         let src = feedback[feedbackIndex]
         let dst = feedback[1 - feedbackIndex]
 
@@ -298,6 +304,7 @@ final class Renderer: NSObject, MTKViewDelegate {
             wu.driftY = scene.driftY * frames
             wu.kaleido = scene.kaleido
             wu.mirror = scene.mirror
+            wu.generative = scene.generative
             wu.hueShift = scene.hueShift * frames
             wu.plasma = scene.plasma
             wu.bass = audio.bass
@@ -358,10 +365,12 @@ final class Renderer: NSObject, MTKViewDelegate {
             feedbackIndex = 1 - feedbackIndex
             return
         }
-        srp.colorAttachments[0].loadAction = .dontCare
+        srp.colorAttachments[0].loadAction = .clear
+        srp.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
         // The final picture: feedback image + logo. Drawn to the screen, and again into the
         // recording (at its own resolution) so the screen's drawable never has to be read back.
+        // In portrait the viewport is the centered 9:16 frame; the bars stay black.
         func composite(_ enc: MTLRenderCommandEncoder) {
             var pu = PresentUniforms(flash: flash * Float(settings.beatFlash),
                                      vignette: scene.vignette,
@@ -398,6 +407,8 @@ final class Renderer: NSObject, MTKViewDelegate {
             }
         }
         if let enc = cb.makeRenderCommandEncoder(descriptor: srp) {
+            enc.setViewport(MTLViewport(originX: content.x, originY: content.y,
+                                        width: content.width, height: content.height, znear: 0, zfar: 1))
             composite(enc)
             enc.endEncoding()
         }
@@ -411,7 +422,7 @@ final class Renderer: NSObject, MTKViewDelegate {
             rp.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
             if let enc = cb.makeRenderCommandEncoder(descriptor: rp) {
                 let tw = Double(recorder.width), th = Double(recorder.height)
-                let sa = Double(size.width / size.height), ta = tw / th
+                let sa = content.aspect, ta = tw / th
                 let vw = sa > ta ? tw : th * sa
                 let vh = sa > ta ? tw / sa : th
                 enc.setViewport(MTLViewport(originX: (tw - vw) / 2, originY: (th - vh) / 2,
@@ -468,6 +479,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         s.driftY = mix(a.driftY, b.driftY)
         s.hueShift = mix(a.hueShift, b.hueShift)
         s.plasma = mix(a.plasma, b.plasma)
+        s.generative = mix(a.generative, b.generative)
         s.vignette = mix(a.vignette, b.vignette)
         s.saturation = mix(a.saturation, b.saturation)
         s.centerRadius = mix(a.centerRadius, b.centerRadius)

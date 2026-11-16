@@ -28,7 +28,7 @@ No. The Windows version is portable: unzip and run, nothing is installed.
 Not built in, but Chrome's *Cast screen* works, and AirPlay, Miracast and HDMI work better. See [[Live Shows and TVs]].
 
 **Will it run MilkDrop presets?**
-Not yet. All 24 styles are original code. Loading `.milk` presets through projectM is on the roadmap.
+Not yet. All 25 styles are original code. Loading `.milk` presets through projectM is on the roadmap.
 
 **Which computers does it need?**
 Mac: macOS 13 Ventura or later, Apple Silicon or Intel (app audio needs 14.2+). Windows: 10 or 11, 64-bit, with a DirectX 11 GPU (practically every PC from the last decade).

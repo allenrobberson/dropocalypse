@@ -287,7 +287,7 @@ def later_pages(canvas, doc):
 # Signature color of each style (its base hue in the app), used for the swatches in section 6.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
-              0.97, 0.25, 0.7, 0.55]
+              0.97, 0.25, 0.7, 0.55, 0.52]
 
 
 IMAGES = os.path.join(ROOT, "docs", "guide-images")
@@ -352,7 +352,7 @@ def build():
     # ---- Contents
     s.append(P("Contents", h1))
     items = ["Install on Mac", "Install on Windows", "Quick start", "The toolbar",
-             "Logo, Motion, Audio and Look settings", "The 24 visual styles", "Keyboard shortcuts",
+             "Logo, Motion, Audio and Look settings", "The 25 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
     for i, name in enumerate(items, 1):
@@ -560,6 +560,9 @@ def build():
     s.append(table(["Control", "Default", "What it does"], [
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
+        ["<b>Frame</b>", "Landscape",
+         "<b>Landscape</b> fills the window. <b>Portrait</b> centers a 9:16 frame for Reels and TikToks. "
+         "Recordings match it (720×1280, 1080×1920 or 2160×3840). It can't be changed while recording."],
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 360 s)"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
@@ -573,12 +576,17 @@ def build():
         P("Open the <b>▾</b> next to Record to pick the video size (720p or 1080p at 60 fps, or 4K at 30 fps) and "
           "the folder. Videos go to Movies (Mac) or Videos (Windows) unless you choose another. They are MP4 "
           "files that play anywhere and upload straight to YouTube, Instagram or TikTok.", small),
+        Spacer(1, 4),
+        P("<b>Portrait</b> (Look panel, Frame) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. "
+          "On a landscape screen the same frame is centered with black bars on either side, so the preview matches "
+          "the file. Landscape still fills the window, and a window that isn't 16:9 is letterboxed into the video.",
+          small),
     ]
     s.append(side_by_side(shot("record.jpg", 2.7 * inch, "Recording settings (▾ next to Record)"), rec_steps,
                           widths=[3.0 * inch, 3.5 * inch]))
 
     # ---- Styles
-    s += section(6, "The 24 visual styles")
+    s += section(6, "The 25 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(Spacer(1, 6))
@@ -618,6 +626,8 @@ def build():
         ["22", "<b>LED Meter</b>", "A classic analyzer: green-yellow-red LED segments with peak markers"],
         ["23", "<b>Rainbow Peaks</b>", "Thin rainbow bars with glowing caps that bounce on the beat"],
         ["24", "<b>Tesseract</b>", "A neon 4D hypercube turning itself inside out, spinning harder on every beat"],
+        ["25", "<b>Full Kaleidoscope</b>",
+         "A full-frame mandala: 4-way mirroring that sometimes reads as 8-way, in neon cyan, magenta, blue, gold and green. Bass zooms and turns it."],
     ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "
@@ -655,7 +665,8 @@ def build():
         "threshold. If it jumps on hi-hats or vocals, raise it.",
         "<b>Go full screen</b> on the projector or TV: drag the window onto that screen and press F. Full screen "
         "covers every pixel, edge to edge. On the Mac the menu bar and Dock disappear, and on MacBooks with a "
-        "camera notch the visuals fill the strip beside the notch too.",
+        "camera notch the visuals fill the strip beside the notch too. In <b>Portrait</b>, full screen centers "
+        "the 9:16 frame and leaves the sides black.",
         "Turn on <b>auto-cycle</b> so the show keeps changing on its own: 30 to 60 seconds per style keeps "
         "things lively, and up to 6 minutes suits a slower night.",
     ])

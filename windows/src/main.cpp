@@ -102,6 +102,7 @@ static std::string serialize(const AppSettings& s) {
     out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
     out += std::string("controlsDetached=") + (s.controlsDetached ? "1" : "0") + "\n";
     out += "recordQuality=" + std::to_string(s.recordQuality) + "\n";
+    out += std::string("portrait=") + (s.r.portrait ? "1" : "0") + "\n";
     out += "recordFolder=" + narrow(s.recordFolder) + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
@@ -157,6 +158,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
     flag("controlsDetached", s.controlsDetached);
     if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
+    if (kv.count("portrait")) s.r.portrait = kv["portrait"] == "1";
     if (kv.count("recordFolder")) s.recordFolder = widen(kv["recordFolder"]);
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
@@ -854,7 +856,7 @@ static void startRecording() {
     wcsftime(name, 64, L"Dropocalypse %Y-%m-%d at %H.%M.%S.mp4", &tm);
     std::wstring path = dir + L"\\" + name;
     std::wstring err;
-    if (!g.recorder.start(path, g.settings.recordQuality, err)) {
+    if (!g.recorder.start(path, g.settings.recordQuality, g.settings.r.portrait, err)) {
         showRecordNotice(L"Couldn't start recording: " + err);
         return;
     }
@@ -926,8 +928,9 @@ static void recordSettingsBody() {
     ImGui::BeginDisabled(g.recorder.isRecording());
     for (int i = 0; i < 3; ++i) {
         const auto& q = Recorder::kQualities[i];
+        const RecordingPixels px = recordingPixels(i, g.settings.r.portrait);
         char label[64];
-        std::snprintf(label, sizeof(label), "%s  (%d x %d, %d fps)", q.label, q.width, q.height, q.fps);
+        std::snprintf(label, sizeof(label), "%s  (%d x %d, %d fps)", q.label, px.width, px.height, q.fps);
         if (ImGui::RadioButton(label, g.settings.recordQuality == i)) g.settings.recordQuality = i;
     }
     ImGui::EndDisabled();
@@ -949,7 +952,7 @@ static void recordSettingsBody() {
         last = g.lastRecording;
     }
     if (!last.empty() && ImGui::Button("Show last recording")) showInExplorer(last);
-    ImGui::TextDisabled("Records the visuals and the music, without the toolbar.");
+    ImGui::TextDisabled("Records the visuals and the music, without the toolbar. Landscape follows the window. Portrait records the centered 9:16 frame (set under Look).");
 }
 
 /// Red record button, or a stop button with the running time while recording.
@@ -1226,6 +1229,15 @@ static void audioPanelBody() {
 static void lookPanelBody(RenderSettings& r) {
     slider("Beat flash", &r.beatFlash, 0, 1);
     slider("Brightness", &r.brightness, 0.4f, 1.6f);
+    ImGui::TextUnformatted("Frame");
+    ImGui::BeginDisabled(g.recorder.isRecording());
+    if (ImGui::RadioButton("Landscape", !r.portrait)) r.portrait = false;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Portrait (9:16)", r.portrait)) r.portrait = true;
+    ImGui::EndDisabled();
+    ImGui::TextWrapped(r.portrait
+                           ? "Portrait centers a vertical frame. Recordings are 720x1280, 1080x1920, or 2160x3840."
+                           : "Landscape fills the window.");
     slider("Auto-cycle every", &r.cycleSeconds, 5, 360, "%.0f s");
 }
 
@@ -2044,7 +2056,12 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
                           g.settings.r);
         if (g.recorder.isRecording()) {   // grab the visuals before the toolbar is drawn on top
             ComPtr<ID3D11Texture2D> back;
-            if (SUCCEEDED(g.swapChain->GetBuffer(0, IID_PPV_ARGS(&back)))) g.recorder.captureFrame(back.Get());
+            if (SUCCEEDED(g.swapChain->GetBuffer(0, IID_PPV_ARGS(&back)))) {
+                const ContentRect frame = fitContentRect((float)g.width, (float)g.height, g.settings.r.portrait);
+                const float uw = std::max(1.0f, (float)g.width);
+                const float uh = std::max(1.0f, (float)g.height);
+                g.recorder.captureFrame(back.Get(), frame.x / uw, frame.y / uh, frame.width / uw, frame.height / uh);
+            }
         }
 
         // Toolbar auto-hide.
