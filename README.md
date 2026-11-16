@@ -25,6 +25,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.0.1: new icon, signed Mac app
+- 🎨 **New app icon** on Mac and Windows.
+- 🔏 **The Mac download is now signed and notarized by Apple**, so macOS opens it without the "unidentified developer" warning.
+- 🍎 Groundwork for the **Mac App Store** edition.
+
 ### 1.0.0: one-click updates
 - 🚀 **Dropocalypse 1.0!** When a new version comes out, click the pink **Update** button in the toolbar, then **Update now**. Dropocalypse downloads the update, checks it against the checksums published with the release, installs it and reopens itself, with your logo and settings kept. No more downloading and replacing it by hand.
   - **Mac:** keep Dropocalypse in your **Applications** folder (or any folder you can edit) so it can replace itself.

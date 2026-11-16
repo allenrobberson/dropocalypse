@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.0.1
+- 🎨 New app icon (Mac and Windows).
+- 🔏 Mac download signed with Developer ID and notarized by Apple: no more "unidentified developer" warning.
+- 🍎 Mac App Store edition (sandboxed, updates through the App Store) built and uploaded automatically.
+
 ## 1.0.0
 - 🚀 **One-click updates:** **Update now** downloads the new version, verifies it against the release's SHA-256 checksums, installs it over the old one and reopens (Mac and Windows). Releases now include `SHA256SUMS.txt`.
 
