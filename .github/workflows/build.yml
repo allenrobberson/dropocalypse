@@ -172,9 +172,17 @@ jobs:
       # The Store signs the package itself, so it is left unsigned here. Identity values come from
       # Partner Center (Product identity, Store ID 9N1TJ9D5R5C8); repository variables can override them.
       - name: Build Microsoft Store edition
+        shell: pwsh
         run: |
-          cmake -S windows -B build-store -A x64 "-DAPP_VERSION=${{ env.APP_VERSION }}" -DDROPOCALYPSE_STORE=ON
+          # Store packages need a plain version. Releases use theirs; other builds use the newest
+          # Changelog version (docs/guide-version.txt), so a package can go to the Store any time.
+          $sv = "$env:APP_VERSION"
+          if ($sv -match '-dev') { $sv = (Get-Content docs/guide-version.txt | Select-Object -First 1).Trim() }
+          "STORE_VERSION=$sv" | Out-File -FilePath $env:GITHUB_ENV -Append
+          cmake -S windows -B build-store -A x64 "-DAPP_VERSION=$sv" -DDROPOCALYPSE_STORE=ON
+          if ($LASTEXITCODE -ne 0) { throw "configure failed" }
           cmake --build build-store --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
       - name: Package MSIX for the Microsoft Store
         shell: pwsh
@@ -183,9 +191,8 @@ jobs:
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
           STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
         run: |
-          $parts = ("$env:APP_VERSION" -split '[-+]')[0].Split('.')
-          if ("$env:APP_VERSION" -match '-dev') { $msixVersion = "0.0.$env:GITHUB_RUN_NUMBER.0" }
-          else { $msixVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0" }
+          $parts = ("$env:STORE_VERSION" -split '[-+]')[0].Split('.')
+          $msixVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
           $name = if ($env:STORE_IDENTITY_NAME) { $env:STORE_IDENTITY_NAME } else { "AllenRobberson.Dropocalypse" }
           $pub  = if ($env:STORE_PUBLISHER) { $env:STORE_PUBLISHER } else { "CN=E2C97CD9-87D6-4B67-95B2-E279CF095C7A" }
           $disp = if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $env:STORE_PUBLISHER_DISPLAY_NAME } else { "Allen Robberson" }
@@ -203,7 +210,7 @@ jobs:
                       Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName | Select-Object -Last 1
           if (-not $makeappx) { throw "makeappx.exe not found" }
           New-Item -ItemType Directory -Force -Path store-dist | Out-Null
-          $out = "store-dist/Dropocalypse-$env:APP_VERSION-Store.msix"
+          $out = "store-dist/Dropocalypse-$env:STORE_VERSION-Store.msix"
           & $makeappx.FullName pack /d $stage /p $out /o
           if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
           Get-ChildItem store-dist
