@@ -22,12 +22,17 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
 - 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok.
-- ⬇ **One-click updates**: the **Updates** menu tells you when a new version is out and installs it for you.
+- ⬇ **One-click updates**: the **Updates** menu (not the Look panel) tells you when a new version is out, checks the download, and installs it for you.
 - 🔏 **Signed and notarized Mac app** that opens without a security warning.
 
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
 
 ## 🆕 What's new
+
+### 1.2.7: safer updates, Microsoft Store edition
+- 🔏 **Update now** still checks the release checksum, and it now checks the download's signature before installing. On Mac the new app must be signed with the same Developer ID as the copy you're running, and Gatekeeper must accept it. On Windows that check starts once the copy you're running is itself code-signed. If a check fails, the **Updates** menu says why and the app you have is left as it is.
+- The **Updates** menu (toolbar, and the detached controls window) is where automatic checks, **Check now** and **Update now** live. They are not in the Look panel.
+- 🪟 A **Microsoft Store** edition. The Store installs its updates, so that copy has no **Update now**. The portable zip on the Releases page is the one that updates from GitHub.
 
 ### 1.2.6: User Guide with screenshots
 - 📸 The printable [User Guide](docs/Dropocalypse-User-Guide.pdf) now has screenshots of the interface and shows its version number on every page.
@@ -126,8 +131,10 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
 1. Download the `Windows-portable.zip`, right-click it → **Extract All**, and open the folder.
 2. Double-click **Dropocalypse.exe**. Nothing gets installed, and you can keep the folder anywhere, even on a USB stick.
-3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the Windows app isn't code-signed yet; free code signing through the SignPath Foundation is being set up.
+3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the portable download isn't code-signed yet.
 4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
+
+A **Microsoft Store** edition is published through the Store. That copy is updated by the Store and has no **Update now**. Logo and settings still live in `%APPDATA%\Dropocalypse`. Until it appears in the Store, use the portable zip above.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
 
@@ -175,7 +182,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing (5 seconds to 6 minutes) |
-| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window). Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours**. |
+| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window), not in the Look panel. Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | ⏺ **Record** / **Stop** | Grey until you press it, red while recording. Records the visuals and the music to an MP4 video and shows the running time. The **▾** next to it sets the video size and where to save. |
@@ -356,7 +363,8 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
 | **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** (Windows: **Refresh devices**) in the Audio panel |
 | **Visuals stutter for the first few minutes** (Mac, with a microphone) | Fixed in 1.2.2. Click **Updates → Update now**. |
-| **Update now doesn't work** | Mac: keep Dropocalypse in **Applications** (or another folder you can edit). Windows: keep the app folder somewhere you can edit, such as Documents or Desktop. Or use **Download page** to get it yourself. |
+| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The portable download isn't code-signed yet. |
+| **Update now doesn't work**, or the Updates menu says the download wasn't installed | Nothing was changed. The **Updates** menu is in the toolbar (and the detached controls window), not the Look panel. Mac: keep Dropocalypse in **Applications**. The new app must be signed with the same Developer ID and accepted by Gatekeeper. Windows: keep the folder somewhere you can edit, such as Documents or Desktop. Once this copy is code-signed, the download must be signed by the same publisher. Or use **Download page**. |
 | **I can't find my recording** | It's in your **Movies** (Mac) or **Videos** (Windows) folder unless you chose another one under **Record ▾**. Click **Show in Finder / Explorer** in the message after you stop. |
 | **Recording has black bars** | The video is 16:9. Go full screen on a 16:9 display, or make the window 16:9, to fill the frame. |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |

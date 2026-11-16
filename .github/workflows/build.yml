@@ -77,6 +77,9 @@ jobs:
             export SIGN_IDENTITY="$DEVID_IDENTITY"
             # Notarize only real releases (it takes a few minutes).
             [ -n "${RELEASE_VERSION}" ] || unset NOTARY_KEY
+          elif [ -n "${RELEASE_VERSION}" ]; then
+            echo "::error::This is a release build but Developer ID signing is not set up. Refusing to publish an unsigned Mac app."
+            exit 1
           fi
           chmod +x scripts/build-app.sh
           ./scripts/build-app.sh
@@ -89,7 +92,9 @@ jobs:
           EDITION=appstore SIGN_IDENTITY="$DIST_IDENTITY" VERSION="$VERSION" ./scripts/build-app.sh
 
       - name: Upload to App Store Connect
-        if: env.SIGNING_READY == '1' && env.PROVISION_PROFILE != '' && env.RELEASE_VERSION != ''
+        # The package is still built and attached to the GitHub release. It is not sent to
+        # App Store Connect unless SUBMIT_MAC_APP_STORE is set to true on the repository.
+        if: env.SIGNING_READY == '1' && env.PROVISION_PROFILE != '' && env.RELEASE_VERSION != '' && vars.SUBMIT_MAC_APP_STORE == 'true'
         env:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
@@ -224,7 +229,13 @@ jobs:
       - name: Checksums for the in-app updater
         run: |
           cd dist
-          sha256sum *.zip *.dmg *.pdf > SHA256SUMS.txt
+          shopt -s nullglob
+          files=(*.zip *.dmg *.pdf *.msix *.pkg)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No release files were produced."
+            exit 1
+          fi
+          sha256sum "${files[@]}" > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Publish GitHub release
@@ -237,6 +248,8 @@ jobs:
             dist/*.zip
             dist/*.dmg
             dist/*.pdf
+            dist/*.msix
+            dist/*.pkg
             dist/SHA256SUMS.txt
           generate_release_notes: true
           body: |
@@ -267,7 +280,7 @@ jobs:
             Switch to a mic or line-in under **Audio** in the toolbar.
 
             ## 🔄 Updating
-            Already on 1.0 or later? Click the pink **Update** button in the toolbar, then **Update now**. Dropocalypse checks the download, installs this version and reopens by itself.
+            Already on 1.0 or later? Open the **Updates** menu in the toolbar, then **Update now**. Dropocalypse checks the download's checksum and, on Mac, its Developer ID signature, then installs this version and reopens. If a check fails, the app you have is left in place.
 
             ## 🔏 Code signing policy
             See the [code signing policy](https://github.com/allenrobberson/dropocalypse/blob/main/CODE_SIGNING_POLICY.md) and [privacy policy](https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md).
