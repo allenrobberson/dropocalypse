@@ -29,6 +29,10 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.8: Full Kaleidoscope and portrait recordings
+- 🔮 **Full Kaleidoscope** (style 25): a full-frame neon mandala. Four-way mirroring sometimes tightens into an 8-way radial pattern, in cyan, magenta, electric blue, gold and acid green. Bass zooms and turns it; mids and highs drive the color and detail.
+- 📱 **Frame** in the **Look** panel: **Landscape** fills the window. **Portrait** centers a 9:16 frame so what you see is what gets recorded (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
+
 ### 1.2.7: safer updates, Microsoft Store edition
 - 🔏 **Update now** still checks the release checksum, and it now checks the download's signature before installing. On Mac the new app must be signed with the same Developer ID as the copy you're running, and Gatekeeper must accept it. On Windows that check starts once the copy you're running is itself code-signed. If a check fails, the **Updates** menu says why and the app you have is left as it is.
 - The **Updates** menu (toolbar, and the detached controls window) is where automatic checks, **Check now** and **Update now** live. They are not in the Look panel.

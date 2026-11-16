@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.8
+- 🔮 **Full Kaleidoscope** (style 25), on Mac and Windows: a mandala that fills the frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green. Bass zooms, pulses and turns it; mids and highs change the color and detail. It is in the style list and in auto-cycle, and the logo still sits on top.
+- 📱 **Frame** in the Look panel (toolbar and the detached controls): **Landscape** fills the window, as before. **Portrait** centers a 9:16 frame, including in full screen on a landscape display, and recordings match it: 720×1280, 1080×1920 or 2160×3840. The choice is saved. It can't be changed while a recording is in progress.
+
 ## 1.2.7
 - 🔏 **Update now** still checks the release's SHA-256 checksum, and it now checks the download's code signature before replacing the app. On Mac the new app must be validly signed with the same Developer ID team as the copy you're running, and macOS Gatekeeper must accept it. On Windows that signature check turns on once the copy you're running is itself code-signed; unsigned builds keep updating after the checksum matches.
 - If a check fails, Dropocalypse shows the reason in the **Updates** menu and leaves the current version in place. Use **Download page** in that same menu, or try again later.
