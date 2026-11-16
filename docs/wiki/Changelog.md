@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.6
+- 📸 The printable User Guide now has screenshots of the toolbar, the Motion, Audio and recording panels, the style list and the detached controls window.
+- The guide shows its version number on the cover and every page, and its "What's new" lists just the two latest releases.
+
 ## 1.2.5
 - 📖 Refreshed README, wiki and User Guide: signed Mac app (no more "Open Anyway"), two screens, recording, the Updates menu and new troubleshooting tips.
 

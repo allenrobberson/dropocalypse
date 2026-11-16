@@ -29,6 +29,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.6: User Guide with screenshots
+- 📸 The printable [User Guide](docs/Dropocalypse-User-Guide.pdf) now has screenshots of the interface and shows its version number on every page.
+
 ### 1.2.5: refreshed guide
 - 📖 Updated README, wiki and printable User Guide for everything added in 1.x.
 

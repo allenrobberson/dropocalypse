@@ -16,8 +16,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (CondPageBreak, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,
-                                TableStyle)
+from reportlab.platypus import (CondPageBreak, Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
+                                Table, TableStyle)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "Dropocalypse-User-Guide.pdf")
@@ -290,6 +290,61 @@ STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.97, 0.25, 0.7, 0.55]
 
 
+IMAGES = os.path.join(ROOT, "docs", "guide-images")
+
+
+def shot(name, width, caption=None):
+    """A screenshot from docs/guide-images, scaled to `width`, with a thin frame and optional caption."""
+    from reportlab.lib.utils import ImageReader
+    path = os.path.join(IMAGES, name)
+    iw, ih = ImageReader(path).getSize()
+    img = Image(path, width=width, height=width * ih / iw)
+    cell = [img]
+    if caption:
+        cell.append(Spacer(1, 3))
+        cell.append(P(caption, ParagraphStyle("cap", parent=small, alignment=TA_CENTER, textColor=MUTED)))
+    t = Table([[cell]], colWidths=[width + 6])
+    t.setStyle(TableStyle([("BOX", (0, 0), (0, 0), 0.6, colors.HexColor("#D8D2E6")),
+                           ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#F7F5FB")),
+                           ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+    return t
+
+
+def side_by_side(*cells, widths):
+    """Lay screenshots or paragraph lists out in one row."""
+    t = Table([list(cells)], colWidths=widths)
+    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                           ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 0)]))
+    return t
+
+
+def latest_releases(count=2):
+    """The newest `count` entries of docs/wiki/Changelog.md as [(version, [bullet html, ...])]."""
+    import re
+    text = open(os.path.join(ROOT, "docs", "wiki", "Changelog.md"), encoding="utf-8").read()
+    out = []
+    for m in re.finditer(r"^## (\d+\.\d+(?:\.\d+)?)\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S):
+        bullets_ = []
+        for line in m.group(2).splitlines():
+            line = line.strip()
+            if not line.startswith("- "):
+                continue
+            line = line[2:]
+            # Drop emoji and other symbols the PDF font can't draw, then convert Markdown to the guide's markup.
+            line = "".join(ch for ch in line if ord(ch) < 0x2190 or ch in "→←×·–—…‘’“”")
+            line = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            line = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", line)
+            line = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)
+            line = re.sub(r"\[\[([^\]]+)\]\]", r"\1", line)
+            bullets_.append(line.strip())
+        out.append((m.group(1), bullets_))
+        if len(out) == count:
+            break
+    return out
+
+
 def build():
     s = []
     s.append(PageBreak())  # page 1 is the drawn cover
@@ -320,32 +375,13 @@ def build():
                "while your logo sits on top and pulses, squashes, bounces, slides and wobbles to the bass.", body))
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
-    s.append(whats_new_box([
-        "<b>Version 1.2: record videos.</b> Click <b>Record</b> (or press R; it turns red while recording) to save the visuals and "
-        "the music as an MP4; click <b>Stop</b> when you're done. The ▾ next to it sets the size (720p, 1080p, 4K) and folder.",
-        "<b>Version 1.1: two screens.</b> Click <b>Detach</b> (or press D) to move the controls into their own window, "
-        "stacked top to bottom, and use <b>Screen</b> to send the visuals full screen to a TV, projector or second monitor.",
-        "<b>Version 1.0: one-click updates.</b> When a new version is out, click the pink <b>Update</b> button, "
-        "then <b>Update now</b>: Dropocalypse downloads, checks, installs and reopens the new version by itself.",
-        "<b>Version 0.9.2: faster reactions.</b> Kicks move your logo on the very frame they're detected, with "
-        "smaller audio buffers on Mac and about 3 ms System-audio chunks on Windows.",
-        "<b>Version 0.9: update notifications.</b> When a new version is out, a pink <b>Update available</b> "
-        "button appears in the toolbar: choose Download, or Ignore for 24 hours. Turn it off or check now in the Updates menu.",
-        "<b>Version 0.8: new Tesseract style</b> (24 in total): a glowing 4D hypercube that turns itself "
-        "inside out, spinning on the beat.",
-        "<b>Version 0.7: choose which styles auto-cycle plays.</b> Open the style list from the toolbar and use the "
-        "<b>checkboxes</b> beside each style. Auto-cycle rotates only through the checked ones.",
-        "<b>Version 0.6: three new equalizer styles</b> (23 in total): <b>Mirror Equalizer</b>, <b>LED Meter</b> "
-        "and <b>Rainbow Peaks</b>. See section 6.",
-        "<b>Outrun Grid</b>: smoother sun with no stair-stepped edge, and the horizon meter now runs the full width of the screen in sunset colors (0.6.1).",
-        "<b>Version 0.5: listen to Spotify, or any app on your Mac, with no mic</b> (macOS 14.2 or later). Click <b>Audio</b>, "
-        "open the <b>Listen to</b> drop-down and pick the app, or <b>All Mac audio</b>. Playing apps are listed "
-        "first. Allow <b>system audio recording</b> the first time. See section 1.",
-        "<b>Truly full screen on the Mac</b>: every pixel, including beside the MacBook notch, with the menu bar "
-        "and Dock hidden. F, the green button or Ctrl+Cmd+F; Esc twice to leave.",
-        "<b>Pulsar Ridges</b> now stretch edge to edge across the screen.",
-        "<b>Discussions</b> are open on GitHub for questions, ideas and clips.",
-    ]))
+    news = []
+    for version, items in latest_releases(2):
+        for i, item in enumerate(items):
+            news.append((f"<b>Version {version}:</b> " if i == 0 else "") + item)
+    s.append(whats_new_box(news))
+    s.append(Spacer(1, 4))
+    s.append(P("Every earlier change is listed in the Changelog on the project's wiki.", small))
 
     # ---- Mac
     s.append(PageBreak())
@@ -375,7 +411,7 @@ def build():
                "with no microphone or extra software. Apps playing right now are listed first.", body))
     s.append(P("The first time, macOS asks to allow <b>system audio recording</b>: click <b>Allow</b>. To use a "
                "microphone or line-in instead, pick it in the same drop-down and allow <b>microphone</b> access. "
-               "Audio is analyzed live and is never recorded or sent anywhere. If you clicked Don't Allow by mistake, "
+               "Audio is analyzed live and never sent anywhere; it's only saved when you press Record. If you clicked Don't Allow by mistake, "
                f"turn it on in <b>System Settings {ARROW} Privacy &amp; Security</b>, under <b>Screen &amp; System "
                f"Audio Recording</b> (apps) or <b>Microphone</b> (mic).", body))
 
@@ -413,10 +449,13 @@ def build():
     s.append(P("Your logo, the style you picked and all your settings are saved automatically and come back the "
                "next time you open the app.", body))
 
+
     # ---- Toolbar
     s += section(4, "The toolbar")
     s.append(P("Every control lives in one slim bar along the <b>top edge</b> of the window. It stays out of the "
                "way during a show:", body))
+    s.append(shot("window.jpg", 4.4 * inch, "Dropocalypse on a Mac, with the toolbar showing along the top"))
+    s.append(Spacer(1, 6))
     s += bullets([
         "<b>To show it:</b> move the mouse toward the top of the screen, click anywhere, or press <b>T</b>.",
         "<b>It hides itself</b> after about 2.5 seconds without activity, and the mouse cursor hides with it.",
@@ -424,6 +463,9 @@ def build():
         "<b>To hide it right away</b>, press <b>Esc</b>.",
     ])
     s.append(Spacer(1, 6))
+    s.append(shot("toolbar.jpg", 6.4 * inch, "The toolbar, left to right: logo, style, auto-cycle, Record, Motion, Logo, "
+                  "Audio, Look, Updates, status, Detach, keys and full screen"))
+    s.append(Spacer(1, 8))
     s.append(table(["Control", "What it does"], [
         ["<b>Add Logo</b> / logo name", "Opens the Logo menu: choose, remove, show or hide your logo"],
         ["<b>‹  Style name  ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
@@ -473,6 +515,10 @@ def build():
     s.append(Spacer(1, 6))
     s.append(tip_box("For a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "
                      "look, push Squash, Bounce and Wobble to 1.2 or higher."))
+    s.append(Spacer(1, 8))
+    s.append(KeepTogether(side_by_side(shot("motion.jpg", 2.9 * inch, "The Motion panel"),
+                                       shot("audio.jpg", 2.75 * inch, "The Audio panel"),
+                                       widths=[3.25 * inch, 3.25 * inch])))
 
     s.append(sub("Logo panel"))
     s.append(table(["Control", "Default", "What it does"], [
@@ -510,10 +556,36 @@ def build():
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 360 s)"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
+    s.append(CondPageBreak(3.4 * inch))
+    s.append(sub("Recording a video"))
+    rec_steps = [
+        P("1. Click <b>Record</b> (or press <b>R</b>). It turns red and shows a running timer.", body),
+        P("2. Play your music. The visuals (without the toolbar) and the music are saved together.", body),
+        P("3. Click <b>Stop</b> (or press <b>R</b> again). A message offers to show the file.", body),
+        Spacer(1, 4),
+        P("Open the <b>▾</b> next to Record to pick the video size (720p or 1080p at 60 fps, or 4K at 30 fps) and "
+          "the folder. Videos go to Movies (Mac) or Videos (Windows) unless you choose another. They are MP4 "
+          "files that play anywhere and upload straight to YouTube, Instagram or TikTok.", small),
+    ]
+    s.append(side_by_side(shot("record.jpg", 2.7 * inch, "Recording settings (▾ next to Record)"), rec_steps,
+                          widths=[3.0 * inch, 3.5 * inch]))
+
     # ---- Styles
     s += section(6, "The 24 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
+    s.append(Spacer(1, 6))
+    s.append(side_by_side(
+        shot("styles.jpg", 2.2 * inch, "The style list"),
+        [P("Click the style name in the toolbar to open the list. Click any name to jump to it.", body),
+         Spacer(1, 4),
+         P("The <b>checkbox</b> beside each style decides whether <b>auto-cycle</b> includes it. "
+           "<b>All</b> and <b>None</b> check or clear every box at once.", body),
+         Spacer(1, 4),
+         P("Turn on <b>Auto-cycle</b> at the top of the list, or with ⟳ in the toolbar or the A key. Set how long "
+           "each style stays up (5 seconds to 6 minutes) under <b>Look</b>.", body)],
+        widths=[2.5 * inch, 4.0 * inch]))
+    s.append(Spacer(1, 8))
     s.append(table(["#", "Style", "What it looks like"], [
         ["1", "<b>Classic Tunnel</b>", "The waveform bursts out of the center into an endless twisting tunnel"],
         ["2", "<b>Spectrum Skyline</b>", "Spectrum bars along the bottom with trails rising like smoke"],
@@ -577,8 +649,25 @@ def build():
         "<b>Go full screen</b> on the projector or TV: drag the window onto that screen and press F. Full screen "
         "covers every pixel, edge to edge. On the Mac the menu bar and Dock disappear, and on MacBooks with a "
         "camera notch the visuals fill the strip beside the notch too.",
-        "Turn on <b>auto-cycle</b> with 30 to 60 seconds per style so the show keeps changing on its own.",
+        "Turn on <b>auto-cycle</b> so the show keeps changing on its own: 30 to 60 seconds per style keeps "
+        "things lively, and up to 6 minutes suits a slower night.",
     ])
+    s.append(CondPageBreak(4.6 * inch))
+    s.append(sub("Two screens: controls on one, visuals on the other"))
+    s.append(side_by_side(
+        shot("detached.jpg", 1.9 * inch, "The detached controls"),
+        [P("1. Click <b>Detach</b> in the toolbar (or press <b>D</b>). The controls move into their own "
+           "<b>Dropocalypse Controls</b> window, stacked top to bottom.", body),
+         Spacer(1, 4),
+         P("2. Under <b>Visuals</b>, pick your TV, projector or second monitor. The visuals go full screen there.",
+           body),
+         Spacer(1, 4),
+         P("3. Keep the controls on your laptop and change styles, logo, motion and audio while the show runs. "
+           "The audience only sees the visuals.", body),
+         Spacer(1, 4),
+         P("4. Close the controls window (or click <b>Attach</b> at the bottom) to put the toolbar back on top.",
+           body)],
+        widths=[2.25 * inch, 4.25 * inch]))
 
     # ---- Troubleshooting
     s += section(9, "Troubleshooting")
@@ -636,8 +725,8 @@ def build():
           "<b>github.com/allenrobberson/dropocalypse/issues</b>.", body),
         sub("Support Dropocalypse"),
         P("Dropocalypse is free and always will be. If you enjoy it, please consider sponsoring the project at "
-          "<b>github.com/sponsors/allenrobberson</b>. The first goal is the $99/year Apple Developer membership, "
-          "so Mac downloads can open without a security warning.", body),
+          "<b>github.com/sponsors/allenrobberson</b>. Sponsorships cover the yearly Apple Developer "
+          "membership that keeps the Mac app signed, and the time spent on new styles and features.", body),
     ]))
     return s
 
