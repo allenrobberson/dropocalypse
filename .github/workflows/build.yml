@@ -168,6 +168,53 @@ jobs:
             dist/*.zip
             dist/*.pdf
 
+      # ---- Microsoft Store edition: same app without the built-in updater, packaged as MSIX.
+      # The Store signs the package itself, so it is left unsigned here. Identity values come from
+      # Partner Center (Product identity) and are stored as repository variables.
+      - name: Build Microsoft Store edition
+        run: |
+          cmake -S windows -B build-store -A x64 "-DAPP_VERSION=${{ env.APP_VERSION }}" -DDROPOCALYPSE_STORE=ON
+          cmake --build build-store --config Release --parallel
+
+      - name: Package MSIX for the Microsoft Store
+        shell: pwsh
+        env:
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          $parts = ("$env:APP_VERSION" -split '[-+]')[0].Split('.')
+          if ("$env:APP_VERSION" -match '-dev') { $msixVersion = "0.0.$env:GITHUB_RUN_NUMBER.0" }
+          else { $msixVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0" }
+          $name = if ($env:STORE_IDENTITY_NAME) { $env:STORE_IDENTITY_NAME } else { "Dropocalypse.Placeholder" }
+          $pub  = if ($env:STORE_PUBLISHER) { $env:STORE_PUBLISHER } else { "CN=00000000-0000-0000-0000-000000000000" }
+          $disp = if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $env:STORE_PUBLISHER_DISPLAY_NAME } else { "Allen Robberson" }
+          if (-not $env:STORE_IDENTITY_NAME) { Write-Output "::notice::STORE_IDENTITY_NAME not set yet; the MSIX uses placeholder identity values." }
+          $stage = "msix-stage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item build-store/Release/Dropocalypse.exe $stage/
+          Copy-Item -Recurse windows/store/Assets $stage/Assets
+          Copy-Item LICENSE "$stage/LICENSE.txt"
+          $m = Get-Content windows/store/AppxManifest.xml -Raw
+          $m = $m.Replace('__IDENTITY_NAME__', $name).Replace('__PUBLISHER__', $pub)
+          $m = $m.Replace('__PUBLISHER_DISPLAY_NAME__', [System.Security.SecurityElement]::Escape($disp))
+          $m = $m.Replace('__VERSION__', $msixVersion)
+          Set-Content -Encoding utf8 -Path "$stage/AppxManifest.xml" -Value $m
+          $makeappx = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter makeappx.exe |
+                      Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName | Select-Object -Last 1
+          if (-not $makeappx) { throw "makeappx.exe not found" }
+          New-Item -ItemType Directory -Force -Path store-dist | Out-Null
+          $out = "store-dist/Dropocalypse-$env:APP_VERSION-Store.msix"
+          & $makeappx.FullName pack /d $stage /p $out /o
+          if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
+          Get-ChildItem store-dist
+
+      - name: Upload Microsoft Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dropocalypse-Microsoft-Store
+          path: store-dist/*.msix
+
   release:
     name: Publish release
     needs: [macos, windows]

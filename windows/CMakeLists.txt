@@ -39,6 +39,10 @@ add_executable(Dropocalypse WIN32
 
 target_include_directories(Dropocalypse PRIVATE src ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_compile_definitions(Dropocalypse PRIVATE UNICODE _UNICODE APP_VERSION_STR="${APP_VERSION}")
+option(DROPOCALYPSE_STORE "Build the Microsoft Store edition (no built-in updater)" OFF)
+if(DROPOCALYPSE_STORE)
+    target_compile_definitions(Dropocalypse PRIVATE STORE_EDITION)
+endif()
 target_compile_options(Dropocalypse PRIVATE /W3 /permissive- /utf-8 /MP)
 target_link_libraries(Dropocalypse PRIVATE
     d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt mfplat mfreadwrite mfuuid)

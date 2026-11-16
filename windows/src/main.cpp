@@ -352,7 +352,14 @@ static std::string jsonString(const std::string& json, const char* key) {
     return e == std::string::npos ? std::string() : json.substr(p + 1, e - p - 1);
 }
 
+#ifdef STORE_EDITION
+static constexpr bool kStoreEdition = true;    // Microsoft Store build: the Store installs updates
+#else
+static constexpr bool kStoreEdition = false;
+#endif
+
 static void startUpdateCheck(bool userInitiated) {
+    if (kStoreEdition) return;
     if (gUpdate.checking.exchange(true)) return;
     {
         std::lock_guard<std::mutex> lock(gUpdate.m);
@@ -394,6 +401,7 @@ static void pollUpdateCheck() {
 }
 
 static bool updateAvailable() {
+    if (kStoreEdition) return false;
     return !g.settings.latestVersion.empty() && versionIsNewer(g.settings.latestVersion, APP_VERSION_STR);
 }
 
@@ -626,17 +634,17 @@ static void cleanupOldExe() {
 /// First launch: say plainly what goes over the network and let the user turn it off before
 /// anything is sent. (Audio never leaves the computer.)
 static void drawPrivacyNotice() {
-    if (g.settings.privacyNoticeSeen) return;
+    if (g.settings.privacyNoticeSeen || kStoreEdition) return;   // the Store edition never contacts GitHub
     if (!ImGui::IsPopupOpen("Welcome to Dropocalypse")) ImGui::OpenPopup("Welcome to Dropocalypse");
     ImGuiIO& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(460 * g.dpi, 0));
     if (ImGui::BeginPopupModal("Welcome to Dropocalypse", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
-        ImGui::TextWrapped("Your audio is analyzed live on this computer and is never recorded or sent anywhere.");
+        ImGui::TextWrapped("Your audio is analyzed live on this computer and never sent anywhere. It's only saved if you press Record.");
         ImGui::Spacing();
         ImGui::TextWrapped("To tell you about new versions, Dropocalypse asks GitHub once a day for the latest version number, "
                            "and downloads an update only when you click Update now. Nothing about you is sent. "
-                           "You can change this any time under Look > Check for updates automatically.");
+                           "You can change this any time in the Updates menu.");
         ImGui::Spacing();
         if (ImGui::SmallButton("Read the privacy policy"))
             ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md",
@@ -1179,6 +1187,11 @@ static void lookPanelBody(RenderSettings& r) {
 
 /// The Updates menu: version, check now, automatic checks, and installing a new version.
 static void updatesPanelBody() {
+    if (kStoreEdition) {
+        ImGui::TextUnformatted("Updates come automatically from the Microsoft Store.");
+        ImGui::TextDisabled("Version %s", APP_VERSION_STR);
+        return;
+    }
     if (updateAvailable() && !g.settings.latestVersion.empty()) {
         ImGui::TextUnformatted(("Dropocalypse " + g.settings.latestVersion + " is available").c_str());
         drawUpdatePopupBody();
