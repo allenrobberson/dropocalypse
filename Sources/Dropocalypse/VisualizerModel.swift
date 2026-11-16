@@ -13,6 +13,10 @@ final class VisualizerModel: NSObject, ObservableObject {
     @Published var openPopover: String?          // a toolbar drop-down is open → stay visible
     @Published var pointerOverToolbar = false
     @Published private(set) var isFullScreen = false
+    /// The toolbar lives in its own window (so it can stay on the main screen while the visuals
+    /// play full screen on another display).
+    @Published private(set) var controlsDetached = false
+    private var controlsWindow: NSWindow?
     private var lastActivity = Date()
     private var hideTimer: Timer?
     static let hideDelay: TimeInterval = 2.5
@@ -40,6 +44,78 @@ final class VisualizerModel: NSObject, ObservableObject {
             self.openPopover = "update"
         }
         updates.checkAutomatically(enabled: settings.checkForUpdates)
+        if UserDefaults.standard.bool(forKey: "controlsDetached") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.detachControls() }
+        }
+    }
+
+    // MARK: Detached controls window
+
+    func toggleControlsDetached() {
+        controlsDetached ? attachControls() : detachControls()
+    }
+
+    func detachControls() {
+        if let w = controlsWindow { w.makeKeyAndOrderFront(nil); return }
+        let view = TopToolbar(model: self, settings: settings, capture: capture, updates: updates, vertical: true)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 370, height: 800),
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                              backing: .buffered, defer: false)
+        window.title = "Dropocalypse Controls"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: view)
+        window.contentMinSize = NSSize(width: 350, height: 360)
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.delegate = self
+        // Start on the main screen (the one with the menu bar), near its right edge.
+        if !window.setFrameUsingName("DropocalypseControls"), let screen = NSScreen.screens.first {
+            let vf = screen.visibleFrame
+            let h = min(800, vf.height - 40)
+            window.setFrame(NSRect(x: vf.maxX - 370 - 24, y: vf.maxY - h - 24, width: 370, height: h), display: false)
+        }
+        window.setFrameAutosaveName("DropocalypseControls")
+        controlsWindow = window
+        openPopover = nil
+        withAnimation(.easeOut(duration: 0.18)) {
+            controlsDetached = true
+            toolbarVisible = false
+        }
+        UserDefaults.standard.set(true, forKey: "controlsDetached")
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func attachControls() {
+        guard controlsDetached else { return }
+        openPopover = nil
+        controlsDetached = false
+        UserDefaults.standard.set(false, forKey: "controlsDetached")
+        let w = controlsWindow
+        controlsWindow = nil
+        w?.delegate = nil
+        w?.close()
+        noteActivity(reveal: true)
+    }
+
+    /// Screens the visuals can be shown on, main screen first.
+    var screens: [NSScreen] { NSScreen.screens }
+
+    var visualsScreen: NSScreen? { targetWindow?.screen }
+
+    func screenName(_ screen: NSScreen) -> String {
+        let size = "\(Int(screen.frame.width)) × \(Int(screen.frame.height))"
+        let main = screen == NSScreen.screens.first ? " · main" : ""
+        return "\(screen.localizedName) (\(size))\(main)"
+    }
+
+    /// Moves the visuals to a screen and makes them full screen there.
+    func showVisuals(on screen: NSScreen) {
+        guard let window = targetWindow else { return }
+        if isFullScreen { exitFullScreen() }
+        let vf = screen.visibleFrame
+        let size = NSSize(width: min(window.frame.width, vf.width), height: min(window.frame.height, vf.height))
+        window.setFrame(NSRect(x: vf.midX - size.width / 2, y: vf.midY - size.height / 2,
+                               width: size.width, height: size.height), display: true)
+        enterFullScreen()
     }
 
     // MARK: Toolbar auto-hide
@@ -47,7 +123,7 @@ final class VisualizerModel: NSObject, ObservableObject {
     /// Call on any user activity. `nearTop` reveals the toolbar; other activity only keeps it alive.
     func noteActivity(reveal: Bool) {
         lastActivity = Date()
-        if reveal && !toolbarVisible {
+        if reveal && !toolbarVisible && !controlsDetached {
             withAnimation(.easeOut(duration: 0.18)) { toolbarVisible = true }
         }
     }
@@ -57,6 +133,7 @@ final class VisualizerModel: NSObject, ObservableObject {
     }
 
     func toggleToolbar() {
+        guard !controlsDetached else { controlsWindow?.makeKeyAndOrderFront(nil); return }
         lastActivity = Date()
         withAnimation(.easeOut(duration: 0.18)) { toolbarVisible.toggle() }
     }
@@ -106,7 +183,7 @@ final class VisualizerModel: NSObject, ObservableObject {
     }
 
     private var targetWindow: NSWindow? {
-        window ?? NSApp.mainWindow ?? NSApp.windows.first { $0.isVisible && $0.canBecomeMain }
+        window ?? NSApp.windows.first { $0.isVisible && $0.canBecomeMain && $0 !== controlsWindow }
     }
 
     func toggleFullScreen() {
@@ -123,7 +200,10 @@ final class VisualizerModel: NSObject, ObservableObject {
         savedMaxSize = window.contentMaxSize
         savedMovable = window.isMovable
 
-        NSApp.presentationOptions = [.hideDock, .hideMenuBar]   // fully hidden, no slide-down
+        // Hide the menu bar and Dock only when the visuals cover the screen they live on; on a
+        // second display they stay available for the controls window.
+        let isMainScreen = screen == NSScreen.screens.first
+        NSApp.presentationOptions = isMainScreen ? [.hideDock, .hideMenuBar] : []
         // .resizable (without .titled) keeps the window able to take keyboard focus.
         window.styleMask = [.resizable, .fullSizeContentView]
         window.isMovable = false
@@ -294,9 +374,18 @@ final class VisualizerModel: NSObject, ObservableObject {
             case "l": self.chooseLogo(); return nil
             case "a": self.settings.autoCycle.toggle(); return nil
             case "g": self.settings.showLogo.toggle(); return nil
+            case "d": self.toggleControlsDetached(); return nil
             default: return event
             }
         }
+    }
+}
+
+extension VisualizerModel: NSWindowDelegate {
+    /// Closing the controls window puts the toolbar back on the visuals.
+    func windowWillClose(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === controlsWindow else { return }
+        DispatchQueue.main.async { [weak self] in self?.attachControls() }
     }
 }
 

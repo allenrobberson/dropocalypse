@@ -7,8 +7,103 @@ struct TopToolbar: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var capture: AudioCapture
     @ObservedObject var updates: UpdateChecker
+    /// true = the detached controls window: everything stacked top to bottom.
+    var vertical = false
+
+    @State var showMotion = true
+    @State var showLogoLook = false
+    @State var showAudio = true
+    @State var showLook = false
+    @State var showKeys = false
 
     var body: some View {
+        if vertical { verticalBody } else { horizontalBody }
+    }
+
+    // MARK: Detached window (vertical)
+
+    private var verticalBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if updates.showBadge || updates.isBusy, let update = updates.available {
+                    updatePopover(update)
+                        .background(Color(red: 0.92, green: 0.29, blue: 0.67).opacity(0.18),
+                                    in: RoundedRectangle(cornerRadius: 10))
+                }
+
+                section("Visuals") {
+                    Menu {
+                        ForEach(model.screens, id: \.self) { screen in
+                            Button(model.screenName(screen)) { model.showVisuals(on: screen) }
+                        }
+                    } label: {
+                        Label(model.visualsScreen.map { model.screenName($0) } ?? "Choose a screen",
+                              systemImage: "display")
+                    }
+                    .help("Show the visuals full screen on this display")
+                    Button {
+                        model.toggleFullScreen()
+                    } label: {
+                        Label(model.isFullScreen ? "Exit full screen" : "Full screen",
+                              systemImage: model.isFullScreen ? "arrow.down.right.and.arrow.up.left"
+                                                              : "arrow.up.left.and.arrow.down.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .controlSize(.large)
+                    Text(capture.isRunning ? capture.statusText : "Audio off")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
+
+                section("Logo") {
+                    Text(model.hasCustomLogo ? (model.logoName ?? "Your logo") : "No logo chosen")
+                        .lineLimit(1).truncationMode(.middle)
+                    HStack {
+                        Button("Choose Logo…") { model.chooseLogo() }
+                        Button("Remove") { model.clearLogo() }.disabled(!model.hasCustomLogo)
+                    }
+                    Toggle("Show logo", isOn: $settings.showLogo)
+                }
+
+                section("Style") {
+                    HStack(spacing: 4) {
+                        Button { model.nextScene(-1) } label: { Image(systemName: "chevron.left") }
+                        styleListButton.frame(maxWidth: .infinity)
+                        Button { model.nextScene(1) } label: { Image(systemName: "chevron.right") }
+                    }
+                    Toggle("Auto-cycle", isOn: $settings.autoCycle)
+                }
+
+                DisclosureGroup("Motion", isExpanded: $showMotion) { motionControls }
+                DisclosureGroup("Logo look", isExpanded: $showLogoLook) { logoLookControls }
+                DisclosureGroup(capture.isRunning ? "Audio" : "Audio (off)", isExpanded: $showAudio) { audioControls }
+                DisclosureGroup("Look & updates", isExpanded: $showLook) { lookControls }
+                DisclosureGroup("Keyboard shortcuts", isExpanded: $showKeys) { shortcuts }
+
+                Divider()
+                Button {
+                    model.attachControls()
+                } label: {
+                    Label("Attach controls to the visuals", systemImage: "rectangle.on.rectangle")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(16)
+        }
+        .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(white: 0.08))
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            content()
+        }
+    }
+
+    // MARK: Over the visuals (horizontal)
+
+    private var horizontalBody: some View {
         HStack(spacing: 4) {
             logoMenu
             separator
@@ -48,6 +143,23 @@ struct TopToolbar: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
 
+            if model.screens.count > 1 {
+                Menu {
+                    Text("Show the visuals full screen on:")
+                    ForEach(model.screens, id: \.self) { screen in
+                        Button(model.screenName(screen)) { model.showVisuals(on: screen) }
+                    }
+                } label: {
+                    Image(systemName: "display.2")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Show the visuals on another display")
+            }
+            toolbarButton(nil, icon: "rectangle.portrait.and.arrow.right",
+                          help: "Detach the controls into their own window (D)") {
+                model.detachControls()
+            }
             popoverButton(nil, icon: "keyboard", id: "keys") { shortcuts }
             toolbarButton(nil, icon: model.isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
                           help: "Full screen (F)") {
@@ -139,7 +251,7 @@ struct TopToolbar: View {
             }
         }
         .padding(14)
-        .frame(width: 360)
+        .frame(width: vertical ? nil : 360)
     }
 
     /// The style name opens a list: click a name to show it now, and use the checkboxes to choose
@@ -341,6 +453,7 @@ struct TopToolbar: View {
         ["F", "Full screen"], ["T / S", "Show / hide toolbar"], ["Esc", "Hide toolbar"],
         ["L", "Choose logo"], ["G", "Show / hide logo"],
         ["Left / Right", "Previous / next style"], ["A", "Auto-cycle on / off"],
+        ["D", "Detach / attach the controls"],
     ]
 
     // MARK: Helpers

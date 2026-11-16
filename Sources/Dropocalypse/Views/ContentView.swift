@@ -18,7 +18,7 @@ struct ContentView: View {
             MetalView(model: model)
                 .ignoresSafeArea()
 
-            if model.toolbarVisible {
+            if model.toolbarVisible && !model.controlsDetached {
                 TopToolbar(model: model, settings: settings, capture: capture, updates: model.updates)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)

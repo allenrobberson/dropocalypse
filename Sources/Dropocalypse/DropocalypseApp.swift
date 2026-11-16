@@ -50,6 +50,8 @@ struct DropocalypseApp: App {
                     .keyboardShortcut("f", modifiers: [.command, .control])
                 Button("Show/Hide Toolbar") { model.toggleToolbar() }
                     .keyboardShortcut(",", modifiers: [.command])
+                Button(model.controlsDetached ? "Attach Controls" : "Detach Controls") { model.toggleControlsDetached() }
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
                 Button("Restart Audio") { model.startAudio() }
             }
         }

@@ -58,6 +58,7 @@ struct AppSettings {
     std::string latestUrl;            // its release page
     long long updateSnoozeUntil = 0;  // "Ignore for 24 hours": hide the toolbar button until then
     bool privacyNoticeSeen = false;   // first-run notice about the update check has been answered
+    bool controlsDetached = false;    // toolbar lives in its own window (for a second screen)
 };
 
 static std::wstring appDataDir() {
@@ -92,6 +93,7 @@ static std::string serialize(const AppSettings& s) {
     out += "latestUrl=" + s.latestUrl + "\n";
     out += "updateSnoozeUntil=" + std::to_string(s.updateSnoozeUntil) + "\n";
     out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
+    out += std::string("controlsDetached=") + (s.controlsDetached ? "1" : "0") + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
     return out;
@@ -144,6 +146,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("latestUrl")) s.latestUrl = kv["latestUrl"];
     if (kv.count("updateSnoozeUntil")) s.updateSnoozeUntil = std::atoll(kv["updateSnoozeUntil"].c_str());
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
+    flag("controlsDetached", s.controlsDetached);
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
 }
@@ -193,6 +196,20 @@ struct App {
     double lastActivity = 0, lastMouseMove = 0;
     bool anyPopupOpen = false;
     bool pointerOverToolbar = false;
+
+    // Detached controls window: its own Win32 window, swap chain and Dear ImGui context, so the
+    // toolbar can sit on the main screen while the visuals run full screen on another display.
+    float mainDpi = 1.0f;
+    ImGuiContext* mainCtx = nullptr;
+    HWND ctrlHwnd = nullptr;
+    ImGuiContext* ctrlCtx = nullptr;
+    ComPtr<IDXGISwapChain1> ctrlSwap;
+    ComPtr<ID3D11RenderTargetView> ctrlRTV;
+    int ctrlW = 0, ctrlH = 0;
+    bool ctrlResizePending = false;
+    float ctrlDpi = 1.0f;
+    bool ctrlFontsDirty = true;
+    int wantDetach = -1;          // deferred: 1 = open the controls window, 0 = close it
 
     // Full screen.
     bool fullscreen = false;
@@ -832,6 +849,52 @@ static void toggleFullscreen() {
     }
 }
 
+// ---- Displays: "Show visuals on" picks the screen the visuals go full screen on.
+struct DisplayInfo {
+    HMONITOR handle;
+    RECT rect;
+    bool primary;
+    std::string name;
+};
+
+static std::vector<DisplayInfo> listDisplays() {
+    std::vector<DisplayInfo> out;
+    EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR m, HDC, LPRECT, LPARAM p) -> BOOL {
+        auto* list = reinterpret_cast<std::vector<DisplayInfo>*>(p);
+        MONITORINFOEXW mi{};
+        mi.cbSize = sizeof(mi);
+        if (!GetMonitorInfoW(m, &mi)) return TRUE;
+        DisplayInfo d{m, mi.rcMonitor, (mi.dwFlags & MONITORINFOF_PRIMARY) != 0, {}};
+        char buf[96];
+        std::snprintf(buf, sizeof(buf), "Display %d  (%ld x %ld)%s", (int)list->size() + 1,
+                      mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
+                      d.primary ? "  - main" : "");
+        d.name = buf;
+        list->push_back(d);
+        return TRUE;
+    }, reinterpret_cast<LPARAM>(&out));
+    return out;
+}
+
+/// Moves the visuals window to a display and makes it full screen there.
+static void showVisualsOn(const DisplayInfo& d) {
+    HWND h = g.hwnd;
+    if (g.fullscreen) {
+        SetWindowPos(h, HWND_TOP, d.rect.left, d.rect.top, d.rect.right - d.rect.left, d.rect.bottom - d.rect.top,
+                     SWP_NOOWNERZORDER);
+        return;
+    }
+    RECT wr;
+    GetWindowRect(h, &wr);
+    int w = std::min<int>(wr.right - wr.left, d.rect.right - d.rect.left);
+    int hh = std::min<int>(wr.bottom - wr.top, d.rect.bottom - d.rect.top);
+    SetWindowPos(h, nullptr, d.rect.left + (d.rect.right - d.rect.left - w) / 2,
+                 d.rect.top + (d.rect.bottom - d.rect.top - hh) / 2, w, hh, SWP_NOZORDER | SWP_NOOWNERZORDER);
+    toggleFullscreen();
+}
+
+static HMONITOR visualsMonitor() { return MonitorFromWindow(g.hwnd, MONITOR_DEFAULTTONEAREST); }
+
 static void nextScene(int delta) {
     int n = (int)builtInScenes().size();
     g.settings.r.sceneIndex = ((g.settings.r.sceneIndex + delta) % n + n) % n;
@@ -878,7 +941,6 @@ static void rebuildFonts() {
     ImGui::GetStyle() = style;
 
     ImGui_ImplDX11_InvalidateDeviceObjects();
-    g.fontsDirty = false;
 }
 
 static bool slider(const char* label, float* v, float lo, float hi, const char* fmt = "%.2f") {
@@ -907,17 +969,131 @@ static std::string ellipsize(const std::string& s, float maxWidth) {
     return t.empty() ? std::string() : t + "...";
 }
 
-static void drawToolbar(float dt) {
+// ---- Panel contents, shared by the toolbar's drop-downs and the detached controls window.
+static void motionPanelBody(RenderSettings& r) {
+    slider("Pulse", &r.pulse, 0, 1.5f);
+    slider("Squash & stretch", &r.squash, 0, 1.5f);
+    slider("Bounce", &r.bounce, 0, 1.5f);
+    slider("Slide", &r.slide, 0, 1.5f);
+    slider("Wobble", &r.wobble, 0, 1.5f);
+    if (ImGui::Button("Reset to defaults")) resetMotion(r);
+}
+
+static void logoPanelBody(RenderSettings& r) {
+    slider("Size", &r.logoSize, 0.08f, 0.8f);
+    slider("Glow", &r.glow, 0, 1.5f);
+    slider("Color tint", &r.logoTint, 0, 1);
+    ImGui::Checkbox("Logo trails (feeds into the visuals)", &r.logoTrails);
+    ImGui::Checkbox("Show logo", &r.showLogo);
+}
+
+static void audioPanelBody() {
+    std::string curName = "System audio (what this PC is playing)";
+    for (const auto& s : g.sources)
+        if (s.key() == g.settings.audioSource) curName = narrow(s.name);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##source", curName.c_str())) {
+        for (const auto& s : g.sources) {
+            std::string k = s.key();
+            if (ImGui::Selectable(narrow(s.name).c_str(), k == g.settings.audioSource)) {
+                g.settings.audioSource = k;
+                startAudio();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::Button("Refresh devices")) g.sources = AudioCapture::listSources();
+    ImGui::SameLine();
+    if (ImGui::Button("Restart audio")) startAudio();
+    slider("Sensitivity", &g.settings.sensitivity, 0.2f, 4.0f);
+    slider("Beat threshold", &g.settings.beatThreshold, 1.1f, 2.2f, "%.2fx");
+    ImGui::TextDisabled("%s", narrow(g.audio.status()).c_str());
+}
+
+static void lookPanelBody(RenderSettings& r) {
+    slider("Beat flash", &r.beatFlash, 0, 1);
+    slider("Brightness", &r.brightness, 0.4f, 1.6f);
+    slider("Auto-cycle every", &r.cycleSeconds, 5, 120, "%.0f s");
+    ImGui::Separator();
+    if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
+        startUpdateCheck(false);
+    if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
+    ImGui::SameLine();
+    ImGui::TextDisabled("Version %s", APP_VERSION_STR);
+    {
+        std::lock_guard<std::mutex> lock(gUpdate.m);
+        if (!gUpdate.message.empty()) ImGui::TextUnformatted(gUpdate.message.c_str());
+    }
+    if (updateAvailable()) {
+        if (ImGui::Button("Update now")) startInstall();
+        ImGui::SameLine();
+        if (ImGui::Button("Open download page")) openDownloadPage();
+        if (gInstall.phase == InstallPhase::Failed) {
+            std::lock_guard<std::mutex> lock(gInstall.m);
+            ImGui::TextWrapped("%s", gInstall.error.c_str());
+        } else if (installBusy()) {
+            ImGui::ProgressBar(gInstall.progress, ImVec2(-1, 0), "Updating...");
+        }
+    }
+}
+
+static void styleListBody(RenderSettings& r, int cur) {
+    const auto& scenes = builtInScenes();
+    int n = (int)scenes.size();
+    // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
+    ImGui::TextDisabled("Checked = included in auto-cycle");
+    if (ImGui::SmallButton("All")) r.cycleSkip = 0;
+    ImGui::SameLine();
+    if (ImGui::SmallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
+    ImGui::Separator();
+    int checked = 0;
+    for (int i = 0; i < n; ++i) {
+        ImGui::PushID(i);
+        bool on = r.inCycle(i);
+        if (ImGui::Checkbox("##cycle", &on)) r.setInCycle(i, on);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Include %s in auto-cycle", scenes[i].name);
+        ImGui::SameLine();
+        char label[64];
+        std::snprintf(label, sizeof(label), "%d. %s", i + 1, scenes[i].name);
+        if (ImGui::Selectable(label, i == cur)) r.sceneIndex = i;
+        ImGui::PopID();
+        if (on) ++checked;
+    }
+    ImGui::Separator();
+    if (checked == 0) ImGui::TextDisabled("Nothing checked: auto-cycle uses every style");
+    else ImGui::TextDisabled("Auto-cycle: %d of %d styles", checked, n);
+}
+
+static void keysPanelBody() {
+    const char* rows[][2] = {{"F / F11", "Full screen"},    {"T / S", "Show / hide toolbar"},
+                             {"Esc", "Hide toolbar / exit full screen"}, {"L", "Choose logo"},
+                             {"G", "Show / hide logo"},     {"Left / Right", "Previous / next style"},
+                             {"A", "Auto-cycle on / off"},  {"D", "Detach / attach the controls"}};
+    for (auto& row : rows) {
+        ImGui::TextUnformatted(row[0]);
+        ImGui::SameLine(110 * g.dpi);
+        ImGui::TextDisabled("%s", row[1]);
+    }
+    ImGui::Spacing();
+    ImGui::TextDisabled("Move the mouse to the top edge to bring the toolbar back.");
+}
+
+/// The toolbar. `docked` = drawn over the visuals (auto-hides); otherwise it's the top row of the
+/// separate controls window and always visible.
+static void drawToolbar(float dt, bool docked = true) {
     ImGuiIO& io = ImGui::GetIO();
     RenderSettings& r = g.settings.r;
-    float target = g.toolbarVisible ? 1.0f : 0.0f;
-    g.toolbarAnim += (target - g.toolbarAnim) * std::min(1.0f, dt * 14.0f);
-    if (g.toolbarAnim < 0.01f && !g.toolbarVisible) return;
+    if (docked) {
+        float target = g.toolbarVisible ? 1.0f : 0.0f;
+        g.toolbarAnim += (target - g.toolbarAnim) * std::min(1.0f, dt * 14.0f);
+        if (g.toolbarAnim < 0.01f && !g.toolbarVisible) return;
+    }
+    const float anim = docked ? g.toolbarAnim : 1.0f;
 
     const float h = toolbarHeight();
-    ImGui::SetNextWindowPos(ImVec2(0, -h * (1.0f - g.toolbarAnim)));
+    ImGui::SetNextWindowPos(ImVec2(0, -h * (1.0f - anim)));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, h));
-    ImGui::SetNextWindowBgAlpha(0.78f);
+    ImGui::SetNextWindowBgAlpha(docked ? 0.78f : 1.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10 * g.dpi, 0));
     ImGui::Begin("##toolbar", nullptr,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -949,28 +1125,7 @@ static void drawToolbar(float dt) {
     int cur = ((r.sceneIndex % n) + n) % n;
     ImGui::SetNextItemWidth(170 * g.dpi);
     if (ImGui::BeginCombo("##style", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
-        // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
-        ImGui::TextDisabled("Checked = included in auto-cycle");
-        if (ImGui::SmallButton("All")) r.cycleSkip = 0;
-        ImGui::SameLine();
-        if (ImGui::SmallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
-        ImGui::Separator();
-        int checked = 0;
-        for (int i = 0; i < n; ++i) {
-            ImGui::PushID(i);
-            bool on = r.inCycle(i);
-            if (ImGui::Checkbox("##cycle", &on)) r.setInCycle(i, on);
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Include %s in auto-cycle", scenes[i].name);
-            ImGui::SameLine();
-            char label[64];
-            std::snprintf(label, sizeof(label), "%d. %s", i + 1, scenes[i].name);
-            if (ImGui::Selectable(label, i == cur)) r.sceneIndex = i;
-            ImGui::PopID();
-            if (on) ++checked;
-        }
-        ImGui::Separator();
-        if (checked == 0) ImGui::TextDisabled("Nothing checked: auto-cycle uses every style");
-        else ImGui::TextDisabled("Auto-cycle: %d of %d styles", checked, n);
+        styleListBody(r, cur);
         ImGui::EndCombo();
     }
     ImGui::SameLine();
@@ -987,12 +1142,7 @@ static void drawToolbar(float dt) {
     panelButton("Motion", "motion");
     if (ImGui::BeginPopup("motion")) {
         beginPanel("Logo motion - driven by the bass");
-        slider("Pulse", &r.pulse, 0, 1.5f);
-        slider("Squash & stretch", &r.squash, 0, 1.5f);
-        slider("Bounce", &r.bounce, 0, 1.5f);
-        slider("Slide", &r.slide, 0, 1.5f);
-        slider("Wobble", &r.wobble, 0, 1.5f);
-        if (ImGui::Button("Reset to defaults")) resetMotion(r);
+        motionPanelBody(r);
         endPanel();
         ImGui::EndPopup();
     }
@@ -1000,11 +1150,7 @@ static void drawToolbar(float dt) {
     panelButton("Logo", "logo");
     if (ImGui::BeginPopup("logo")) {
         beginPanel("Logo");
-        slider("Size", &r.logoSize, 0.08f, 0.8f);
-        slider("Glow", &r.glow, 0, 1.5f);
-        slider("Color tint", &r.logoTint, 0, 1);
-        ImGui::Checkbox("Logo trails (feeds into the visuals)", &r.logoTrails);
-        ImGui::Checkbox("Show logo", &r.showLogo);
+        logoPanelBody(r);
         endPanel();
         ImGui::EndPopup();
     }
@@ -1012,26 +1158,7 @@ static void drawToolbar(float dt) {
     panelButton(g.audio.isRunning() ? "Audio" : "Audio (off)", "audio");
     if (ImGui::BeginPopup("audio")) {
         beginPanel("Audio input");
-        std::string curName = "System audio (what this PC is playing)";
-        for (const auto& s : g.sources)
-            if (s.key() == g.settings.audioSource) curName = narrow(s.name);
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::BeginCombo("##source", curName.c_str())) {
-            for (const auto& s : g.sources) {
-                std::string k = s.key();
-                if (ImGui::Selectable(narrow(s.name).c_str(), k == g.settings.audioSource)) {
-                    g.settings.audioSource = k;
-                    startAudio();
-                }
-            }
-            ImGui::EndCombo();
-        }
-        if (ImGui::Button("Refresh devices")) g.sources = AudioCapture::listSources();
-        ImGui::SameLine();
-        if (ImGui::Button("Restart audio")) startAudio();
-        slider("Sensitivity", &g.settings.sensitivity, 0.2f, 4.0f);
-        slider("Beat threshold", &g.settings.beatThreshold, 1.1f, 2.2f, "%.2fx");
-        ImGui::TextDisabled("%s", narrow(g.audio.status()).c_str());
+        audioPanelBody();
         endPanel();
         ImGui::EndPopup();
     }
@@ -1039,30 +1166,7 @@ static void drawToolbar(float dt) {
     panelButton("Look", "look");
     if (ImGui::BeginPopup("look")) {
         beginPanel("Look");
-        slider("Beat flash", &r.beatFlash, 0, 1);
-        slider("Brightness", &r.brightness, 0.4f, 1.6f);
-        slider("Auto-cycle every", &r.cycleSeconds, 5, 120, "%.0f s");
-        ImGui::Separator();
-        if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
-            startUpdateCheck(false);
-        if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
-        ImGui::SameLine();
-        ImGui::TextDisabled("Version %s", APP_VERSION_STR);
-        {
-            std::lock_guard<std::mutex> lock(gUpdate.m);
-            if (!gUpdate.message.empty()) ImGui::TextUnformatted(gUpdate.message.c_str());
-        }
-        if (updateAvailable()) {
-            if (ImGui::Button("Update now")) startInstall();
-            ImGui::SameLine();
-            if (ImGui::Button("Open download page")) openDownloadPage();
-            if (gInstall.phase == InstallPhase::Failed) {
-                std::lock_guard<std::mutex> lock(gInstall.m);
-                ImGui::TextWrapped("%s", gInstall.error.c_str());
-            } else if (installBusy()) {
-                ImGui::ProgressBar(gInstall.progress, ImVec2(-1, 0), "Updating...");
-            }
-        }
+        lookPanelBody(r);
         endPanel();
         ImGui::EndPopup();
     }
@@ -1086,11 +1190,13 @@ static void drawToolbar(float dt) {
         }
     }
 
-    // ---- Right side: status, shortcuts, full screen
+    // ---- Right side: status, screen picker, detach, shortcuts, full screen
     const char* fsLabel = g.fullscreen ? "Exit full screen" : "Full screen";
+    const char* detachLabel = docked ? "Detach" : "Attach";
     ImGuiStyle& st = ImGui::GetStyle();
-    float rightW = ImGui::CalcTextSize("Keys").x + ImGui::CalcTextSize(fsLabel).x + st.FramePadding.x * 4 +
-                   st.ItemSpacing.x + 10 * g.dpi;
+    float rightW = ImGui::CalcTextSize("Screen").x + ImGui::CalcTextSize(detachLabel).x +
+                   ImGui::CalcTextSize("Keys").x + ImGui::CalcTextSize(fsLabel).x + st.FramePadding.x * 8 +
+                   st.ItemSpacing.x * 3 + 10 * g.dpi;
     ImGui::SameLine(0, 16 * g.dpi);
     float statusW = ImGui::GetContentRegionAvail().x - rightW - 12 * g.dpi;
     if (statusW > 60 * g.dpi) {
@@ -1101,26 +1207,127 @@ static void drawToolbar(float dt) {
     }
     ImGui::SetCursorPosX(io.DisplaySize.x - rightW);
     ImGui::SetCursorPosY(y);
+    if (ImGui::Button("Screen")) ImGui::OpenPopup("screen");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show the visuals full screen on another display");
+    if (ImGui::BeginPopup("screen")) {
+        ImGui::TextDisabled("Show the visuals full screen on:");
+        HMONITOR cur = visualsMonitor();
+        for (const auto& d : listDisplays()) {
+            bool here = d.handle == cur && g.fullscreen;
+            if (ImGui::MenuItem(d.name.c_str(), nullptr, here)) showVisualsOn(d);
+        }
+        if (g.fullscreen) {
+            ImGui::Separator();
+            if (ImGui::MenuItem("Back to a window")) toggleFullscreen();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(detachLabel)) g.wantDetach = docked ? 1 : 0;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(docked ? "Move these controls into their own window (for a second screen)"
+                                 : "Put the controls back on top of the visuals");
+    ImGui::SameLine();
     if (ImGui::Button("Keys")) ImGui::OpenPopup("keys");
     if (ImGui::BeginPopup("keys")) {
         beginPanel("Keyboard shortcuts");
-        const char* rows[][2] = {{"F / F11", "Full screen"},    {"T / S", "Show / hide toolbar"},
-                                 {"Esc", "Hide toolbar / exit full screen"}, {"L", "Choose logo"},
-                                 {"G", "Show / hide logo"},     {"Left / Right", "Previous / next style"},
-                                 {"A", "Auto-cycle on / off"}};
-        for (auto& row : rows) {
-            ImGui::TextUnformatted(row[0]);
-            ImGui::SameLine(110 * g.dpi);
-            ImGui::TextDisabled("%s", row[1]);
-        }
-        ImGui::Spacing();
-        ImGui::TextDisabled("Move the mouse to the top edge to bring the toolbar back.");
+        keysPanelBody();
         endPanel();
         ImGui::EndPopup();
     }
     ImGui::SameLine();
     if (ImGui::Button(fsLabel)) toggleFullscreen();
 
+    ImGui::End();
+}
+
+// ---- Detached controls window: everything stacked top to bottom, sections shown in place.
+static void drawControlsPanel() {
+    ImGuiIO& io = ImGui::GetIO();
+    RenderSettings& r = g.settings.r;
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(io.DisplaySize);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14 * g.dpi, 12 * g.dpi));
+    ImGui::Begin("##controls", nullptr,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::PopStyleVar();
+    ImGui::PushItemWidth(-FLT_MIN);
+    const float full = -FLT_MIN;
+
+    // Update banner
+    if (updateAvailable() && (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil)) {
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.92f, 0.29f, 0.67f, 0.85f));
+        if (ImGui::CollapsingHeader(("Update " + g.settings.latestVersion + " available").c_str()))
+            drawUpdatePopupBody();
+        ImGui::PopStyleColor();
+    }
+
+    // Visuals: screen + full screen
+    ImGui::SeparatorText("Visuals");
+    {
+        HMONITOR cur = visualsMonitor();
+        std::string curName = "Choose a screen...";
+        auto displays = listDisplays();
+        for (const auto& d : displays) if (d.handle == cur) curName = d.name;
+        ImGui::TextDisabled("Show the visuals full screen on:");
+        ImGui::SetNextItemWidth(full);
+        if (ImGui::BeginCombo("##screen", curName.c_str())) {
+            for (const auto& d : displays)
+                if (ImGui::Selectable(d.name.c_str(), d.handle == cur && g.fullscreen)) showVisualsOn(d);
+            ImGui::EndCombo();
+        }
+        if (ImGui::Button(g.fullscreen ? "Exit full screen" : "Full screen", ImVec2(full, 0))) toggleFullscreen();
+    }
+
+    // Logo
+    ImGui::SeparatorText("Logo");
+    {
+        std::string name = g.settings.logoName.empty() ? "No logo chosen" : narrow(g.settings.logoName);
+        ImGui::TextUnformatted(ellipsize(name, ImGui::GetContentRegionAvail().x).c_str());
+        float half = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+        if (ImGui::Button("Choose logo...", ImVec2(half, 0))) chooseLogo();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(g.settings.logoFile.empty());
+        if (ImGui::Button("Remove", ImVec2(half, 0))) clearLogo();
+        ImGui::EndDisabled();
+    }
+
+    // Style
+    ImGui::SeparatorText("Style");
+    {
+        const auto& scenes = builtInScenes();
+        int n = (int)scenes.size();
+        int cur = ((r.sceneIndex % n) + n) % n;
+        float bw = ImGui::GetFrameHeight() * 1.4f;
+        if (ImGui::Button(" < ", ImVec2(bw, 0))) nextScene(-1);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - bw - ImGui::GetStyle().ItemSpacing.x);
+        if (ImGui::BeginCombo("##style2", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
+            for (int i = 0; i < n; ++i)
+                if (ImGui::Selectable(scenes[i].name, i == cur)) r.sceneIndex = i;
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(" > ", ImVec2(bw, 0))) nextScene(1);
+        ImGui::Checkbox("Auto-cycle", &r.autoCycle);
+        if (ImGui::CollapsingHeader("Styles in auto-cycle")) styleListBody(r, cur);
+    }
+
+    // Sections
+    ImGui::Spacing();
+    if (ImGui::CollapsingHeader("Motion", ImGuiTreeNodeFlags_DefaultOpen)) motionPanelBody(r);
+    if (ImGui::CollapsingHeader("Logo look")) logoPanelBody(r);
+    if (ImGui::CollapsingHeader(g.audio.isRunning() ? "Audio" : "Audio (off)", ImGuiTreeNodeFlags_DefaultOpen))
+        audioPanelBody();
+    if (ImGui::CollapsingHeader("Look & updates")) lookPanelBody(r);
+    if (ImGui::CollapsingHeader("Keyboard shortcuts")) keysPanelBody();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    if (ImGui::Button("Attach controls to the visuals", ImVec2(full, 0))) g.wantDetach = 0;
+    ImGui::PopItemWidth();
     ImGui::End();
 }
 
@@ -1150,7 +1357,33 @@ static bool cursorShouldHide() {
     return !g.toolbarVisible && !g.anyPopupOpen && nowSeconds() - g.lastMouseMove > kHideDelay;
 }
 
-static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+/// Keyboard shortcuts shared by the visuals window and the controls window.
+static bool handleKey(WPARAM key) {
+    bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+    switch (key) {
+    case VK_RIGHT: nextScene(1); return true;
+    case VK_LEFT: nextScene(-1); return true;
+    case VK_F11: toggleFullscreen(); return true;
+    case VK_ESCAPE:
+        if (g.toolbarVisible && !g.anyPopupOpen && !g.settings.controlsDetached) g.toolbarVisible = false;
+        else if (g.fullscreen) toggleFullscreen();
+        return true;
+    case 'F': if (!ctrl) { toggleFullscreen(); return true; } break;
+    case 'T':
+    case 'S':
+    case 'H':
+        if (!ctrl && !g.settings.controlsDetached) { g.toolbarVisible = !g.toolbarVisible; g.lastActivity = nowSeconds(); return true; }
+        break;
+    case 'D': if (!ctrl) { g.wantDetach = g.settings.controlsDetached ? 0 : 1; return true; } break;
+    case 'L': if (!ctrl) { chooseLogo(); return true; } break;
+    case 'O': if (ctrl) { chooseLogo(); return true; } break;
+    case 'G': if (!ctrl) { g.settings.r.showLogo = !g.settings.r.showLogo; return true; } break;
+    case 'A': if (!ctrl) { g.settings.r.autoCycle = !g.settings.r.autoCycle; return true; } break;
+    }
+    return false;
+}
+
+static LRESULT MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_SETCURSOR && LOWORD(lParam) == HTCLIENT && cursorShouldHide()) {
         SetCursor(nullptr);
         return TRUE;
@@ -1174,8 +1407,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     }
 
     case WM_DPICHANGED: {
-        g.dpi = HIWORD(wParam) / 96.0f;
+        g.mainDpi = HIWORD(wParam) / 96.0f;
         g.fontsDirty = true;
+        if (g.fullscreen) {   // moved to a screen with another scale: stay exactly full screen
+            MONITORINFO mi{sizeof(mi)};
+            GetMonitorInfoW(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &mi);
+            SetWindowPos(hWnd, nullptr, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left,
+                         mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0;
+        }
         auto rc = reinterpret_cast<RECT*>(lParam);
         SetWindowPos(hWnd, nullptr, rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top,
                      SWP_NOZORDER | SWP_NOACTIVATE);
@@ -1205,28 +1445,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     }
 
     case WM_KEYDOWN:
-    case WM_SYSKEYDOWN: {
+    case WM_SYSKEYDOWN:
         if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard) break;
-        bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-        switch (wParam) {
-        case VK_RIGHT: nextScene(1); return 0;
-        case VK_LEFT: nextScene(-1); return 0;
-        case VK_F11: toggleFullscreen(); return 0;
-        case VK_ESCAPE:
-            if (g.toolbarVisible && !g.anyPopupOpen) g.toolbarVisible = false;
-            else if (g.fullscreen) toggleFullscreen();
-            return 0;
-        case 'F': if (!ctrl) { toggleFullscreen(); return 0; } break;
-        case 'T':
-        case 'S':
-        case 'H': if (!ctrl) { g.toolbarVisible = !g.toolbarVisible; g.lastActivity = nowSeconds(); return 0; } break;
-        case 'L': if (!ctrl) { chooseLogo(); return 0; } break;
-        case 'O': if (ctrl) { chooseLogo(); return 0; } break;
-        case 'G': if (!ctrl) { g.settings.r.showLogo = !g.settings.r.showLogo; return 0; } break;
-        case 'A': if (!ctrl) { g.settings.r.autoCycle = !g.settings.r.autoCycle; return 0; } break;
-        }
+        if (handleKey(wParam)) return 0;
         break;
-    }
 
     case WM_SYSCOMMAND:
         if ((wParam & 0xfff0) == SC_KEYMENU) return 0; // no beep / menu on Alt
@@ -1237,6 +1459,197 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     return DefWindowProcW(hWnd, msg, wParam, lParam);
+}
+
+/// Every message is handled with the visuals window's ImGui context current (a modal dialog opened
+/// from the controls window can deliver messages here mid-frame).
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    ImGuiContext* prev = ImGui::GetCurrentContext();
+    if (g.mainCtx) ImGui::SetCurrentContext(g.mainCtx);
+    LRESULT res = MainWndProc(hWnd, msg, wParam, lParam);
+    ImGui::SetCurrentContext(prev);
+    return res;
+}
+
+static LRESULT ControlsWndProcImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (ImGui::GetCurrentContext() && ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) return TRUE;
+    switch (msg) {
+    case WM_SIZE:
+        if (wParam != SIZE_MINIMIZED) {
+            g.ctrlW = LOWORD(lParam);
+            g.ctrlH = HIWORD(lParam);
+            g.ctrlResizePending = true;
+        }
+        return 0;
+    case WM_GETMINMAXINFO: {
+        auto mmi = reinterpret_cast<MINMAXINFO*>(lParam);
+        mmi->ptMinTrackSize.x = (LONG)(300 * g.ctrlDpi);
+        mmi->ptMinTrackSize.y = (LONG)(360 * g.ctrlDpi);
+        return 0;
+    }
+    case WM_DPICHANGED: {
+        g.ctrlDpi = HIWORD(wParam) / 96.0f;
+        g.ctrlFontsDirty = true;
+        auto rc = reinterpret_cast<RECT*>(lParam);
+        SetWindowPos(hWnd, nullptr, rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+        return 0;
+    }
+    case WM_DROPFILES: {
+        HDROP drop = (HDROP)wParam;
+        wchar_t path[MAX_PATH * 4];
+        if (DragQueryFileW(drop, 0, path, (UINT)(sizeof(path) / sizeof(path[0])))) loadLogoFrom(path);
+        DragFinish(drop);
+        return 0;
+    }
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard) break;
+        if (handleKey(wParam)) return 0;
+        break;
+    case WM_SYSCOMMAND:
+        if ((wParam & 0xfff0) == SC_KEYMENU) return 0;
+        break;
+    case WM_CLOSE:
+        g.wantDetach = 0;   // closing the controls window puts the toolbar back on the visuals
+        return 0;
+    }
+    return DefWindowProcW(hWnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK ControlsWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    ImGuiContext* prev = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(g.ctrlCtx);
+    LRESULT res = ControlsWndProcImpl(hWnd, msg, wParam, lParam);
+    ImGui::SetCurrentContext(prev);
+    return res;
+}
+
+static void createControlsRTV() {
+    ComPtr<ID3D11Texture2D> back;
+    if (SUCCEEDED(g.ctrlSwap->GetBuffer(0, IID_PPV_ARGS(&back))))
+        g.device->CreateRenderTargetView(back.Get(), nullptr, &g.ctrlRTV);
+}
+
+static void openControlsWindow() {
+    if (g.ctrlHwnd) { SetForegroundWindow(g.ctrlHwnd); return; }
+    HINSTANCE inst = GetModuleHandleW(nullptr);
+    static bool registered = false;
+    if (!registered) {
+        WNDCLASSEXW wc{sizeof(wc)};
+        wc.style = CS_HREDRAW | CS_VREDRAW;
+        wc.lpfnWndProc = ControlsWndProc;
+        wc.hInstance = inst;
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        wc.hIcon = LoadIconW(inst, MAKEINTRESOURCEW(1));
+        wc.hIconSm = wc.hIcon;
+        wc.lpszClassName = L"DropocalypseControls";
+        RegisterClassExW(&wc);
+        registered = true;
+    }
+    // A tall panel on the main (primary) screen, near its right edge.
+    POINT origin{0, 0};
+    HMONITOR mon = MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO mi{sizeof(mi)};
+    GetMonitorInfoW(mon, &mi);
+    g.ctrlDpi = ImGui_ImplWin32_GetDpiScaleForMonitor(mon);
+    int w = (int)(360 * g.ctrlDpi);
+    int h = std::min<int>((int)(820 * g.ctrlDpi), mi.rcWork.bottom - mi.rcWork.top - (int)(40 * g.ctrlDpi));
+    int x = mi.rcWork.right - w - (int)(24 * g.ctrlDpi);
+    int y = mi.rcWork.top + (int)(24 * g.ctrlDpi);
+    g.ctrlHwnd = CreateWindowExW(0, L"DropocalypseControls", L"Dropocalypse Controls",
+                                 WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, x, y, w, h, nullptr, nullptr, inst, nullptr);
+    if (!g.ctrlHwnd) return;
+    DragAcceptFiles(g.ctrlHwnd, TRUE);
+
+    ComPtr<IDXGIDevice> dxgiDevice;
+    ComPtr<IDXGIAdapter> adapter;
+    ComPtr<IDXGIFactory2> factory;
+    g.device.As(&dxgiDevice);
+    dxgiDevice->GetAdapter(&adapter);
+    adapter->GetParent(IID_PPV_ARGS(&factory));
+    DXGI_SWAP_CHAIN_DESC1 sd{};
+    sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    sd.SampleDesc.Count = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.BufferCount = 2;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    HRESULT hr = factory ? factory->CreateSwapChainForHwnd(g.device.Get(), g.ctrlHwnd, &sd, nullptr, nullptr, &g.ctrlSwap)
+                         : E_FAIL;
+    if (FAILED(hr) && factory) {
+        sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        hr = factory->CreateSwapChainForHwnd(g.device.Get(), g.ctrlHwnd, &sd, nullptr, nullptr, &g.ctrlSwap);
+    }
+    if (FAILED(hr)) { DestroyWindow(g.ctrlHwnd); g.ctrlHwnd = nullptr; return; }
+    factory->MakeWindowAssociation(g.ctrlHwnd, DXGI_MWA_NO_ALT_ENTER);
+    createControlsRTV();
+
+    ImGuiContext* prev = ImGui::GetCurrentContext();
+    g.ctrlCtx = ImGui::CreateContext();
+    ImGui::SetCurrentContext(g.ctrlCtx);
+    ImGui::GetIO().IniFilename = nullptr;
+    ImGui_ImplWin32_Init(g.ctrlHwnd);
+    ImGui_ImplDX11_Init(g.device.Get(), g.ctx.Get());
+    ImGui::SetCurrentContext(prev);
+    g.ctrlFontsDirty = true;
+
+    RECT rc;
+    GetClientRect(g.ctrlHwnd, &rc);
+    g.ctrlW = rc.right - rc.left;
+    g.ctrlH = rc.bottom - rc.top;
+    g.ctrlResizePending = true;
+    ShowWindow(g.ctrlHwnd, SW_SHOW);
+    g.settings.controlsDetached = true;
+    g.toolbarVisible = false;
+}
+
+static void closeControlsWindow() {
+    g.settings.controlsDetached = false;
+    if (!g.ctrlHwnd) return;
+    ImGuiContext* prev = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(g.ctrlCtx);
+    ImGui_ImplDX11_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext(g.ctrlCtx);
+    ImGui::SetCurrentContext(prev == g.ctrlCtx ? g.mainCtx : prev);
+    g.ctrlCtx = nullptr;
+    g.ctrlRTV.Reset();
+    g.ctrlSwap.Reset();
+    HWND h = g.ctrlHwnd;
+    g.ctrlHwnd = nullptr;
+    DestroyWindow(h);
+    noteActivity(true);
+}
+
+/// Draws one frame of the controls window (if it's open).
+static void renderControlsWindow() {
+    if (!g.ctrlHwnd || !g.ctrlSwap || IsIconic(g.ctrlHwnd)) return;
+    ImGui::SetCurrentContext(g.ctrlCtx);
+    g.dpi = g.ctrlDpi;
+    if (g.ctrlResizePending && g.ctrlW > 0 && g.ctrlH > 0) {
+        g.ctrlResizePending = false;
+        g.ctrlRTV.Reset();
+        g.ctx->OMSetRenderTargets(0, nullptr, nullptr);
+        g.ctrlSwap->ResizeBuffers(0, g.ctrlW, g.ctrlH, DXGI_FORMAT_UNKNOWN, 0);
+        createControlsRTV();
+    }
+    if (g.ctrlFontsDirty) { rebuildFonts(); g.ctrlFontsDirty = false; }
+    if (g.ctrlRTV) {
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+        drawControlsPanel();
+        ImGui::Render();
+        ID3D11RenderTargetView* rtv = g.ctrlRTV.Get();
+        const float bg[4] = {0.06f, 0.06f, 0.08f, 1.0f};
+        g.ctx->ClearRenderTargetView(rtv, bg);
+        g.ctx->OMSetRenderTargets(1, &rtv, nullptr);
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        g.ctrlSwap->Present(0, 0);
+    }
+    ImGui::SetCurrentContext(g.mainCtx);
+    g.dpi = g.mainDpi;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1272,7 +1685,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     g.hwnd = CreateWindowExW(0, wc.lpszClassName, L"Dropocalypse", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                              CW_USEDEFAULT, w, h, nullptr, nullptr, hInst, nullptr);
     if (!g.hwnd) return 1;
-    g.dpi = ImGui_ImplWin32_GetDpiScaleForHwnd(g.hwnd);
+    g.dpi = g.mainDpi = ImGui_ImplWin32_GetDpiScaleForHwnd(g.hwnd);
     DragAcceptFiles(g.hwnd, TRUE);
 
     std::wstring error;
@@ -1286,7 +1699,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     }
 
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    g.mainCtx = ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr; // portable: no imgui.ini next to the exe
     ImGui_ImplWin32_Init(g.hwnd);
@@ -1313,6 +1726,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
         startUpdateCheck(false);
     noteActivity(true);
+    if (g.settings.controlsDetached) openControlsWindow();
 
     double lastFrame = nowSeconds();
     double lastSaveCheck = lastFrame;
@@ -1342,7 +1756,15 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
             g.resizePending = false;
             handleResize();
         }
-        if (g.fontsDirty) rebuildFonts();
+        if (g.wantDetach >= 0) {
+            int want = g.wantDetach;
+            g.wantDetach = -1;
+            if (want == 1) openControlsWindow();
+            else closeControlsWindow();
+        }
+        ImGui::SetCurrentContext(g.mainCtx);
+        g.dpi = g.mainDpi;
+        if (g.fontsDirty) { rebuildFonts(); g.fontsDirty = false; }
         if (!g.backbufferRTV) { Sleep(10); continue; }
 
         double now = nowSeconds();
@@ -1366,11 +1788,12 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         ImGui::NewFrame();
 
         g.anyPopupOpen = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
+        if (g.settings.controlsDetached) g.toolbarVisible = false;
         g.pointerOverToolbar = g.toolbarVisible && io.MousePos.y >= 0 && io.MousePos.y < toolbarHeight();
         if (g.anyPopupOpen || g.pointerOverToolbar) g.lastActivity = now;
         if (g.toolbarVisible && now - g.lastActivity > kHideDelay) g.toolbarVisible = false;
 
-        drawToolbar(dt);
+        if (!g.settings.controlsDetached) drawToolbar(dt);
         drawPrivacyNotice();
         drawNotices();
 
@@ -1388,6 +1811,8 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         HRESULT hr = g.swapChain->Present(1, 0);
         if (hr == DXGI_STATUS_OCCLUDED) g.occluded = true;
 
+        renderControlsWindow();
+
         // Save settings when something changed (checked twice a second).
         if (now - lastSaveCheck > 0.5) {
             lastSaveCheck = now;
@@ -1399,6 +1824,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         }
     }
 
+    bool keepDetached = g.settings.controlsDetached;
+    closeControlsWindow();
+    g.settings.controlsDetached = keepDetached;   // reopen detached next time
     writeFile(g.settingsPath, serialize(g.settings));
     g.audio.stop();
     ImGui_ImplDX11_Shutdown();
