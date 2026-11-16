@@ -1,0 +1,64 @@
+name: Notarization status
+
+# Checks Apple's notarization result for the latest Mac release. If Apple accepted it, staples
+# the ticket into the release's .dmg and .zip (so they open without a warning even offline)
+# and refreshes SHA256SUMS.txt for the in-app updater.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.1). Empty = latest release."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          python3 - <<'PY'
+          import os, re, textwrap
+          raw = os.environ["ASC_KEY_P8"]
+          body = re.sub(r"(?i)[^A-Za-z0-9+/=]*(BEGIN|END)\s+(EC\s+)?PRIVATE\s+KEY[^A-Za-z0-9+/=]*", "\n", raw)
+          body = "".join(re.findall(r"[A-Za-z0-9+/=]+", body))
+          p = os.path.join(os.environ["RUNNER_TEMP"], "key.p8")
+          open(p, "w").write("-----BEGIN PRIVATE KEY-----\n" + "\n".join(textwrap.wrap(body, 64)) + "\n-----END PRIVATE KEY-----\n")
+          PY
+
+      - name: Notarization history
+        env:
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun notarytool history --key "$RUNNER_TEMP/key.p8" --key-id AAX8B3U4QH --issuer "$ISSUER"
+
+      - name: Staple the release downloads if accepted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          [ -n "$TAG" ] || TAG="$(gh release view --json tagName -q .tagName)"
+          echo "Release: $TAG"
+          mkdir rel && cd rel
+          gh release download "$TAG"
+          ls -la
+          DMG="$(ls *-macOS.dmg)"; ZIP="$(ls *-macOS.zip)"
+          if ! xcrun stapler staple "$DMG"; then
+            echo "::warning::Apple has not accepted the notarization yet (or it was rejected; see the history above). Nothing changed."
+            exit 0
+          fi
+          xcrun stapler validate "$DMG"
+          mkdir app && ditto -x -k "$ZIP" app
+          xcrun stapler staple app/Dropocalypse.app
+          spctl --assess --type execute --verbose app/Dropocalypse.app
+          rm "$ZIP" && ditto -c -k --sequesterRsrc --keepParent app/Dropocalypse.app "$ZIP"
+          sha256sum *.zip *.dmg *.pdf > SHA256SUMS.txt 2>/dev/null || shasum -a 256 *.zip *.dmg *.pdf > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" "$DMG" "$ZIP" SHA256SUMS.txt --clobber
+          echo "Stapled and re-uploaded $DMG and $ZIP."
