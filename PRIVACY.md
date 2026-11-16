@@ -17,6 +17,10 @@ Your logo image and settings are stored only on your computer:
 
 They are never uploaded.
 
+## Recordings
+
+When you click **Record**, the visuals and the audio Dropocalypse is listening to are saved as a video file in the folder you choose (Movies on Mac or Videos on Windows by default). Recordings stay on your computer; Dropocalypse never uploads them.
+
 ## Network use: update checks
 
 Dropocalypse connects to the internet for one purpose: keeping the app up to date. It connects only to GitHub, where the project is hosted.

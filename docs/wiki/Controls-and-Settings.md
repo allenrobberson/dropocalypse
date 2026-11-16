@@ -23,11 +23,20 @@ From left to right:
 | 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
+| 🔴 **Record** / **Stop** | Records the visuals and the music to an MP4 video, without the toolbar. The **▾** next to it sets the video size (720p, 1080p, 4K) and where to save. See [Recording](#recording). |
 | 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor) |
 | ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen. See [Live Shows and TVs](Live-Shows-and-TVs#two-screens-controls-on-one-visuals-on-the-other). |
 | ⤢ / **Full screen** | Full screen on / off |
 
 > On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+
+## Recording
+
+1. Click the red **Record** button in the toolbar (or press **R**). It turns into **Stop** with a running timer.
+2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
+3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
+
+Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. If your window isn't 16:9, the video gets black bars; full screen on a 16:9 display fills the frame.
 
 ## Style controls
 

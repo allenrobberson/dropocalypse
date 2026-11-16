@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.0
+- 🔴 Record the visuals and the music to an MP4 video (H.264 + AAC) with the **Record** / **Stop** button or **R**. The toolbar is never in the video.
+- Choose 720p60, 1080p60 or 4K30, and where recordings are saved (Movies / Videos by default, or any folder).
+- In the toolbar and the detached controls window, on Mac and Windows. "Saved …" messages appear in the controls window when it's detached, so the audience doesn't see them.
+
 ## 1.1.0
 - 🖥️🖥️ Detachable controls: **Detach** (or **D**) moves the toolbar into its own window with every control stacked top to bottom, so it can stay on the main screen while the visuals play full screen on another display. **Attach** or closing the window puts it back; the choice is remembered (Mac and Windows).
 - 📺 Screen picker: send the visuals full screen to any connected display in one click.

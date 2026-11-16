@@ -13,6 +13,8 @@
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
 | `D` | Detach / attach the controls window |
+| `R` | Start / stop recording |
+| `⇧⌘R` | Start / stop recording (Mac menu shortcut) |
 | `⇧⌘D` | Detach / attach the controls (Mac menu shortcut) |
 
 On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Restart Audio**.
