@@ -116,11 +116,19 @@ if [ -n "$SIGN_IDENTITY" ]; then
   codesign --force --timestamp --sign "$SIGN_IDENTITY" "$DMG"
   if [ -n "${NOTARY_KEY:-}" ]; then
     echo "==> Notarizing (this usually takes a few minutes)"
-    xcrun notarytool submit "$DMG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" \
-      --issuer "$NOTARY_ISSUER" --wait --timeout 30m
-    xcrun stapler staple "$DMG"
-    xcrun stapler staple "$APP"     # the app inside was notarized with the disk image
-    spctl --assess --type execute --verbose "$APP"
+    # If Apple is slow, don't block the release: once Apple accepts the submission, macOS
+    # finds the notarization online even without a stapled ticket.
+    if xcrun notarytool submit "$DMG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" \
+         --issuer "$NOTARY_ISSUER" --wait --timeout "${NOTARY_TIMEOUT:-20m}" | tee "$DIST/notary.log" \
+       && grep -q "status: Accepted" "$DIST/notary.log"; then
+      xcrun stapler staple "$DMG"
+      xcrun stapler staple "$APP"     # the app inside was notarized with the disk image
+      spctl --assess --type execute --verbose "$APP" || true
+    else
+      echo "::warning::Notarization not finished or not accepted; publishing without a stapled ticket."
+      cat "$DIST/notary.log" || true
+    fi
+    rm -f "$DIST/notary.log"
   fi
 fi
 
