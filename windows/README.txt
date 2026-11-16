@@ -40,4 +40,6 @@ WHERE THINGS ARE SAVED
 Full user guide: https://github.com/allenrobberson/dropocalypse#user-guide
 Questions and ideas: https://github.com/allenrobberson/dropocalypse/discussions
 Report a bug: https://github.com/allenrobberson/dropocalypse/issues
+Privacy policy: https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md
+Code signing policy: https://github.com/allenrobberson/dropocalypse/blob/main/CODE_SIGNING_POLICY.md
 Free and open source under the MIT License (see LICENSE.txt).

@@ -21,7 +21,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge for projectors, TVs and DJ booths.
 
-**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Build from source](#building-from-source)**
+**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
 
 ## 🆕 What's new
 
@@ -388,6 +388,11 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 ## Support the project
 
 Dropocalypse is free and always will be. If it livens up your shows or streams, consider **[sponsoring it on GitHub](https://github.com/sponsors/allenrobberson)**. The first goal is the $99/year Apple Developer membership, so Mac downloads can be signed and notarized and open without a security warning.
+
+## Privacy and code signing
+
+- **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer. The only network use is a daily update check with GitHub (which you can turn off) and downloading an update when you click **Update now**.
+- **[Code signing policy](CODE_SIGNING_POLICY.md):** Windows releases are being set up for free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 ## License
 

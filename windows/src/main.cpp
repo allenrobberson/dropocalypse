@@ -57,6 +57,7 @@ struct AppSettings {
     std::string latestVersion;        // newest version GitHub reported
     std::string latestUrl;            // its release page
     long long updateSnoozeUntil = 0;  // "Ignore for 24 hours": hide the toolbar button until then
+    bool privacyNoticeSeen = false;   // first-run notice about the update check has been answered
 };
 
 static std::wstring appDataDir() {
@@ -90,6 +91,7 @@ static std::string serialize(const AppSettings& s) {
     out += "latestVersion=" + s.latestVersion + "\n";
     out += "latestUrl=" + s.latestUrl + "\n";
     out += "updateSnoozeUntil=" + std::to_string(s.updateSnoozeUntil) + "\n";
+    out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
     return out;
@@ -141,6 +143,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("latestVersion")) s.latestVersion = kv["latestVersion"];
     if (kv.count("latestUrl")) s.latestUrl = kv["latestUrl"];
     if (kv.count("updateSnoozeUntil")) s.updateSnoozeUntil = std::atoll(kv["updateSnoozeUntil"].c_str());
+    flag("privacyNoticeSeen", s.privacyNoticeSeen);
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
 }
@@ -587,6 +590,41 @@ static void cleanupOldExe() {
             Sleep(250);
         }
     }).detach();
+}
+
+/// First launch: say plainly what goes over the network and let the user turn it off before
+/// anything is sent. (Audio never leaves the computer.)
+static void drawPrivacyNotice() {
+    if (g.settings.privacyNoticeSeen) return;
+    if (!ImGui::IsPopupOpen("Welcome to Dropocalypse")) ImGui::OpenPopup("Welcome to Dropocalypse");
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(460 * g.dpi, 0));
+    if (ImGui::BeginPopupModal("Welcome to Dropocalypse", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+        ImGui::TextWrapped("Your audio is analyzed live on this computer and is never recorded or sent anywhere.");
+        ImGui::Spacing();
+        ImGui::TextWrapped("To tell you about new versions, Dropocalypse asks GitHub once a day for the latest version number, "
+                           "and downloads an update only when you click Update now. Nothing about you is sent. "
+                           "You can change this any time under Look > Check for updates automatically.");
+        ImGui::Spacing();
+        if (ImGui::SmallButton("Read the privacy policy"))
+            ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md",
+                          nullptr, nullptr, SW_SHOWNORMAL);
+        ImGui::Separator();
+        if (ImGui::Button("OK, check for updates")) {
+            g.settings.privacyNoticeSeen = true;
+            g.settings.checkForUpdates = true;
+            ImGui::CloseCurrentPopup();
+            if (!isDevVersion(APP_VERSION_STR)) startUpdateCheck(false);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Don't check for updates")) {
+            g.settings.privacyNoticeSeen = true;
+            g.settings.checkForUpdates = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 /// The popup shown from the toolbar's Update button.
@@ -1269,7 +1307,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
 
     g.sources = AudioCapture::listSources();
     startAudio();
-    if (g.settings.checkForUpdates && !isDevVersion(APP_VERSION_STR) &&
+    if (g.settings.checkForUpdates && g.settings.privacyNoticeSeen && !isDevVersion(APP_VERSION_STR) &&
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
         startUpdateCheck(false);
     noteActivity(true);
@@ -1331,6 +1369,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         if (g.toolbarVisible && now - g.lastActivity > kHideDelay) g.toolbarVisible = false;
 
         drawToolbar(dt);
+        drawPrivacyNotice();
         drawNotices();
 
         ImGui::Render();

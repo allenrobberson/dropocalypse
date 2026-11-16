@@ -185,6 +185,9 @@ jobs:
             ## 🔄 Updating
             Already on 1.0 or later? Click the pink **Update** button in the toolbar, then **Update now**, and Dropocalypse installs this version and reopens by itself.
 
+            ## 🔏 Code signing policy
+            See the [code signing policy](https://github.com/allenrobberson/dropocalypse/blob/main/CODE_SIGNING_POLICY.md) and [privacy policy](https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md).
+
             ## 💬 Questions or ideas?
             Ask, suggest new styles or share your setup in [Discussions](https://github.com/allenrobberson/dropocalypse/discussions). Found a bug? [Open an issue](https://github.com/allenrobberson/dropocalypse/issues).
 
