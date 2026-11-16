@@ -263,9 +263,12 @@ void Recorder::captureFrame(ID3D11Texture2D* source) {
         stagingFull_[slot] = false;
     }
 
-    // Frame pacing: record at the chosen rate even if the screen refreshes faster.
-    if (lastVideoTime_ >= 0 && now100ns - lastVideoTime_ < frameLen * 9 / 10) return;
-    lastVideoTime_ = now100ns;
+    // Constant frame rate: frames sit exactly on a 1/fps grid whatever the screen's refresh.
+    if (lastVideoTime_ < 0) lastVideoTime_ = 0;              // next slot
+    if (now100ns < lastVideoTime_ - frameLen / 2) return;
+    if (now100ns - lastVideoTime_ > frameLen * 2) lastVideoTime_ = (now100ns / frameLen) * frameLen;
+    const int64_t slotTime = lastVideoTime_;
+    lastVideoTime_ += frameLen;
 
     D3D11_TEXTURE2D_DESC sd{};
     source->GetDesc(&sd);
@@ -331,7 +334,7 @@ void Recorder::captureFrame(ID3D11Texture2D* source) {
     ID3D11ShaderResourceView* nullSRV = nullptr;
     ctx_->PSSetShaderResources(0, 1, &nullSRV);
     ctx_->CopyResource(staging_[slot].Get(), target_.Get());
-    stagingTime_[slot] = now100ns;
+    stagingTime_[slot] = slotTime;
     stagingFull_[slot] = true;
     stagingNext_ = (slot + 1) % kStaging;
 

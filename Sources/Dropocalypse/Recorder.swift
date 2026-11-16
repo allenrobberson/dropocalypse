@@ -30,7 +30,7 @@ final class Recorder: @unchecked Sendable {
     private(set) var url: URL?
     private var active = false
     private var startTime: CFTimeInterval = 0
-    private var lastFrameTime: CFTimeInterval = -1
+    private var nextSlot: Double = 0   // time of the next video frame on a fixed fps grid
     private var fps = 60
     private(set) var width = 1920
     private(set) var height = 1080
@@ -102,7 +102,7 @@ final class Recorder: @unchecked Sendable {
         audioRate = 0
         audioFramesWritten = 0
         audioFormat = nil
-        lastFrameTime = -1
+        nextSlot = 0
         startTime = CACurrentMediaTime()
         active = true
         lock.unlock()
@@ -139,15 +139,19 @@ final class Recorder: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard active, let adaptor, let pool = adaptor.pixelBufferPool, let cache = textureCache else { return nil }
+        // Constant frame rate: frames sit exactly on a 1/fps grid whatever the screen's refresh.
         let t = now - startTime
-        if lastFrameTime >= 0, t - lastFrameTime < 0.9 / Double(fps) { return nil }
+        let step = 1.0 / Double(fps)
+        if t < nextSlot - step * 0.5 { return nil }
+        if t - nextSlot > step * 2 { nextSlot = (t / step).rounded(.down) * step }   // fell behind: catch up
+        let slot = nextSlot
         var pb: CVPixelBuffer?
         guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) == kCVReturnSuccess, let pixelBuffer = pb else { return nil }
         var cvTex: CVMetalTexture?
         CVMetalTextureCacheCreateTextureFromImage(nil, cache, pixelBuffer, nil, .bgra8Unorm, width, height, 0, &cvTex)
         guard let cvTexture = cvTex, let texture = CVMetalTextureGetTexture(cvTexture) else { return nil }
-        lastFrameTime = t
-        return FrameTarget(pixelBuffer: pixelBuffer, texture: texture, cvTexture: cvTexture, time: t)
+        nextSlot = slot + step
+        return FrameTarget(pixelBuffer: pixelBuffer, texture: texture, cvTexture: cvTexture, time: slot)
     }
 
     /// Call when the GPU has finished drawing into the frame target.
@@ -221,10 +225,13 @@ final class RecordingAudioTap: @unchecked Sendable {
     private let lock = NSLock()
     private var recorder: Recorder?
     private var scratch = [Float](repeating: 0, count: 16384)
+    private var pending = [Float]()        // batched to ~20 ms chunks to keep the writer light
+    private var pendingRate: Double = 0
 
     func attach(_ recorder: Recorder?) {
         lock.lock()
         self.recorder = recorder
+        pending.removeAll(keepingCapacity: true)
         lock.unlock()
     }
 
@@ -242,12 +249,18 @@ final class RecordingAudioTap: @unchecked Sendable {
         }
         guard let left = channels.first else { return }
         let right = channels.count > 1 ? channels[1] : left
-        scratch.withUnsafeMutableBufferPointer { out in
-            for i in 0..<frameCount {
-                out[i * 2] = left.0[i * left.1 + left.2]
-                out[i * 2 + 1] = right.0[i * right.1 + right.2]
+        if pendingRate != sampleRate { pending.removeAll(keepingCapacity: true); pendingRate = sampleRate }
+        pending.reserveCapacity(4096 * 2)
+        for i in 0..<frameCount {
+            pending.append(left.0[i * left.1 + left.2])
+            pending.append(right.0[i * right.1 + right.2])
+        }
+        let chunk = max(256, Int(sampleRate * 0.02))
+        if pending.count / 2 >= chunk {
+            pending.withUnsafeBufferPointer { buf in
+                recorder.appendAudio(buf.baseAddress!, frames: buf.count / 2, sampleRate: sampleRate)
             }
-            recorder.appendAudio(out.baseAddress!, frames: frameCount, sampleRate: sampleRate)
+            pending.removeAll(keepingCapacity: true)
         }
     }
 }
