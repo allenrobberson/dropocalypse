@@ -170,7 +170,7 @@ jobs:
 
       # ---- Microsoft Store edition: same app without the built-in updater, packaged as MSIX.
       # The Store signs the package itself, so it is left unsigned here. Identity values come from
-      # Partner Center (Product identity) and are stored as repository variables.
+      # Partner Center (Product identity, Store ID 9N1TJ9D5R5C8); repository variables can override them.
       - name: Build Microsoft Store edition
         run: |
           cmake -S windows -B build-store -A x64 "-DAPP_VERSION=${{ env.APP_VERSION }}" -DDROPOCALYPSE_STORE=ON
@@ -186,10 +186,9 @@ jobs:
           $parts = ("$env:APP_VERSION" -split '[-+]')[0].Split('.')
           if ("$env:APP_VERSION" -match '-dev') { $msixVersion = "0.0.$env:GITHUB_RUN_NUMBER.0" }
           else { $msixVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0" }
-          $name = if ($env:STORE_IDENTITY_NAME) { $env:STORE_IDENTITY_NAME } else { "Dropocalypse.Placeholder" }
-          $pub  = if ($env:STORE_PUBLISHER) { $env:STORE_PUBLISHER } else { "CN=00000000-0000-0000-0000-000000000000" }
+          $name = if ($env:STORE_IDENTITY_NAME) { $env:STORE_IDENTITY_NAME } else { "AllenRobberson.Dropocalypse" }
+          $pub  = if ($env:STORE_PUBLISHER) { $env:STORE_PUBLISHER } else { "CN=E2C97CD9-87D6-4B67-95B2-E279CF095C7A" }
           $disp = if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $env:STORE_PUBLISHER_DISPLAY_NAME } else { "Allen Robberson" }
-          if (-not $env:STORE_IDENTITY_NAME) { Write-Output "::notice::STORE_IDENTITY_NAME not set yet; the MSIX uses placeholder identity values." }
           $stage = "msix-stage"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item build-store/Release/Dropocalypse.exe $stage/

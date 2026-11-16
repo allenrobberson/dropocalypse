@@ -58,8 +58,11 @@ visualizer, winamp, milkdrop, music visualizer, dj, logo, equalizer
 ## Screenshots
 Use the same 2560×1600 images as the Mac App Store (`docs/app-store/screenshots/`); the Store accepts 1366×768 or larger.
 
-## Store identity (fill in after reserving the name)
-Partner Center → the app → Product management → Product identity. Copy these into GitHub → Settings → Secrets and variables → Actions → **Variables**:
-- `STORE_IDENTITY_NAME` = Package/Identity/Name
-- `STORE_PUBLISHER` = Package/Identity/Publisher (starts with `CN=`)
-- `STORE_PUBLISHER_DISPLAY_NAME` = Package/Properties/PublisherDisplayName
+## Store identity (from Partner Center → Product identity)
+- Store ID: 9N1TJ9D5R5C8
+- Package/Identity/Name: AllenRobberson.Dropocalypse
+- Package/Identity/Publisher: CN=E2C97CD9-87D6-4B67-95B2-E279CF095C7A
+- Package/Properties/PublisherDisplayName: Allen Robberson
+- Package Family Name: AllenRobberson.Dropocalypse_mzf15we3wbajj
+
+These are built into `.github/workflows/build.yml`.
