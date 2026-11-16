@@ -1,0 +1,104 @@
+name: Microsoft Store
+
+# Builds the unsigned Store MSIX and, when the four Partner Center secrets exist,
+# uploads it as a new submission. Microsoft requires the first submission (age
+# ratings, pricing, properties, and a listing with a screenshot) to be finished
+# in Partner Center by a person. See docs/microsoft-store/submission.md.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version, for example 1.2.6. Empty uses docs/guide-version.txt. Must be higher than any version already sent to the Store."
+        required: false
+        default: ""
+      publish:
+        description: "Upload the package to Partner Center"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: Build and submit MSIX
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Build Microsoft Store edition
+        shell: pwsh
+        run: |
+          $v = "${{ inputs.version }}".Trim()
+          if (-not $v) { $v = (Get-Content docs/guide-version.txt | Select-Object -First 1).Trim() }
+          if ($v -match '-dev') { throw "Store packages need a plain version such as 1.2.6, not '$v'." }
+          "STORE_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append
+          cmake -S windows -B build-store -A x64 "-DAPP_VERSION=$v" -DDROPOCALYPSE_STORE=ON
+          if ($LASTEXITCODE -ne 0) { throw "configure failed" }
+          cmake --build build-store --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+
+      - name: Package MSIX
+        shell: pwsh
+        env:
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/package-store-msix.ps1 -Version $env:STORE_VERSION -ExePath build-store/Release/Dropocalypse.exe
+
+      - name: Upload Microsoft Store package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Dropocalypse-Microsoft-Store
+          path: store-dist/*.msix
+
+      - name: Check Partner Center credentials
+        id: creds
+        if: inputs.publish == true
+        shell: pwsh
+        env:
+          TENANT: ${{ secrets.AZURE_AD_TENANT_ID }}
+          CLIENT: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          SELLER: ${{ secrets.SELLER_ID }}
+        run: |
+          $missing = @()
+          if (-not $env:TENANT) { $missing += "AZURE_AD_TENANT_ID" }
+          if (-not $env:CLIENT) { $missing += "AZURE_AD_APPLICATION_CLIENT_ID" }
+          if (-not $env:SECRET) { $missing += "AZURE_AD_APPLICATION_SECRET" }
+          if (-not $env:SELLER) { $missing += "SELLER_ID" }
+          if ($missing.Count -gt 0) {
+            Write-Host "::error::Partner Center secrets are not in this repository yet: $($missing -join ', ')."
+            Write-Host "Add them under Settings, Secrets and variables, Actions. The steps are in docs/microsoft-store/submission.md."
+            Write-Host "The MSIX above can still be downloaded and uploaded by hand for the first submission."
+            exit 1
+          }
+          "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Set up Microsoft Store CLI
+        if: inputs.publish == true && steps.creds.outputs.ready == 'true'
+        uses: microsoft/microsoft-store-apppublisher@cc9910a8d59f2eb55cbb83df0a3800cf3b5300e0 # v1.4
+        with:
+          version: v0.4.4
+
+      - name: Publish to Partner Center
+        if: inputs.publish == true && steps.creds.outputs.ready == 'true'
+        shell: pwsh
+        env:
+          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+          STORE_PRODUCT_ID: ${{ vars.STORE_PRODUCT_ID }}
+        run: |
+          $productId = if ($env:STORE_PRODUCT_ID) { $env:STORE_PRODUCT_ID } else { "9N1TJ9D5R5C8" }
+          $msix = Get-ChildItem store-dist -Filter *.msix | Select-Object -First 1
+          if (-not $msix) { throw "No MSIX was packaged." }
+          msstore reconfigure --tenantId "$env:AZURE_AD_TENANT_ID" --sellerId "$env:SELLER_ID" --clientId "$env:AZURE_AD_APPLICATION_CLIENT_ID" --clientSecret "$env:AZURE_AD_APPLICATION_SECRET" --output-stream stdout
+          if ($LASTEXITCODE -ne 0) { throw "msstore reconfigure failed" }
+          msstore settings --enableTelemetry false --output-stream stdout
+          if ($LASTEXITCODE -ne 0) { Write-Host "::warning::Couldn't turn off Microsoft Store CLI telemetry. Continuing." }
+          msstore publish $msix.FullName -id $productId --output-stream stdout
+          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed. If Partner Center has a draft submission that was created in the browser, delete that draft and run this again. The first age-ratings questionnaire still has to be completed in Partner Center. See docs/microsoft-store/submission.md." }
