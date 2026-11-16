@@ -6,6 +6,13 @@
 // 16-bit PCM at 48 kHz for the AAC encoder. Writing happens on a worker thread.
 #pragma once
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <d3d11.h>
 #include <wrl/client.h>
 
