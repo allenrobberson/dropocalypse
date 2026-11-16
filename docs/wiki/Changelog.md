@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## Unreleased
+- 🔏 **Update now** checks the download before installing it. The SHA-256 checksum is still required. On Mac, the new app must also be validly signed with the same Developer ID team as the copy you're running, and macOS Gatekeeper must accept it. On Windows, that signature check turns on once the copy you're running is itself code-signed; unsigned builds keep updating as they do today. If a check fails, nothing is changed.
+
 ## 1.2.6
 - 📸 The printable User Guide now has screenshots of the toolbar, the Motion, Audio and recording panels, the style list and the detached controls window.
 - The guide shows its version number on the cover and every page, and its "What's new" lists just the two latest releases.

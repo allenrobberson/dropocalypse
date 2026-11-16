@@ -29,7 +29,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 
 ## Updating
 
-From version **1.0**, Dropocalypse updates itself: when a new version is out, a pink **Update** button appears in the toolbar. Click it, then **Update now**. It downloads the new version, checks it against the release's published SHA-256 checksums, installs it and reopens, with your logo and settings kept. (0.9.x shows the button but only opens the download page; update to 1.0 by hand once.)
+From version **1.0**, Dropocalypse updates itself: when a new version is out, a pink **Update** button appears in the toolbar. Click it, then **Update now**. It downloads the new version, checks the SHA-256 checksum published with the release, and installs it only if that check passes. On Mac it also requires a valid Developer ID signature from the same team as the copy you're running, accepted by Gatekeeper. On Windows, once the copy you're running is code-signed, the new one must be signed by the same publisher; until then the checksum is enough. Your logo and settings are kept. (0.9.x shows the button but only opens the download page; update to 1.0 by hand once.)
 
 - **Mac:** Dropocalypse must be in a folder it can edit, such as **Applications**. If you run it straight from the disk image, it will ask you to move it first.
 - **Windows:** keep the Dropocalypse folder somewhere you can edit (Documents, Desktop, a USB stick). The old version is swapped out in place; no admin rights are needed.
@@ -44,6 +44,6 @@ Download the new version and replace the old one: drag the new app into **Applic
 
 ## Why the security warnings?
 
-Dropocalypse is free and made by one developer. Apple charges $99 a year to notarize Mac apps, and Windows code-signing certificates cost money too, so for now the downloads aren't signed. The warnings mean "this app isn't from an identified developer", not that anything harmful was found. The full source code is public, and every download is built by GitHub Actions from that code. Signing the Mac app is the first [sponsorship](Support-the-Project) goal.
+The Mac app has been signed and notarized since 1.0.1, so it opens without a security warning. The portable Windows download is not code-signed yet (signing through SignPath is in progress), so Windows may still say "Windows protected your PC" the first time: click **More info → Run anyway**. That means the file has no publisher signature, not that anything harmful was found. The full source code is public, and every download is built by GitHub Actions from that code. Sponsorships help keep the Mac signing membership and Windows signing going: see [Support the Project](Support-the-Project).
 
 Next: [[Quick Start]]

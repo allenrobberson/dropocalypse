@@ -234,7 +234,7 @@ struct TopToolbar: View {
                         .disabled(updates.installBlocker != nil)
                 }
             case .idle:
-                Text("You have version \(updates.currentVersion). **Update now** downloads the new version, installs it and reopens Dropocalypse. Your logo and settings are kept.")
+                Text("You have version \(updates.currentVersion). **Update now** downloads the new version, checks its signature, installs it and reopens Dropocalypse. Your logo and settings are kept.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {

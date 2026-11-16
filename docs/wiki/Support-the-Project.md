@@ -6,7 +6,7 @@ Dropocalypse is free and always will be. If it livens up your shows, streams or 
 
 **[github.com/sponsors/allenrobberson](https://github.com/sponsors/allenrobberson)**
 
-Sponsorships go to the developer and keep the project going. The first goal is the **$99/year Apple Developer membership**, so Mac downloads can be signed and notarized and open without a security warning. After that: a code-signing certificate for Windows, an app icon, and time for new styles and features.
+Sponsorships go to the developer and keep the project going. They cover the yearly Apple Developer membership that keeps Mac downloads signed and notarized, a Windows code-signing certificate, and time for new styles and features.
 
 ## Other ways to help
 

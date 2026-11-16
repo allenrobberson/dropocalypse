@@ -4,6 +4,7 @@
 // Settings and the saved logo live in %APPDATA%\Dropocalypse.
 
 #include "audio.h"
+#include "core_logic.h"
 #include "recorder.h"
 #include "renderer.h"
 
@@ -18,6 +19,9 @@
 #include <shobjidl.h>
 #include <winhttp.h>
 #include <bcrypt.h>
+#include <wintrust.h>
+#include <softpub.h>
+#include <wincrypt.h>
 #include <wrl/client.h>
 
 #include "imgui.h"
@@ -234,8 +238,8 @@ static App g;
 
 // ---------------------------------------------------------------------------------------------
 // Update check: one HTTPS request to GitHub for the latest release (at most once a day). If it's
-// newer than this copy, the toolbar shows "Update X.Y.Z", which opens the download page. Nothing
-// is downloaded or installed automatically, and nothing about the user is sent.
+// newer than this copy, the toolbar offers Update now. Nothing is downloaded until the user asks,
+// and nothing about the user is sent.
 
 static const char* kReleasesPage = "https://github.com/allenrobberson/dropocalypse/releases/latest";
 
@@ -246,34 +250,12 @@ struct UpdateState {
     bool userInitiated = false;
     bool ok = false;
     std::string version, url, error;
-    std::string message;   // shown in the Look panel after "Check now"
+    std::string message;   // shown in the Updates menu after "Check now"
 };
 static UpdateState gUpdate;
 
 static bool isDevVersion(const char* v) {
     return std::string(v).find("dev") != std::string::npos || std::string(v) == "0.0.0";
-}
-
-/// Dotted versions compared numerically (0.10.0 > 0.9.2); anything after "-" is ignored.
-static bool versionIsNewer(const std::string& a, const std::string& b) {
-    auto parts = [](const std::string& s) {
-        std::vector<int> v;
-        std::string core = s.substr(0, s.find('-'));
-        size_t i = 0;
-        while (i <= core.size()) {
-            size_t j = core.find('.', i);
-            if (j == std::string::npos) j = core.size();
-            v.push_back(std::atoi(core.substr(i, j - i).c_str()));
-            i = j + 1;
-        }
-        return v;
-    };
-    auto x = parts(a), y = parts(b);
-    for (size_t i = 0; i < std::max(x.size(), y.size()); ++i) {
-        int p = i < x.size() ? x[i] : 0, q = i < y.size() ? y[i] : 0;
-        if (p != q) return p > q;
-    }
-    return false;
 }
 
 /// HTTPS GET of a full URL (redirects followed). `progress(done, total)` is optional.
@@ -412,9 +394,10 @@ static void openDownloadPage() {
 
 // ---------------------------------------------------------------------------------------------
 // Update now: download the new portable zip, check it against the release's SHA256SUMS.txt,
-// unpack it, swap the files in this folder (a running .exe can be renamed, so no admin rights or
-// helper program are needed), start the new version and quit. Any failure leaves the current
-// version untouched and falls back to the download page.
+// and, once this copy itself is Authenticode-signed, require the new exe to be signed by the
+// same publisher. Then unpack and swap the files in this folder (a running .exe can be renamed,
+// so no admin rights or helper program are needed), start the new version and quit. Any failure
+// leaves the current version untouched. Unsigned builds keep updating on the checksum alone.
 
 enum class InstallPhase { Idle, Downloading, Verifying, Installing, ReadyToRelaunch, Failed };
 struct InstallState {
@@ -439,6 +422,60 @@ static std::wstring exePath() {
 static std::wstring dirOf(const std::wstring& p) {
     size_t s = p.find_last_of(L"\\/");
     return s == std::wstring::npos ? L"." : p.substr(0, s);
+}
+
+/// Trusted Authenticode signature and the signing certificate's simple display name (the publisher).
+struct AuthenticodeResult {
+    bool hasSignature = false;
+    bool trusted = false;
+    std::string publisher;
+};
+
+static AuthenticodeResult queryAuthenticode(const std::wstring& path) {
+    AuthenticodeResult result;
+    WINTRUST_FILE_INFO fileInfo{};
+    fileInfo.cbStruct = sizeof(fileInfo);
+    fileInfo.pcwszFilePath = path.c_str();
+
+    WINTRUST_DATA trust{};
+    trust.cbStruct = sizeof(trust);
+    trust.dwUIChoice = WTD_UI_NONE;
+    trust.fdwRevocationChecks = WTD_REVOKE_NONE; // a CRL outage must not block an update
+    trust.dwUnionChoice = WTD_CHOICE_FILE;
+    trust.pFile = &fileInfo;
+    trust.dwStateAction = WTD_STATEACTION_VERIFY;
+
+    GUID action = WINTRUST_ACTION_GENERIC_VERIFY_V2;
+    const LONG status = WinVerifyTrust(nullptr, &action, &trust);
+    if (status == ERROR_SUCCESS) {
+        result.hasSignature = true;
+        result.trusted = true;
+    } else if (status != TRUST_E_NOSIGNATURE) {
+        result.hasSignature = true;
+    }
+
+    if (trust.hWVTStateData) {
+        if (CRYPT_PROVIDER_DATA* prov = WTHelperProvDataFromStateData(trust.hWVTStateData)) {
+            if (prov->csSigners > 0) {
+                result.hasSignature = true;
+                if (CRYPT_PROVIDER_SGNR* sgnr = WTHelperGetProvSignerFromChain(prov, 0, FALSE, 0)) {
+                    if (sgnr->csCertChain > 0 && sgnr->pasCertChain && sgnr->pasCertChain[0].pCert) {
+                        PCCERT_CONTEXT cert = sgnr->pasCertChain[0].pCert;
+                        const DWORD n = CertGetNameStringW(cert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, nullptr, 0);
+                        if (n > 1) {
+                            std::wstring name(n, L'\0');
+                            CertGetNameStringW(cert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, name.data(), n);
+                            if (!name.empty() && name.back() == L'\0') name.pop_back();
+                            result.publisher = narrow(name);
+                        }
+                    }
+                }
+            }
+        }
+        trust.dwStateAction = WTD_STATEACTION_CLOSE;
+        WinVerifyTrust(nullptr, &action, &trust);
+    }
+    return result;
 }
 
 static std::string sha256Hex(const std::string& data) {
@@ -514,15 +551,7 @@ static void installWorker() {
     // 2. Checksums, then the zip.
     std::string sums;
     if (!httpsGetUrl(sumsUrl, sums, err, 100000)) return failInstall(err);
-    std::string expected;
-    {
-        size_t p = sums.find(zipName);
-        if (p != std::string::npos) {
-            size_t lineStart = sums.rfind('\n', p);
-            lineStart = lineStart == std::string::npos ? 0 : lineStart + 1;
-            expected = sums.substr(lineStart, 64);
-        }
-    }
+    std::string expected = checksumFor(zipName, sums);
     if (expected.size() != 64) return failInstall("Couldn't read the release checksums.");
     std::string zip;
     gInstall.progress = 0;
@@ -564,10 +593,25 @@ static void installWorker() {
                                  L"' -DestinationPath '" + outDir + L"' -Force\"", code) && code == 0;
     }
     std::wstring newDir = outDir + L"\\Dropocalypse";
-    if (!unpacked || GetFileAttributesW((newDir + L"\\Dropocalypse.exe").c_str()) == INVALID_FILE_ATTRIBUTES)
+    std::wstring newExe = newDir + L"\\Dropocalypse.exe";
+    if (!unpacked || GetFileAttributesW(newExe.c_str()) == INVALID_FILE_ATTRIBUTES)
         return failInstall("Unpacking the update failed. Use the download page.");
 
+    // Signature: enforced only when the running exe is already trusted-signed, so unsigned
+    // builds (today, until SignPath signing lands) keep updating on the checksum alone.
+    gInstall.phase = InstallPhase::Verifying;
+    const AuthenticodeResult running = queryAuthenticode(exePath());
+    const AuthenticodeResult update = queryAuthenticode(newExe);
+    UpdateSignatureFacts signature;
+    signature.runningIsSigned = running.trusted;
+    signature.runningPublisher = running.publisher;
+    signature.updateIsSigned = update.hasSignature;
+    signature.updateTrusted = update.trusted;
+    signature.updatePublisher = update.publisher;
+    if (const char* why = updateSignatureRefusal(signature)) return failInstall(why);
+
     // 5. Swap files in this folder: rename the running .exe out of the way, copy the new files in.
+    gInstall.phase = InstallPhase::Installing;
     std::wstring cur = exePath();
     std::wstring appDir = dirOf(cur);
     std::wstring old = cur + L".old";

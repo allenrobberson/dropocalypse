@@ -1,12 +1,14 @@
 import AppKit
 import CryptoKit
+import DropocalypseCore
 import Foundation
 
 /// Asks GitHub for the latest release (at most once a day) and, if it's newer than this copy,
 /// shows an "Update available" button in the toolbar. From there the user can choose
 /// **Update now**: the new version is downloaded, checked against the SHA-256 checksums published
-/// with the release, installed over this copy, and reopened. Nothing happens without that click,
-/// and no information about the user is sent.
+/// with the release, and installed only if its Developer ID signature matches this copy's team
+/// and macOS Gatekeeper accepts it. Then it replaces this copy and reopens. Nothing happens
+/// without that click, and no information about the user is sent.
 final class UpdateChecker: ObservableObject {
     struct Release: Equatable {
         let version: String
@@ -217,10 +219,14 @@ final class UpdateChecker: ObservableObject {
         let work = FileManager.default.temporaryDirectory
             .appendingPathComponent("DropocalypseUpdate-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        var handedToHelper = false
+        defer { if !handedToHelper { try? FileManager.default.removeItem(at: work) } }
         let zipFile = work.appendingPathComponent(zip.name)
         try await download(zip.url, to: zipFile)
 
-        // 3. Verify.
+        // 3. Checksum, then the bundle's identity, Developer ID team, and Gatekeeper.
+        //    Quarantine is left in place until those checks pass, so a rejected download
+        //    is never stripped.
         await MainActor.run { self.phase = .verifying }
         let digest = SHA256.hash(data: try Data(contentsOf: zipFile, options: .mappedIfSafe))
         let actual = digest.map { String(format: "%02x", $0) }.joined()
@@ -228,8 +234,6 @@ final class UpdateChecker: ObservableObject {
             throw UpdateError("The download didn't match its checksum, so it wasn't installed. Try again.")
         }
 
-        // 4. Unpack and check it's really Dropocalypse at the expected version.
-        await MainActor.run { self.phase = .installing }
         let unpacked = work.appendingPathComponent("unpacked", isDirectory: true)
         try run("/usr/bin/ditto", ["-x", "-k", zipFile.path, unpacked.path])
         guard let newApp = try FileManager.default.contentsOfDirectory(at: unpacked, includingPropertiesForKeys: nil)
@@ -239,10 +243,20 @@ final class UpdateChecker: ObservableObject {
               (bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) == version else {
             throw UpdateError("The downloaded app didn't look right, so it wasn't installed.")
         }
-        try? run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", newApp.path])
+        let runningTeam = BundleSignature.observe(app: Bundle.main.bundleURL).teamID
+        let decision = UpdateSignaturePolicy.decide(UpdateSignatureFacts(
+            candidate: BundleSignature.observe(app: newApp),
+            runningTeamID: runningTeam))
+        if case .refuse(let message) = decision { throw UpdateError(message) }
 
-        // 5. A tiny helper swaps the apps once we've quit, then reopens the new one.
+        // 4. A tiny helper swaps the apps once we've quit, then reopens the new one.
         //    If anything goes wrong it puts the old app back and reopens that.
+        //    Gatekeeper already accepted this bundle (spctl). The attribute is cleared only
+        //    now, on the installed copy, so `open` relaunches it in place. Leaving
+        //    com.apple.quarantine on would make macOS translocate the app, and the next
+        //    update would refuse to replace a translocated copy. A download Gatekeeper
+        //    rejected never reaches this script.
+        await MainActor.run { self.phase = .installing }
         let script = work.appendingPathComponent("install.sh")
         try """
         #!/bin/sh
@@ -255,6 +269,7 @@ final class UpdateChecker: ObservableObject {
         else
           rm -rf "$OLD"; mv "$BACKUP" "$OLD"
         fi
+        # Cleared only after codesign and spctl accepted the download. See UpdateChecker.
         xattr -dr com.apple.quarantine "$OLD" 2>/dev/null
         open "$OLD"
         rm -rf "$(dirname "$0")"
@@ -264,6 +279,7 @@ final class UpdateChecker: ObservableObject {
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
         helper.arguments = [script.path, String(getpid()), Bundle.main.bundleURL.path, newApp.path]
         try helper.run()
+        handedToHelper = true
 
         await MainActor.run {
             self.phase = .relaunching
@@ -297,13 +313,7 @@ final class UpdateChecker: ObservableObject {
 
     /// Finds "<hash>  <file name>" in a sha256sum listing.
     static func checksum(for file: String, in listing: String) -> String? {
-        for line in listing.split(whereSeparator: \.isNewline) {
-            let parts = line.split(separator: " ", omittingEmptySubsequences: true)
-            if parts.count >= 2, parts.last.map({ $0.hasPrefix("*") ? String($0.dropFirst()) : String($0) }) == file {
-                return String(parts[0])
-            }
-        }
-        return nil
+        Checksums.sha256(for: file, in: listing)
     }
 
     func openDownloadPage() {
@@ -314,7 +324,7 @@ final class UpdateChecker: ObservableObject {
         let alert = NSAlert()
         if let available {
             alert.messageText = "Dropocalypse \(available.version) is available"
-            alert.informativeText = "You have version \(currentVersion). Update Now downloads it, installs it and reopens Dropocalypse. Your logo and settings are kept."
+            alert.informativeText = "You have version \(currentVersion). Update Now downloads it, checks its signature, installs it and reopens Dropocalypse. Your logo and settings are kept."
             alert.addButton(withTitle: "Update Now")
             alert.addButton(withTitle: "Later")
             alert.addButton(withTitle: "Download Page")
@@ -341,15 +351,7 @@ final class UpdateChecker: ObservableObject {
 
     /// Compares dotted versions numerically: 0.10.0 > 0.9.2. Anything after "-" is ignored.
     static func isNewer(_ a: String, than b: String) -> Bool {
-        func parts(_ s: String) -> [Int] {
-            s.split(separator: "-").first.map { $0.split(separator: ".").map { Int($0) ?? 0 } } ?? []
-        }
-        let x = parts(a), y = parts(b)
-        for i in 0..<max(x.count, y.count) {
-            let p = i < x.count ? x[i] : 0, q = i < y.count ? y[i] : 0
-            if p != q { return p > q }
-        }
-        return false
+        VersionCompare.isNewer(a, than: b)
     }
 }
 

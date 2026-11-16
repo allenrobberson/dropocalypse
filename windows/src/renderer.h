@@ -2,6 +2,7 @@
 #pragma once
 
 #include "audio.h"
+#include "core_logic.h"
 #include "scenes.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -22,7 +23,7 @@ struct RenderSettings {
     /// Bit i set = style i is left out of auto-cycle (unchecked in the style list).
     /// Stored as "skipped" so styles added in later versions are included automatically.
     uint32_t cycleSkip = 0;
-    bool inCycle(int i) const { return (cycleSkip & (1u << i)) == 0; }
+    bool inCycle(int i) const { return !cycleBitSkipped(cycleSkip, i); }
     void setInCycle(int i, bool on) { if (on) cycleSkip &= ~(1u << i); else cycleSkip |= (1u << i); }
     bool showLogo = true;
     float logoSize = 0.32f;

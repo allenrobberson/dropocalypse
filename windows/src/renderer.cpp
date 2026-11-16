@@ -1244,12 +1244,7 @@ void Renderer::updateScene(double now, float dt, RenderSettings& st) {
     const int n = (int)scenes.size();
     int requested = ((st.sceneIndex % n) + n) % n;
     if (st.autoCycle && now - sceneStart_ > std::max(5.0f, st.cycleSeconds)) {
-        int next = (requested + 1) % n;          // nothing checked -> use every style
-        for (int k = 1; k <= n; ++k) {
-            int c = (requested + k) % n;
-            if (st.inCycle(c)) { next = c; break; }
-        }
-        requested = next;
+        requested = nextCycleIndex(requested, n, st.cycleSkip); // nothing checked -> use every style
         sceneStart_ = now;
         st.sceneIndex = requested;
     }
