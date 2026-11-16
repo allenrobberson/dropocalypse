@@ -10,6 +10,8 @@
 **Privacy policy URL:** https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md
 **Package:** `Dropocalypse-<version>-Store.msix` from the "Dropocalypse-Microsoft-Store" build artifact (x64, Windows 10 1809 or later)
 
+How to send it to Partner Center, including the one-time browser steps and the GitHub secrets the workflow needs: [submission.md](submission.md).
+
 ## Short description
 Classic Winamp/MilkDrop-style visuals that react to your music, with your own logo bouncing to the bass.
 

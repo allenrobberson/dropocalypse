@@ -197,29 +197,8 @@ jobs:
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
           STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
         run: |
-          $parts = ("$env:STORE_VERSION" -split '[-+]')[0].Split('.')
-          $msixVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
-          $name = if ($env:STORE_IDENTITY_NAME) { $env:STORE_IDENTITY_NAME } else { "AllenRobberson.Dropocalypse" }
-          $pub  = if ($env:STORE_PUBLISHER) { $env:STORE_PUBLISHER } else { "CN=E2C97CD9-87D6-4B67-95B2-E279CF095C7A" }
-          $disp = if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $env:STORE_PUBLISHER_DISPLAY_NAME } else { "Allen Robberson" }
-          $stage = "msix-stage"
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Copy-Item build-store/Release/Dropocalypse.exe $stage/
-          Copy-Item -Recurse windows/store/Assets $stage/Assets
-          Copy-Item LICENSE "$stage/LICENSE.txt"
-          $m = Get-Content windows/store/AppxManifest.xml -Raw
-          $m = $m.Replace('__IDENTITY_NAME__', $name).Replace('__PUBLISHER__', $pub)
-          $m = $m.Replace('__PUBLISHER_DISPLAY_NAME__', [System.Security.SecurityElement]::Escape($disp))
-          $m = $m.Replace('__VERSION__', $msixVersion)
-          Set-Content -Encoding utf8 -Path "$stage/AppxManifest.xml" -Value $m
-          $makeappx = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter makeappx.exe |
-                      Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName | Select-Object -Last 1
-          if (-not $makeappx) { throw "makeappx.exe not found" }
-          New-Item -ItemType Directory -Force -Path store-dist | Out-Null
-          $out = "store-dist/Dropocalypse-$env:STORE_VERSION-Store.msix"
-          & $makeappx.FullName pack /d $stage /p $out /o
-          if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
-          Get-ChildItem store-dist
+          Set-ExecutionPolicy -Scope Process Bypass -Force
+          ./scripts/package-store-msix.ps1 -Version $env:STORE_VERSION -ExePath build-store/Release/Dropocalypse.exe
 
       - name: Upload Microsoft Store package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
