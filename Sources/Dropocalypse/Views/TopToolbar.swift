@@ -21,7 +21,7 @@ struct TopToolbar: View {
 
             Spacer(minLength: 12)
 
-            if updates.showBadge, let update = updates.available {
+            if updates.showBadge || updates.isBusy, let update = updates.available {
                 Button {
                     model.openPopover = model.openPopover == "update" ? nil : "update"
                 } label: {
@@ -101,24 +101,45 @@ struct TopToolbar: View {
     private func updatePopover(_ update: UpdateChecker.Release) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Dropocalypse \(update.version) is available").font(.headline)
-            Text("You have version \(updates.currentVersion). Download the new version and replace this one; your logo and settings are kept.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack {
-                Button("Ignore for 24 hours") {
-                    updates.ignoreForADay()
-                    model.openPopover = nil
+            switch updates.phase {
+            case .downloading(let p):
+                ProgressView(value: p) { Text("Downloading… \(Int(p * 100))%").font(.caption) }
+            case .verifying:
+                ProgressView { Text("Checking the download…").font(.caption) }
+            case .installing:
+                ProgressView { Text("Installing…").font(.caption) }
+            case .relaunching:
+                ProgressView { Text("Restarting Dropocalypse…").font(.caption) }
+            case .failed(let message):
+                Text(message).font(.caption).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Download page") { updates.openDownloadPage(); model.openPopover = nil }
+                    Spacer()
+                    Button("Try again") { updates.resetInstallState(); updates.installUpdate() }
+                        .disabled(updates.installBlocker != nil)
                 }
-                Spacer()
-                Button("Download") {
-                    updates.openDownloadPage()
-                    model.openPopover = nil
+            case .idle:
+                Text("You have version \(updates.currentVersion). **Update now** downloads the new version, installs it and reopens Dropocalypse. Your logo and settings are kept.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Ignore for 24 hours") {
+                        updates.ignoreForADay()
+                        model.openPopover = nil
+                    }
+                    Spacer()
+                    Button("Download page") {
+                        updates.openDownloadPage()
+                        model.openPopover = nil
+                    }
+                    Button("Update now") { updates.installUpdate() }
+                        .keyboardShortcut(.defaultAction)
                 }
-                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(14)
-        .frame(width: 300)
+        .frame(width: 360)
     }
 
     /// The style name opens a list: click a name to show it now, and use the checkboxes to choose

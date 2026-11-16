@@ -34,6 +34,11 @@ final class VisualizerModel: NSObject, ObservableObject {
         logoName = UserDefaults.standard.string(forKey: "logoName")
         installKeyMonitor()
         startHideTimer()
+        updates.presentPanel = { [weak self] in
+            guard let self else { return }
+            self.noteActivity(reveal: true)
+            self.openPopover = "update"
+        }
         updates.checkAutomatically(enabled: settings.checkForUpdates)
     }
 

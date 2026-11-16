@@ -31,7 +31,11 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 
 ## Updating
 
-From version 0.9.0, Dropocalypse tells you when a new version is out: a pink **Update available** button appears in the toolbar. Click it and choose **Download** (or **Ignore for 24 hours**). For an email on every release, click **Watch → Custom → Releases** on the GitHub page.
+From version **1.0**, Dropocalypse updates itself: when a new version is out, a pink **Update** button appears in the toolbar. Click it, then **Update now**. It downloads the new version, checks it against the release's published SHA-256 checksums, installs it and reopens, with your logo and settings kept. (0.9.x shows the button but only opens the download page; update to 1.0 by hand once.)
+
+- **Mac:** Dropocalypse must be in a folder it can edit, such as **Applications**. If you run it straight from the disk image, it will ask you to move it first.
+- **Windows:** keep the Dropocalypse folder somewhere you can edit (Documents, Desktop, a USB stick). The old version is swapped out in place; no admin rights are needed.
+- If anything fails (no internet, a bad download, a locked folder), nothing is changed. Use **Download page** instead. For an email on every release, click **Watch → Custom → Releases** on the GitHub page.
 
 Download the new version and replace the old one: drag the new app into **Applications** on a Mac (choose **Replace**), or swap in the new folder on Windows. Your logo, style and settings are kept.
 

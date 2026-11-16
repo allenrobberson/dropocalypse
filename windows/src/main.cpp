@@ -16,6 +16,7 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <winhttp.h>
+#include <bcrypt.h>
 #include <wrl/client.h>
 
 #include "imgui.h"
@@ -24,6 +25,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
+#include <functional>
 #include <ctime>
 #include <mutex>
 #include <thread>
@@ -239,25 +242,46 @@ static bool versionIsNewer(const std::string& a, const std::string& b) {
     return false;
 }
 
-static bool httpsGet(const wchar_t* host, const wchar_t* path, std::string& out, std::string& error) {
-    HINTERNET session = WinHttpOpen(L"Dropocalypse-update-check", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+/// HTTPS GET of a full URL (redirects followed). `progress(done, total)` is optional.
+static bool httpsGetUrl(const std::string& url, std::string& out, std::string& error, size_t maxBytes,
+                        const std::function<void(uint64_t, uint64_t)>& progress = nullptr,
+                        const wchar_t* extraHeaders = nullptr) {
+    std::wstring wurl = widen(url);
+    URL_COMPONENTS uc{sizeof(uc)};
+    wchar_t host[256] = {}, path[2048] = {};
+    uc.lpszHostName = host; uc.dwHostNameLength = 255;
+    uc.lpszUrlPath = path; uc.dwUrlPathLength = 2047;
+    wchar_t extra[2048] = {};
+    uc.lpszExtraInfo = extra; uc.dwExtraInfoLength = 2047;
+    if (!WinHttpCrackUrl(wurl.c_str(), 0, 0, &uc) || uc.nScheme != INTERNET_SCHEME_HTTPS) {
+        error = "Bad download address.";
+        return false;
+    }
+    std::wstring fullPath = std::wstring(path) + extra;
+    HINTERNET session = WinHttpOpen(L"Dropocalypse-updater", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                     WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) { error = "Couldn't start the network request."; return false; }
-    WinHttpSetTimeouts(session, 8000, 8000, 10000, 10000);
-    HINTERNET connect = WinHttpConnect(session, host, INTERNET_DEFAULT_HTTPS_PORT, 0);
-    HINTERNET request = connect ? WinHttpOpenRequest(connect, L"GET", path, nullptr, WINHTTP_NO_REFERER,
+    WinHttpSetTimeouts(session, 10000, 10000, 20000, 30000);
+    HINTERNET connect = WinHttpConnect(session, host, uc.nPort, 0);
+    HINTERNET request = connect ? WinHttpOpenRequest(connect, L"GET", fullPath.c_str(), nullptr, WINHTTP_NO_REFERER,
                                                      WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE)
                                 : nullptr;
     bool ok = request &&
-              WinHttpSendRequest(request, L"Accept: application/vnd.github+json\r\n", (DWORD)-1L,
-                                 WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+              WinHttpSendRequest(request, extraHeaders ? extraHeaders : WINHTTP_NO_ADDITIONAL_HEADERS,
+                                 extraHeaders ? (DWORD)-1L : 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
               WinHttpReceiveResponse(request, nullptr);
     if (!ok) error = "Couldn't reach GitHub. Check your internet connection.";
+    uint64_t total = 0;
     if (ok) {
         DWORD status = 0, size = sizeof(status);
         WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
                             WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX);
         if (status != 200) { ok = false; error = "GitHub didn't answer (" + std::to_string(status) + "). Try again later."; }
+        wchar_t len[32] = {};
+        DWORD lenSize = sizeof(len);
+        if (WinHttpQueryHeaders(request, WINHTTP_QUERY_CONTENT_LENGTH, WINHTTP_HEADER_NAME_BY_INDEX, len, &lenSize,
+                                WINHTTP_NO_HEADER_INDEX))
+            total = _wcstoui64(len, nullptr, 10);
     }
     while (ok) {
         DWORD avail = 0;
@@ -266,12 +290,19 @@ static bool httpsGet(const wchar_t* host, const wchar_t* path, std::string& out,
         DWORD read = 0;
         if (!WinHttpReadData(request, buf.data(), avail, &read)) { ok = false; error = "Download interrupted."; break; }
         out.append(buf.data(), read);
-        if (out.size() > 2'000'000) break;
+        if (progress) progress(out.size(), total);
+        if (out.size() > maxBytes) { ok = false; error = "Download was larger than expected."; break; }
     }
+    if (ok && total > 0 && out.size() != total) { ok = false; error = "Download was cut off. Try again."; }
     if (request) WinHttpCloseHandle(request);
     if (connect) WinHttpCloseHandle(connect);
     WinHttpCloseHandle(session);
     return ok;
+}
+
+static bool httpsGet(const wchar_t* host, const wchar_t* path, std::string& out, std::string& error) {
+    return httpsGetUrl("https://" + narrow(host) + narrow(path), out, error, 2'000'000, nullptr,
+                       L"Accept: application/vnd.github+json\r\n");
 }
 
 /// Pulls a string value out of GitHub's JSON without a full parser: "key": "value".
@@ -335,6 +366,261 @@ static bool updateAvailable() {
 static void openDownloadPage() {
     std::string url = g.settings.latestUrl.rfind("https://github.com/", 0) == 0 ? g.settings.latestUrl : kReleasesPage;
     ShellExecuteW(nullptr, L"open", widen(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Update now: download the new portable zip, check it against the release's SHA256SUMS.txt,
+// unpack it, swap the files in this folder (a running .exe can be renamed, so no admin rights or
+// helper program are needed), start the new version and quit. Any failure leaves the current
+// version untouched and falls back to the download page.
+
+enum class InstallPhase { Idle, Downloading, Verifying, Installing, ReadyToRelaunch, Failed };
+struct InstallState {
+    std::atomic<InstallPhase> phase{InstallPhase::Idle};
+    std::atomic<float> progress{0};
+    std::mutex m;
+    std::string error;
+};
+static InstallState gInstall;
+
+static bool installBusy() {
+    InstallPhase p = gInstall.phase;
+    return p == InstallPhase::Downloading || p == InstallPhase::Verifying || p == InstallPhase::Installing ||
+           p == InstallPhase::ReadyToRelaunch;
+}
+
+static std::wstring exePath() {
+    wchar_t buf[MAX_PATH * 2] = {};
+    GetModuleFileNameW(nullptr, buf, (DWORD)std::size(buf));
+    return buf;
+}
+static std::wstring dirOf(const std::wstring& p) {
+    size_t s = p.find_last_of(L"\\/");
+    return s == std::wstring::npos ? L"." : p.substr(0, s);
+}
+
+static std::string sha256Hex(const std::string& data) {
+    BCRYPT_ALG_HANDLE alg = nullptr;
+    BCRYPT_HASH_HANDLE hash = nullptr;
+    unsigned char digest[32] = {};
+    std::string hex;
+    if (BCryptOpenAlgorithmProvider(&alg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) == 0) {
+        if (BCryptCreateHash(alg, &hash, nullptr, 0, nullptr, 0, 0) == 0) {
+            BCryptHashData(hash, (PUCHAR)data.data(), (ULONG)data.size(), 0);
+            if (BCryptFinishHash(hash, digest, sizeof(digest), 0) == 0) {
+                char b[3];
+                for (unsigned char c : digest) { std::snprintf(b, sizeof(b), "%02x", c); hex += b; }
+            }
+            BCryptDestroyHash(hash);
+        }
+        BCryptCloseAlgorithmProvider(alg, 0);
+    }
+    return hex;
+}
+
+/// Every "browser_download_url" value in GitHub's release JSON.
+static std::vector<std::string> assetUrls(const std::string& json) {
+    std::vector<std::string> urls;
+    const std::string key = "\"browser_download_url\"";
+    size_t p = 0;
+    while ((p = json.find(key, p)) != std::string::npos) {
+        size_t q = json.find('"', json.find(':', p + key.size()));
+        size_t e = q == std::string::npos ? q : json.find('"', q + 1);
+        if (e == std::string::npos) break;
+        urls.push_back(json.substr(q + 1, e - q - 1));
+        p = e;
+    }
+    return urls;
+}
+
+static bool runHidden(const std::wstring& cmdline, DWORD& exitCode) {
+    STARTUPINFOW si{sizeof(si)};
+    PROCESS_INFORMATION pi{};
+    std::wstring cmd = cmdline;
+    if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
+        return false;
+    WaitForSingleObject(pi.hProcess, 120000);
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+}
+
+static void failInstall(const std::string& why) {
+    std::lock_guard<std::mutex> lock(gInstall.m);
+    gInstall.error = why;
+    gInstall.phase = InstallPhase::Failed;
+}
+
+static void installWorker() {
+    // 1. Latest release and its files.
+    std::string json, err;
+    if (!httpsGet(L"api.github.com", L"/repos/allenrobberson/dropocalypse/releases/latest", json, err))
+        return failInstall(err);
+    std::string tag = jsonString(json, "tag_name");
+    std::string version = (!tag.empty() && tag[0] == 'v') ? tag.substr(1) : tag;
+    if (!versionIsNewer(version, APP_VERSION_STR)) return failInstall("You already have the latest version.");
+    std::string zipUrl, sumsUrl;
+    for (const auto& u : assetUrls(json)) {
+        if (u.size() > 21 && u.compare(u.size() - 21, 21, "-Windows-portable.zip") == 0) zipUrl = u;
+        if (u.size() > 15 && u.compare(u.size() - 15, 15, "/SHA256SUMS.txt") == 0) sumsUrl = u;
+    }
+    if (zipUrl.empty()) return failInstall("This release has no Windows download. Use the download page.");
+    if (sumsUrl.empty()) return failInstall("This release has no checksums, so it can't be installed automatically. Use the download page.");
+    std::string zipName = zipUrl.substr(zipUrl.find_last_of('/') + 1);
+
+    // 2. Checksums, then the zip.
+    std::string sums;
+    if (!httpsGetUrl(sumsUrl, sums, err, 100000)) return failInstall(err);
+    std::string expected;
+    {
+        size_t p = sums.find(zipName);
+        if (p != std::string::npos) {
+            size_t lineStart = sums.rfind('\n', p);
+            lineStart = lineStart == std::string::npos ? 0 : lineStart + 1;
+            expected = sums.substr(lineStart, 64);
+        }
+    }
+    if (expected.size() != 64) return failInstall("Couldn't read the release checksums.");
+    std::string zip;
+    gInstall.progress = 0;
+    if (!httpsGetUrl(zipUrl, zip, err, 200'000'000, [](uint64_t done, uint64_t total) {
+            if (total > 0) gInstall.progress = (float)done / (float)total;
+        }))
+        return failInstall(err);
+
+    // 3. Verify.
+    gInstall.phase = InstallPhase::Verifying;
+    std::string actual = sha256Hex(zip);
+    std::string want = expected;
+    std::transform(want.begin(), want.end(), want.begin(), [](char c) { return (char)std::tolower((unsigned char)c); });
+    if (actual.empty() || actual != want) return failInstall("The download didn't match its checksum, so it wasn't installed. Try again.");
+
+    // 4. Unpack into a temp folder (tar.exe ships with Windows 10 and 11; PowerShell as a fallback).
+    gInstall.phase = InstallPhase::Installing;
+    wchar_t tmp[MAX_PATH] = {};
+    GetTempPathW(MAX_PATH, tmp);
+    std::wstring work = std::wstring(tmp) + L"DropocalypseUpdate-" + std::to_wstring(GetTickCount64());
+    CreateDirectoryW(work.c_str(), nullptr);
+    std::wstring zipPath = work + L"\\update.zip";
+    {
+        FILE* f = nullptr;
+        if (_wfopen_s(&f, zipPath.c_str(), L"wb") != 0 || !f) return failInstall("Couldn't save the download.");
+        bool wrote = std::fwrite(zip.data(), 1, zip.size(), f) == zip.size();
+        std::fclose(f);
+        if (!wrote) return failInstall("Couldn't save the download.");
+    }
+    std::wstring outDir = work + L"\\files";
+    CreateDirectoryW(outDir.c_str(), nullptr);
+    wchar_t sysDir[MAX_PATH] = {};
+    GetSystemDirectoryW(sysDir, MAX_PATH);
+    DWORD code = 1;
+    bool unpacked = runHidden(L"\"" + std::wstring(sysDir) + L"\\tar.exe\" -xf \"" + zipPath + L"\" -C \"" + outDir + L"\"", code) && code == 0;
+    if (!unpacked) {
+        code = 1;
+        unpacked = runHidden(L"powershell.exe -NoProfile -NonInteractive -Command \"Expand-Archive -LiteralPath '" + zipPath +
+                                 L"' -DestinationPath '" + outDir + L"' -Force\"", code) && code == 0;
+    }
+    std::wstring newDir = outDir + L"\\Dropocalypse";
+    if (!unpacked || GetFileAttributesW((newDir + L"\\Dropocalypse.exe").c_str()) == INVALID_FILE_ATTRIBUTES)
+        return failInstall("Unpacking the update failed. Use the download page.");
+
+    // 5. Swap files in this folder: rename the running .exe out of the way, copy the new files in.
+    std::wstring cur = exePath();
+    std::wstring appDir = dirOf(cur);
+    std::wstring old = cur + L".old";
+    DeleteFileW(old.c_str());
+    if (!MoveFileExW(cur.c_str(), old.c_str(), MOVEFILE_REPLACE_EXISTING))
+        return failInstall("Dropocalypse can't replace itself in this folder. Move the Dropocalypse folder somewhere "
+                           "you can edit (like Documents or Desktop), or use the download page.");
+    if (!CopyFileW((newDir + L"\\Dropocalypse.exe").c_str(), cur.c_str(), FALSE)) {
+        MoveFileExW(old.c_str(), cur.c_str(), MOVEFILE_REPLACE_EXISTING);
+        return failInstall("Couldn't copy the new version into this folder. Nothing was changed.");
+    }
+    WIN32_FIND_DATAW fd;
+    HANDLE h = FindFirstFileW((newDir + L"\\*").c_str(), &fd);
+    if (h != INVALID_HANDLE_VALUE) {
+        do {
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            std::wstring name = fd.cFileName;
+            if (_wcsicmp(name.c_str(), L"Dropocalypse.exe") == 0) continue;
+            CopyFileW((newDir + L"\\" + name).c_str(), (appDir + L"\\" + name).c_str(), FALSE);
+        } while (FindNextFileW(h, &fd));
+        FindClose(h);
+    }
+    gInstall.phase = InstallPhase::ReadyToRelaunch;
+}
+
+static void startInstall() {
+    if (installBusy()) return;
+    if (isDevVersion(APP_VERSION_STR)) return failInstall("This is a development build. Use the download page.");
+    gInstall.phase = InstallPhase::Downloading;
+    gInstall.progress = 0;
+    std::thread(installWorker).detach();
+}
+
+/// Called each frame: once the new files are in place, save settings, start the new version, quit.
+static bool relaunchIfUpdated() {
+    if (gInstall.phase != InstallPhase::ReadyToRelaunch) return false;
+    writeFile(g.settingsPath, serialize(g.settings));
+    g.lastSaved = serialize(g.settings);
+    std::wstring cur = exePath();
+    STARTUPINFOW si{sizeof(si)};
+    PROCESS_INFORMATION pi{};
+    std::wstring cmd = L"\"" + cur + L"\" --updated";
+    std::wstring dir = dirOf(cur);
+    if (CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, dir.c_str(), &si, &pi)) {
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        return true;   // caller quits
+    }
+    failInstall("The update was installed, but Dropocalypse couldn't restart. Please open it again.");
+    return false;
+}
+
+/// After an update, the previous .exe is left as "<name>.exe.old" until it has quit; tidy it up.
+static void cleanupOldExe() {
+    std::thread([] {
+        std::wstring old = exePath() + L".old";
+        for (int i = 0; i < 40; ++i) {
+            if (GetFileAttributesW(old.c_str()) == INVALID_FILE_ATTRIBUTES || DeleteFileW(old.c_str())) return;
+            Sleep(250);
+        }
+    }).detach();
+}
+
+/// The popup shown from the toolbar's Update button.
+static void drawUpdatePopupBody() {
+    InstallPhase phase = gInstall.phase;
+    if (phase == InstallPhase::Downloading) {
+        ImGui::ProgressBar(gInstall.progress, ImVec2(-1, 0), "Downloading...");
+        return;
+    }
+    if (phase == InstallPhase::Verifying) { ImGui::TextUnformatted("Checking the download..."); return; }
+    if (phase == InstallPhase::Installing || phase == InstallPhase::ReadyToRelaunch) {
+        ImGui::TextUnformatted("Installing and restarting...");
+        return;
+    }
+    if (phase == InstallPhase::Failed) {
+        std::lock_guard<std::mutex> lock(gInstall.m);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.7f, 0.3f, 1));
+        ImGui::TextWrapped("%s", gInstall.error.c_str());
+        ImGui::PopStyleColor();
+    } else {
+        ImGui::TextDisabled("You have version %s.", APP_VERSION_STR);
+        ImGui::TextWrapped("Update now downloads it, installs it and reopens Dropocalypse. Your logo and settings are kept.");
+    }
+    ImGui::Spacing();
+    if (ImGui::Button(phase == InstallPhase::Failed ? "Try again" : "Update now")) startInstall();
+    ImGui::SameLine();
+    if (ImGui::Button("Download page")) { openDownloadPage(); ImGui::CloseCurrentPopup(); }
+    if (phase != InstallPhase::Failed) {
+        ImGui::SameLine();
+        if (ImGui::Button("Ignore for 24 hours")) {
+            g.settings.updateSnoozeUntil = (long long)std::time(nullptr) + 24 * 3600;
+            ImGui::CloseCurrentPopup();
+        }
+    }
 }
 
 static double nowSeconds() {
@@ -728,15 +1014,27 @@ static void drawToolbar(float dt) {
             std::lock_guard<std::mutex> lock(gUpdate.m);
             if (!gUpdate.message.empty()) ImGui::TextUnformatted(gUpdate.message.c_str());
         }
-        if (updateAvailable() && ImGui::Button("Open download page")) openDownloadPage();
+        if (updateAvailable()) {
+            if (ImGui::Button("Update now")) startInstall();
+            ImGui::SameLine();
+            if (ImGui::Button("Open download page")) openDownloadPage();
+            if (gInstall.phase == InstallPhase::Failed) {
+                std::lock_guard<std::mutex> lock(gInstall.m);
+                ImGui::TextWrapped("%s", gInstall.error.c_str());
+            } else if (installBusy()) {
+                ImGui::ProgressBar(gInstall.progress, ImVec2(-1, 0), "Updating...");
+            }
+        }
         endPanel();
         ImGui::EndPopup();
     }
 
     // ---- Update available: a bright button with Download / Ignore for 24 hours
-    if (updateAvailable() && (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil) {
+    if (updateAvailable() && (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil)) {
         ImGui::SameLine(0, 12 * g.dpi);
-        std::string label = "Update " + g.settings.latestVersion + " available";
+        std::string label = installBusy() ? "Updating... " + std::to_string((int)(gInstall.progress * 100)) + "%"
+                                          : "Update " + g.settings.latestVersion + " available";
+        label += "###updatebtn";
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
@@ -744,16 +1042,7 @@ static void drawToolbar(float dt) {
         ImGui::PopStyleColor(3);
         if (ImGui::BeginPopup("update")) {
             beginPanel(("Dropocalypse " + g.settings.latestVersion + " is available").c_str());
-            ImGui::TextDisabled("You have version %s.", APP_VERSION_STR);
-            ImGui::TextDisabled("Download the new version and replace this folder;");
-            ImGui::TextDisabled("your logo and settings are kept.");
-            ImGui::Spacing();
-            if (ImGui::Button("Download")) { openDownloadPage(); ImGui::CloseCurrentPopup(); }
-            ImGui::SameLine();
-            if (ImGui::Button("Ignore for 24 hours")) {
-                g.settings.updateSnoozeUntil = (long long)std::time(nullptr) + 24 * 3600;
-                ImGui::CloseCurrentPopup();
-            }
+            drawUpdatePopupBody();
             endPanel();
             ImGui::EndPopup();
         }
@@ -921,6 +1210,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     timeBeginPeriod(1); // 1 ms timer resolution for the audio thread's waits
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 
+    cleanupOldExe();
     g.dataDir = appDataDir();
     g.settingsPath = g.dataDir + L"\\settings.ini";
     loadSettings(g.settingsPath, g.settings);
@@ -990,6 +1280,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
 
     while (running) {
         pollUpdateCheck();
+        if (relaunchIfUpdated()) running = false;
         // Wait until DXGI is ready for a new frame, *then* read input and audio, so what we draw is
         // as fresh as possible when it reaches the screen.
         if (g.frameWaitable && !g.occluded) WaitForSingleObjectEx(g.frameWaitable, 100, TRUE);

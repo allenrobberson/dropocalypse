@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 1.0: one-click updates.</b> When a new version is out, click the pink <b>Update</b> button, "
+        "then <b>Update now</b>: Dropocalypse downloads, checks, installs and reopens the new version by itself.",
         "<b>Version 0.9.2: faster reactions.</b> Kicks move your logo on the very frame they're detected, with "
         "smaller audio buffers on Mac and about 3 ms System-audio chunks on Windows.",
         "<b>Version 0.9: update notifications.</b> When a new version is out, a pink <b>Update available</b> "
@@ -471,7 +473,7 @@ def build():
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 120 s)"],
-        ["<b>Check for updates automatically</b>", "On", "Once a day, checks GitHub for a newer version and shows a pink <b>Update available</b> button in the toolbar (<b>Download</b> or <b>Ignore for 24 hours</b>). <b>Check now</b> checks right away."],
+        ["<b>Check for updates automatically</b>", "On", "Once a day, checks GitHub for a newer version and shows a pink <b>Update</b> button in the toolbar: <b>Update now</b> installs it and reopens the app; or <b>Download page</b> / <b>Ignore for 24 hours</b>. <b>Check now</b> checks right away."],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles

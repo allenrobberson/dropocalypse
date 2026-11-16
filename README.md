@@ -25,6 +25,13 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.0.0: one-click updates
+- 🚀 **Dropocalypse 1.0!** When a new version comes out, click the pink **Update** button in the toolbar, then **Update now**. Dropocalypse downloads the update, checks it against the checksums published with the release, installs it and reopens itself, with your logo and settings kept. No more downloading and replacing it by hand.
+  - **Mac:** keep Dropocalypse in your **Applications** folder (or any folder you can edit) so it can replace itself.
+  - **Windows:** keep the Dropocalypse folder somewhere you can edit, like Documents or Desktop. No admin rights needed.
+  - If anything goes wrong, nothing is changed and you can still use **Download page**.
+  - Mac users can also use **Dropocalypse → Check for Updates… → Update Now**.
+
 ### 0.9.2: faster reactions
 - ⚡ **Lower latency on Mac and Windows.** Kicks now move your logo on the very frame they're detected, instead of the motion peaking a few frames later. The Mac asks for audio in 2.7 ms chunks (was 5.3 ms), and on Windows, *System audio* now arrives in about 3 ms chunks instead of 10 ms on most PCs. Everything feels tighter, especially squash, bounce and wobble.
 
@@ -66,7 +73,7 @@ You still hear everything normally; Dropocalypse only listens along. If the app 
 
 ## Download
 
-Get both versions from the **[latest release](../../releases/latest)**. From 0.9.0 on, the app tells you when a newer version is out. Want an email for each release? Click **Watch → Custom → Releases** at the top of this page. Each release also includes **Dropocalypse-User-Guide.pdf**, a printable guide for Mac and Windows. You can [read it here](docs/Dropocalypse-User-Guide.pdf) too.
+Get both versions from the **[latest release](../../releases/latest)**. From 1.0 on, the app updates itself in one click when a newer version is out. Want an email for each release? Click **Watch → Custom → Releases** at the top of this page. Each release also includes **Dropocalypse-User-Guide.pdf**, a printable guide for Mac and Windows. You can [read it here](docs/Dropocalypse-User-Guide.pdf) too.
 
 ### 🍎 Mac
 
@@ -132,7 +139,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
-| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Download** to open the download page, or **Ignore for 24 hours** to hide the button until tomorrow. Download the new version and replace the old one; your logo and settings are kept. |
+| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | ⤢ / **Full screen** | Full screen on / off |

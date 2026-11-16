@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.0.0
+- 🚀 **One-click updates:** **Update now** downloads the new version, verifies it against the release's SHA-256 checksums, installs it over the old one and reopens (Mac and Windows). Releases now include `SHA256SUMS.txt`.
+
 ## 0.9.2
 - ⚡ **Faster reactions:** the logo's squash, bounce, slide and wobble now hit on the frame the beat is detected; Mac audio buffers halved to ~2.7 ms; Windows *System audio* delivered in ~3 ms chunks instead of 10 ms (low-latency helper stream).
 

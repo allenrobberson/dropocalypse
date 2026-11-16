@@ -135,6 +135,12 @@ jobs:
 
       - run: ls -la dist
 
+      - name: Checksums for the in-app updater
+        run: |
+          cd dist
+          sha256sum *.zip *.dmg *.pdf > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -145,6 +151,7 @@ jobs:
             dist/*.zip
             dist/*.dmg
             dist/*.pdf
+            dist/SHA256SUMS.txt
           generate_release_notes: true
           body: |
             ## 📖 User guide
@@ -174,6 +181,9 @@ jobs:
 
             By default the Windows version listens to **what your PC is playing** (Spotify, YouTube, DJ software), so no microphone is needed.
             Switch to a mic or line-in under **Audio** in the toolbar.
+
+            ## 🔄 Updating
+            Already on 1.0 or later? Click the pink **Update** button in the toolbar, then **Update now**, and Dropocalypse installs this version and reopens by itself.
 
             ## 💬 Questions or ideas?
             Ask, suggest new styles or share your setup in [Discussions](https://github.com/allenrobberson/dropocalypse/discussions). Found a bug? [Open an issue](https://github.com/allenrobberson/dropocalypse/issues).
