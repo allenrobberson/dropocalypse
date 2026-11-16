@@ -9,11 +9,18 @@
 5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**. Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
 6. Turn **auto-cycle** on with 30 to 60 seconds per style so the show keeps changing without you touching it. Uncheck any styles in the style list that don't fit the night.
 
+## Two screens: controls on one, visuals on the other
+
+1. Click **Detach** in the toolbar (or press **D**). The controls move into their own **Dropocalypse Controls** window, stacked top to bottom, with every panel shown in place.
+2. Under **Visuals**, pick your TV, projector or second monitor from the screen list. The visuals go full screen there.
+3. Keep the controls window on your main screen and change styles, logo, motion and audio while the show runs. Your audience only sees the visuals.
+4. Click **Attach controls to the visuals** (or close the controls window) to put the toolbar back on top. Dropocalypse remembers which way you left it.
+
 ## Showing it on a TV or projector
 
 | Method | Lag | Quality | How |
 |---|---|---|---|
-| **HDMI cable** | None | Best | Plug in, drag the window onto that screen, press **F**. The best choice for live shows. |
+| **HDMI cable** | None | Best | Plug in, then pick the TV in the **Screen** list (or drag the window onto it and press **F**). Detach the controls to keep them on your laptop. The best choice for live shows. |
 | **AirPlay** (Mac) | Low | Good | Control Center → **Screen Mirroring** → your Apple TV or AirPlay TV (many Samsung, LG, Sony and Vizio sets) |
 | **Miracast** (Windows) | Low | Good | Press **Win + K** and pick a Miracast TV or adapter |
 | **Chromecast** | Some | OK | In Chrome: **⋮ menu → Cast… → Sources → Cast screen**, pick your TV, then run Dropocalypse full screen |

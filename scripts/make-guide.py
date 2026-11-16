@@ -298,6 +298,8 @@ def build():
     s.append(Spacer(1, 12))
     s.append(P("What's new", h2))
     s.append(whats_new_box([
+        "<b>Version 1.1: two screens.</b> Click <b>Detach</b> (or press D) to move the controls into their own window, "
+        "stacked top to bottom, and use <b>Screen</b> to send the visuals full screen to a TV, projector or second monitor.",
         "<b>Version 1.0: one-click updates.</b> When a new version is out, click the pink <b>Update</b> button, "
         "then <b>Update now</b>: Dropocalypse downloads, checks, installs and reopens the new version by itself.",
         "<b>Version 0.9.2: faster reactions.</b> Kicks move your logo on the very frame they're detected, with "
@@ -405,6 +407,9 @@ def build():
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],
         ["<b>Look</b>", "Beat flash, brightness and auto-cycle timing"],
         ["Status text", "The input being used, its sample rate and buffer size (lower ms = faster reaction)"],
+        ["<b>Screen</b> (display icon on Mac)", "Shows the visuals full screen on another display (TV, projector, second monitor)"],
+        ["<b>Detach</b>", "Moves the controls into their own window, stacked top to bottom, so they stay on your main "
+                          "screen while the visuals play on another. <b>Attach</b> puts them back."],
         ["<b>Keys</b> (⌨ on Mac)", "Shows the keyboard shortcuts"],
         ["<b>Full screen</b>", "Full screen on or off"],
     ], [1.9 * inch, 4.6 * inch]))
@@ -521,6 +526,7 @@ def build():
         ["Show / hide the logo", "G", "G"],
         ["Previous / next style", f"{LEFT} / {RIGHT}  (or {CMD}{LEFT} / {CMD}{RIGHT})", f"{LEFT} / {RIGHT}"],
         ["Auto-cycle on / off", "A", "A"],
+        ["Detach / attach the controls window", f"D or Shift+{CMD}D", "D"],
     ], [2.4 * inch, 2.0 * inch, 2.1 * inch]))
     s.append(Spacer(1, 6))
     s.append(P(f"On the Mac, the menu bar has the same actions under <b>File</b> and <b>Visualizer</b>, including "

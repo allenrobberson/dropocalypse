@@ -25,6 +25,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.1.0: controls on one screen, visuals on another
+- 🖥️🖥️ **Detach the controls.** Click **Detach** in the toolbar (or press **D**) and the controls move into their own window, stacked top to bottom with every panel open in place. Keep it on your laptop or main screen and adjust everything while the visuals play full screen on a TV, projector or second monitor.
+- 📺 **Pick the screen.** A new screen picker sends the visuals full screen to any connected display in one click.
+- Click **Attach** (or close the controls window) to put the toolbar back over the visuals. Works the same on Mac and Windows.
+
 ### 1.0.1: new icon, signed Mac app
 - 🎨 **New app icon** on Mac and Windows.
 - 🔏 **The Mac download is now signed and notarized by Apple**, so macOS opens it without the "unidentified developer" warning.
@@ -147,6 +152,8 @@ From left to right:
 | 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
+| 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor) |
+| ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen |
 | ⤢ / **Full screen** | Full screen on / off |
 
 > On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
@@ -279,8 +286,15 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 | `G` | Show / hide the logo |
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
+| `D` | Detach / attach the controls window |
 
-On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Restart Audio**.
+On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Detach Controls (⇧⌘D), Restart Audio**.
+
+### Two screens: controls on one, visuals on the other
+1. Click **Detach** in the toolbar (or press **D**). The controls move into their own **Dropocalypse Controls** window, stacked top to bottom, with every panel shown in place.
+2. Under **Visuals**, pick your TV, projector or second monitor from the screen list. The visuals go full screen there.
+3. Keep the controls window on your main screen and change styles, logo, motion and audio while the show runs. Your audience only sees the visuals.
+4. Click **Attach controls to the visuals** (or close the controls window) to put the toolbar back on top. Dropocalypse remembers which way you left it.
 
 ### Setting up for a live show
 

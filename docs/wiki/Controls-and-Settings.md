@@ -23,9 +23,11 @@ From left to right:
 | 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
+| 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor) |
+| ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen. See [Live Shows and TVs](Live-Shows-and-TVs#two-screens-controls-on-one-visuals-on-the-other). |
 | ⤢ / **Full screen** | Full screen on / off |
 
-> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
 
 ## Style controls
 

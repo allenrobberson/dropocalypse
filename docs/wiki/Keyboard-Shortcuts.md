@@ -12,6 +12,8 @@
 | `G` | Show / hide the logo |
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
+| `D` | Detach / attach the controls window |
+| `⇧⌘D` | Detach / attach the controls (Mac menu shortcut) |
 
 On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Restart Audio**.
 

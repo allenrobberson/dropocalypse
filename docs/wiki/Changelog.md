@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.1.0
+- 🖥️🖥️ Detachable controls: **Detach** (or **D**) moves the toolbar into its own window with every control stacked top to bottom, so it can stay on the main screen while the visuals play full screen on another display. **Attach** or closing the window puts it back; the choice is remembered (Mac and Windows).
+- 📺 Screen picker: send the visuals full screen to any connected display in one click.
+- Mac: the menu bar and Dock stay usable when the visuals are full screen on a second display. Windows: full screen stays exact when moving between displays with different scaling.
+
 ## 1.0.1
 - 🎨 New app icon (Mac and Windows).
 - 🔏 Mac download signed with Developer ID and notarized by Apple: no more "unidentified developer" warning.
