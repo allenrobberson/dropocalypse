@@ -13,6 +13,9 @@ final class VisualizerModel: NSObject, ObservableObject {
     @Published var openPopover: String?          // a toolbar drop-down is open → stay visible
     @Published var pointerOverToolbar = false
     @Published private(set) var isFullScreen = false
+    /// Height of the camera notch (MacBook Pro) when the visuals are full screen on that display:
+    /// the toolbar sits below it so nothing hides behind the notch.
+    @Published private(set) var topSafeInset: CGFloat = 0
     /// The toolbar lives in its own window (so it can stay on the main screen while the visuals
     /// play full screen on another display).
     @Published private(set) var controlsDetached = false
@@ -263,7 +266,7 @@ final class VisualizerModel: NSObject, ObservableObject {
     }
 
     func pointerMoved(toY y: CGFloat) {
-        noteActivity(reveal: y < Self.revealZone)
+        noteActivity(reveal: y < Self.revealZone + topSafeInset)
     }
 
     func toggleToolbar() {
@@ -346,6 +349,7 @@ final class VisualizerModel: NSObject, ObservableObject {
         window.setFrame(screen.frame, display: true)
         window.makeKeyAndOrderFront(nil)
         isFullScreen = true
+        topSafeInset = Self.notchHeight(of: screen)
         NotificationCenter.default.addObserver(self, selector: #selector(screensChanged),
                                                name: NSApplication.didChangeScreenParametersNotification, object: nil)
     }
@@ -354,6 +358,7 @@ final class VisualizerModel: NSObject, ObservableObject {
         guard isFullScreen, let window = targetWindow else { return }
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
         isFullScreen = false
+        topSafeInset = 0
         window.styleMask = savedStyle
         window.contentMinSize = savedMinSize
         window.contentMaxSize = savedMaxSize
@@ -370,6 +375,12 @@ final class VisualizerModel: NSObject, ObservableObject {
         window.contentMinSize = screen.frame.size
         window.contentMaxSize = screen.frame.size
         window.setFrame(screen.frame, display: true)
+        topSafeInset = Self.notchHeight(of: screen)
+    }
+
+    static func notchHeight(of screen: NSScreen) -> CGFloat {
+        if #available(macOS 12.0, *) { return screen.safeAreaInsets.top }
+        return 0
     }
 
     func startAudio() {

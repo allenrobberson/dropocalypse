@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.3
+- 🖥 Mac: in full screen on a MacBook with a camera notch, the toolbar now sits just below the notch so no buttons hide behind it. The visuals still fill the whole screen.
+
 ## 1.2.2
 - 🛠 Mac: fixed the stutter in the first few minutes after opening the app. Audio-system change notices no longer rebuild the audio engine on the drawing thread, so the visuals stay smooth from the start.
 

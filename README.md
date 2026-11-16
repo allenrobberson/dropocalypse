@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.3: notch-friendly toolbar
+- 🖥 Mac: in full screen on a MacBook with a camera notch, the toolbar sits just below the notch so nothing hides behind it.
+
 ### 1.2.2: smooth from the start
 - 🛠 Mac: fixed a stutter during the first few minutes after opening the app.
 

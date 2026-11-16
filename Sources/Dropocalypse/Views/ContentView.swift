@@ -20,6 +20,7 @@ struct ContentView: View {
 
             if model.toolbarVisible && !model.controlsDetached {
                 TopToolbar(model: model, settings: settings, capture: capture, updates: model.updates)
+                    .padding(.top, model.topSafeInset)   // below the MacBook camera notch in full screen
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
             }
