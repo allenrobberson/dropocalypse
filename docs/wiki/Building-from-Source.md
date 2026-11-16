@@ -25,6 +25,8 @@ The Windows build downloads [Dear ImGui](https://github.com/ocornut/imgui) (MIT)
 
 Either way, the Mac and Windows versions are built side by side and published together in one GitHub Release.
 
+Before releasing, add the new version to the top of `docs/wiki/Changelog.md` and run `python3 scripts/make-guide.py` (needs `reportlab`). The printable User Guide shows the version on its cover and on every page, taken from the newest changelog entry, and the build warns if the guide's version doesn't match the release.
+
 ## Project layout
 
 ```

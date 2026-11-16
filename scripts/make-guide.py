@@ -21,6 +21,24 @@ from reportlab.platypus import (CondPageBreak, KeepTogether, PageBreak, Paragrap
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "Dropocalypse-User-Guide.pdf")
+VERSION_FILE = os.path.join(ROOT, "docs", "guide-version.txt")
+
+
+def guide_version():
+    """The app version this guide describes: $GUIDE_VERSION, or the newest entry in the wiki changelog."""
+    import re
+    v = os.environ.get("GUIDE_VERSION", "").strip().lstrip("v")
+    if v:
+        return v
+    with open(os.path.join(ROOT, "docs", "wiki", "Changelog.md"), encoding="utf-8") as f:
+        m = re.search(r"^## (\d+\.\d+(?:\.\d+)?)\s*$", f.read(), re.M)
+    return m.group(1) if m else "dev"
+
+
+VERSION = guide_version()
+import datetime as _dt
+_today = _dt.date.today()
+VERSION_DATE = f"{_today:%B} {_today.day}, {_today.year}"
 
 # ---------------------------------------------------------------------------- fonts
 
@@ -224,6 +242,10 @@ def cover_page(canvas, doc):
     canvas.drawCentredString(w / 2, h * 0.22, "User Guide")
     canvas.setFont(FONT, 13)
     canvas.drawCentredString(w / 2, h * 0.22 - 24, "for Mac and Windows")
+    canvas.setFont(BOLD, 12)
+    canvas.setFillColor(colors.HexColor("#F2C6E0"))
+    canvas.drawCentredString(w / 2, h * 0.22 - 50, f"Version {VERSION}  ·  {VERSION_DATE}"
+                             if FONT == "Guide" else f"Version {VERSION}  -  {VERSION_DATE}")
     canvas.setFont(FONT, 10)
     canvas.setFillColor(colors.HexColor("#B9B3C9"))
     canvas.drawCentredString(w / 2, 0.75 * inch, "Free and open source  ·  github.com/allenrobberson/dropocalypse"
@@ -254,7 +276,8 @@ def later_pages(canvas, doc):
     canvas.drawString(inch, 0.22 * inch, "DROPOCALYPSE")
     canvas.setFont(FONT, 9)
     canvas.setFillColor(colors.white)
-    canvas.drawString(inch + 1.15 * inch, 0.22 * inch, "User Guide")
+    canvas.drawString(inch + 1.15 * inch, 0.22 * inch, f"User Guide  ·  Version {VERSION}"
+                      if FONT == "Guide" else f"User Guide  -  Version {VERSION}")
     canvas.drawRightString(w - inch, 0.22 * inch, f"Page {doc.page}")
     canvas.restoreState()
 
@@ -625,7 +648,9 @@ def main():
                             bottomMargin=inch, title="Dropocalypse User Guide", author="Dropocalypse contributors",
                             subject="How to install and use Dropocalypse on Mac and Windows")
     doc.build(build(), onFirstPage=cover_page, onLaterPages=later_pages)
-    print(f"Wrote {OUT}")
+    with open(VERSION_FILE, "w", encoding="utf-8") as f:
+        f.write(VERSION + "\n")
+    print(f"Wrote {OUT} (version {VERSION})")
 
 
 if __name__ == "__main__":

@@ -150,6 +150,10 @@ jobs:
           Copy-Item build/Release/Dropocalypse.exe package/Dropocalypse/
           Copy-Item windows/README.txt package/Dropocalypse/README.txt
           Copy-Item LICENSE package/Dropocalypse/LICENSE.txt
+          $gv = (Get-Content docs/guide-version.txt -ErrorAction SilentlyContinue | Select-Object -First 1)
+          if ("${{ inputs.release_version }}" -ne "" -and $gv -ne $env:APP_VERSION) {
+            Write-Output "::warning::User Guide says version $gv but this release is $env:APP_VERSION. Run scripts/make-guide.py and commit the PDF."
+          }
           Copy-Item docs/Dropocalypse-User-Guide.pdf "package/Dropocalypse/Dropocalypse User Guide.pdf"
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item docs/Dropocalypse-User-Guide.pdf dist/Dropocalypse-User-Guide.pdf
