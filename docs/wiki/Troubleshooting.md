@@ -3,7 +3,8 @@
 | Problem | Fix |
 |---|---|
 | **Mac: "Dropocalypse can't be opened"** on first launch | Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. On an older version, see [[Installation]]. |
-| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The app isn't code-signed. |
+| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The portable download isn't code-signed yet. The Microsoft Store edition, once it is listed, is signed by the Store. |
+| **Update now doesn't install** | Nothing was changed. Open the **Updates** menu (toolbar, or the detached controls window), not the Look panel. Mac: keep the app in **Applications**. The download must be signed with the same Developer ID and accepted by Gatekeeper. Windows: keep the folder somewhere you can edit. Once this copy is code-signed, the download must be signed by the same publisher. Or use **Download page**. |
 | **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
 | **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
 | **Nothing reacts when listening to an app** (Mac) | Make sure the app is actually playing, then allow Dropocalypse in **System Settings → Privacy & Security → Screen & System Audio Recording** (under *System Audio Recording Only*) and click **Restart audio**. Needs macOS 14.2 or later. |

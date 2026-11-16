@@ -20,7 +20,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](Your-Logo-and-Motion#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](Audio-Sources#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](Controls-and-Settings#look-panel): flash, brightness, auto-cycle timing |
-| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window). Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours**. |
+| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window), not in the Look panel. Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | 🔴 **Record** / **Stop** | Records the visuals and the music to an MP4 video, without the toolbar. The **▾** next to it sets the video size (720p, 1080p, 4K) and where to save. See [Recording](#recording). |

@@ -2,8 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
-## Unreleased
-- 🔏 **Update now** checks the download before installing it. The SHA-256 checksum is still required. On Mac, the new app must also be validly signed with the same Developer ID team as the copy you're running, and macOS Gatekeeper must accept it. On Windows, that signature check turns on once the copy you're running is itself code-signed; unsigned builds keep updating as they do today. If a check fails, nothing is changed.
+## 1.2.7
+- 🔏 **Update now** still checks the release's SHA-256 checksum, and it now checks the download's code signature before replacing the app. On Mac the new app must be validly signed with the same Developer ID team as the copy you're running, and macOS Gatekeeper must accept it. On Windows that signature check turns on once the copy you're running is itself code-signed; unsigned builds keep updating after the checksum matches.
+- If a check fails, Dropocalypse shows the reason in the **Updates** menu and leaves the current version in place. Use **Download page** in that same menu, or try again later.
+- Automatic checks, **Check now** and **Update now** are in the **Updates** menu in the toolbar and in the detached controls window (not in the Look panel).
+- 🪟 A **Microsoft Store** edition. The Store installs its updates, so that copy has no GitHub updater and no **Update now**. The portable zip on the Releases page is the edition that updates from GitHub.
 
 ## 1.2.6
 - 📸 The printable User Guide now has screenshots of the toolbar, the Motion, Audio and recording panels, the style list and the detached controls window.

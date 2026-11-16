@@ -136,8 +136,9 @@ if [ -n "$SIGN_IDENTITY" ]; then
       staple "$APP"     # the app inside was notarized with the disk image
       spctl --assess --type execute --verbose "$APP" || true
     else
-      echo "::warning::Notarization not finished or not accepted; publishing without a stapled ticket."
+      echo "::error::Notarization was not accepted. Refusing to publish a Mac build that is not notarized."
       cat "$DIST/notary.log" || true
+      exit 1
     fi
     rm -f "$DIST/notary.log"
   fi

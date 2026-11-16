@@ -6,8 +6,10 @@ Get both versions from the **[latest release](https://github.com/allenrobberson/
 |---|---|
 | `Dropocalypse-…-macOS.dmg` | Mac (drag-to-Applications installer) |
 | `Dropocalypse-…-macOS.zip` | Mac (the app in a zip, same thing) |
-| `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install |
+| `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
 | `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for both |
+
+A **Microsoft Store** edition is also published through the Store. That copy is updated by the Store, so it has no **Update now** and does not check GitHub. Your logo and settings still live in `%APPDATA%\Dropocalypse`. Until it shows up in the Store, use the portable zip.
 
 ## 🍎 Mac
 
@@ -33,7 +35,7 @@ From version **1.0**, Dropocalypse updates itself: when a new version is out, a 
 
 - **Mac:** Dropocalypse must be in a folder it can edit, such as **Applications**. If you run it straight from the disk image, it will ask you to move it first.
 - **Windows:** keep the Dropocalypse folder somewhere you can edit (Documents, Desktop, a USB stick). The old version is swapped out in place; no admin rights are needed.
-- If anything fails (no internet, a bad download, a locked folder), nothing is changed. Use **Download page** instead. For an email on every release, click **Watch → Custom → Releases** on the GitHub page.
+- If anything fails, nothing is changed and the **Updates** menu says why. That includes no internet, a bad download, a locked folder, a Mac download that isn't signed by the same Developer ID or that Gatekeeper rejects, and (once your Windows copy is code-signed) a download signed by a different publisher. Use **Download page** in that menu, or try again later. For an email on every release, click **Watch → Custom → Releases** on the GitHub page. The Microsoft Store edition does not use this updater.
 
 Download the new version and replace the old one: drag the new app into **Applications** on a Mac (choose **Replace**), or swap in the new folder on Windows. Your logo, style and settings are kept.
 

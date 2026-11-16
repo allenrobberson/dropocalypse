@@ -427,7 +427,12 @@ def build():
     ])
     s.append(sub("First launch"))
     s.append(P(f"If Windows shows <b>“Windows protected your PC”</b>, click <b>More info {ARROW} Run anyway</b>. "
-               "This appears because the free app isn't code-signed.", body))
+               "This appears because the portable download isn't code-signed yet.", body))
+    s.append(sub("Microsoft Store edition"))
+    s.append(P("Dropocalypse is also published through the <b>Microsoft Store</b>. That copy is updated by the Store, "
+               "so it has no <b>Updates</b> menu and does not check GitHub. Your logo and settings are still saved in "
+               "%APPDATA%\\Dropocalypse. The zip from the Releases page is the portable edition, which updates itself "
+               "from GitHub. Until the Store listing is available, use the zip.", body))
     s.append(sub("Listening to music on Windows"))
     s.append(P("By default the Windows version listens to <b>what your PC is playing</b> (Spotify, YouTube, DJ "
                "software, games), so no microphone is needed. To use a microphone or line-in instead, choose it "
@@ -475,8 +480,10 @@ def build():
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],
         ["<b>Look</b>", "Beat flash, brightness and auto-cycle timing"],
         ["Status text", "The input being used, its sample rate and buffer size (lower ms = faster reaction)"],
-        ["<b>Updates</b>", "Your version, <b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
-                           "version is out: <b>Update now</b> installs it and reopens the app."],
+        ["<b>Updates</b>", "In the toolbar and the detached controls window, not the Look panel. Your version, "
+                           "<b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
+                           "version is out. <b>Update now</b> checks the download and, if the checks pass, installs "
+                           "it and reopens the app. If a check fails, nothing is changed."],
         ["<b>Record</b> / <b>Stop</b>", "Records the visuals and music to an MP4 video, without the toolbar. "
                                          "The ▾ next to it sets the video size and where to save."],
         ["<b>Screen</b> (display icon on Mac)", "Shows the visuals full screen on another display (TV, projector, second monitor)"],
@@ -676,7 +683,13 @@ def build():
          "Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. "
          "For older copies, see section 1."],
         ["<b>Windows: “Windows protected your PC”</b>",
-         f"Click <b>More info {ARROW} Run anyway</b>. The Windows app isn't code-signed yet."],
+         f"Click <b>More info {ARROW} Run anyway</b>. The portable download isn't code-signed yet. "
+         "The Microsoft Store edition is signed by the Store."],
+        ["<b>Update now doesn't install</b>",
+         "Nothing was changed. Open the <b>Updates</b> menu in the toolbar (not Look). On a Mac the new app must be "
+         "signed with the same Developer ID and accepted by Gatekeeper, and Dropocalypse must be in a folder you can "
+         "edit, such as Applications. On Windows, once this copy is code-signed the download must be signed by the "
+         "same publisher. Or use <b>Download page</b>."],
         ["<b>Windows: nothing happens when I double-click</b>",
          "Extract the zip first; don't run the app from inside it. On work or school PCs, IT policies can block "
          "unapproved apps, so ask your IT team."],
