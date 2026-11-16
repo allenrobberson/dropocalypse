@@ -483,7 +483,7 @@ def build():
     s.append(table(["Control", "Default", "What it does"], [
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
-        ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 120 s)"],
+        ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 360 s)"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles

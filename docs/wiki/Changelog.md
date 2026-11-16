@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.4
+- ⏱ Auto-cycle can now hold each style for up to 6 minutes (360 seconds), up from 2 minutes.
+
 ## 1.2.3
 - 🖥 Mac: in full screen on a MacBook with a camera notch, the toolbar now sits just below the notch so no buttons hide behind it. The visuals still fill the whole screen.
 

@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.4: longer auto-cycle
+- ⏱ **Auto-cycle every** now goes up to 6 minutes (360 seconds) per style.
+
 ### 1.2.3: notch-friendly toolbar
 - 🖥 Mac: in full screen on a MacBook with a camera notch, the toolbar sits just below the notch so nothing hides behind it.
 
@@ -237,7 +240,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 |---|---|---|
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
-| **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
+| **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
 
 ### The 24 styles
 

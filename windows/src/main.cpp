@@ -129,7 +129,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("sceneIndex")) r.sceneIndex = std::max(0, std::atoi(kv["sceneIndex"].c_str()));
     flag("autoCycle", r.autoCycle);
     if (kv.count("cycleSkip")) r.cycleSkip = (uint32_t)std::strtoul(kv["cycleSkip"].c_str(), nullptr, 10);
-    num("cycleSeconds", r.cycleSeconds, 5, 120);
+    num("cycleSeconds", r.cycleSeconds, 5, 360);
     flag("showLogo", r.showLogo);
     num("logoSize", r.logoSize, 0.08f, 0.8f);
     num("pulse", r.pulse, 0, 1.5f);
@@ -1174,7 +1174,7 @@ static void audioPanelBody() {
 static void lookPanelBody(RenderSettings& r) {
     slider("Beat flash", &r.beatFlash, 0, 1);
     slider("Brightness", &r.brightness, 0.4f, 1.6f);
-    slider("Auto-cycle every", &r.cycleSeconds, 5, 120, "%.0f s");
+    slider("Auto-cycle every", &r.cycleSeconds, 5, 360, "%.0f s");
 }
 
 /// The Updates menu: version, check now, automatic checks, and installing a new version.

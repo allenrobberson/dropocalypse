@@ -52,7 +52,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 |---|---|---|
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
-| **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
+| **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
 
 ## Other panels
 

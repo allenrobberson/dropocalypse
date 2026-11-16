@@ -527,7 +527,7 @@ struct TopToolbar: View {
         PopoverForm(title: "Look") {
             slider("Beat flash", $settings.beatFlash, 0...1)
             slider("Brightness", $settings.brightness, 0.4...1.6)
-            slider("Auto-cycle every", $settings.cycleSeconds, 5...120) { "\(Int($0)) s" }
+            slider("Auto-cycle every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
             if !UpdateChecker.isEnabled {
                 Divider()
                 Text("Version \(updates.currentVersion) · Updates come from the App Store.")
