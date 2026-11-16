@@ -10,6 +10,8 @@ The Windows program `Dropocalypse.exe` in the **Windows-portable** download on t
 
 The product name in every signed file is **Dropocalypse**, and its version matches the release.
 
+The in-app updater always checks the SHA-256 published in `SHA256SUMS.txt`. Once `Dropocalypse.exe` is signed, **Update now** also requires the downloaded copy to carry a trusted Authenticode signature from the same publisher. Until a signed build is what you're running, updates keep working on the checksum alone. The Mac updater requires the download to be signed with the same Developer ID team as the running app and accepted by Gatekeeper.
+
 ## Team roles
 
 | Role | Members |
@@ -21,7 +23,7 @@ Changes from anyone outside the team arrive as pull requests and are reviewed be
 
 ## Privacy
 
-Dropocalypse does not send any information to other networked systems unless the user asks for it, with one exception the user controls: it checks GitHub for new versions about once a day, and downloads an update only when the user clicks **Update now**. No personal information, audio or usage data is sent. The first launch on Windows explains this and offers to turn it off, and it can be switched off any time in the **Look** panel. See the full [Privacy Policy](PRIVACY.md).
+Dropocalypse does not send any information to other networked systems unless the user asks for it, with one exception the user controls: it checks GitHub for new versions about once a day, and downloads an update only when the user clicks **Update now**. No personal information, audio or usage data is sent. The first launch on Windows explains this and offers to turn it off, and it can be switched off any time in the **Updates** menu. See the full [Privacy Policy](PRIVACY.md).
 
 ## Installing and uninstalling
 

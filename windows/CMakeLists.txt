@@ -13,6 +13,7 @@ set(APP_VERSION "0.0.0-dev" CACHE STRING "Version shown in the .exe properties")
 include(FetchContent)
 FetchContent_Declare(imgui
     URL https://github.com/ocornut/imgui/archive/refs/tags/v1.91.6.tar.gz
+    URL_HASH SHA256=c5fbc5dcab1d46064001c3b84d7a88812985cde7e0e9ced03f5677bec1ba502a
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(imgui)
 
@@ -45,4 +46,17 @@ if(DROPOCALYPSE_STORE)
 endif()
 target_compile_options(Dropocalypse PRIVATE /W3 /permissive- /utf-8 /MP)
 target_link_libraries(Dropocalypse PRIVATE
-    d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt mfplat mfreadwrite mfuuid)
+    d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt crypt32 wintrust mfplat mfreadwrite mfuuid)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(dropocalypse_tests tests/core_logic_test.cpp)
+    target_include_directories(dropocalypse_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_compile_features(dropocalypse_tests PRIVATE cxx_std_17)
+    if(MSVC)
+        target_compile_options(dropocalypse_tests PRIVATE /W3 /permissive- /utf-8)
+    else()
+        target_compile_options(dropocalypse_tests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME core_logic COMMAND dropocalypse_tests)
+endif()

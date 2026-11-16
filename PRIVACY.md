@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: November 15, 2026_
+_Last updated: November 16, 2026_
 
 Dropocalypse is a free, open-source music visualizer for Mac and Windows. It is made to keep what you do private.
 
@@ -26,7 +26,7 @@ When you click **Record**, the visuals and the audio Dropocalypse is listening t
 Dropocalypse connects to the internet for one purpose: keeping the app up to date. It connects only to GitHub, where the project is hosted.
 
 - **Update check:** about once a day, the app asks GitHub's public API (`api.github.com`) for the latest release of Dropocalypse. The request contains only what any web request contains (your IP address, plus a user agent naming the app and its version). It sends no personal information, no information about your audio, logo or settings, and no usage data or analytics.
-- **Downloading an update:** only when you click **Update now**, the app downloads the new version and its checksum file from GitHub (`github.com` and GitHub's download servers).
+- **Downloading an update:** only when you click **Update now**, the app downloads the new version and its checksum file from GitHub (`github.com` and GitHub's download servers). Before installing, the Mac app checks the download's Developer ID signature and asks macOS Gatekeeper whether the app is notarized. That check runs on your Mac; macOS may contact Apple to confirm the notarization ticket. On Windows, once this copy of Dropocalypse is code-signed, the app also checks the download's Authenticode signature locally.
 
 GitHub's handling of these requests is covered by the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement).
 

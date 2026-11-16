@@ -1,3 +1,4 @@
+import DropocalypseCore
 import SwiftUI
 
 /// User-adjustable settings, persisted with UserDefaults.
@@ -38,14 +39,7 @@ final class AppSettings: ObservableObject {
 
     /// The next checked style after `index`. If nothing is checked, cycles through all of them.
     func nextCycleIndex(after index: Int) -> Int {
-        let scenes = VisualScene.builtIn
-        let n = scenes.count
-        let skip = skipped
-        for k in 1...n {
-            let candidate = (index + k) % n
-            if !skip.contains(scenes[candidate].name) { return candidate }
-        }
-        return (index + 1) % n
+        SceneCycle.nextIndex(after: index, names: VisualScene.builtIn.map(\.name), skipped: skipped)
     }
 
     // Logo

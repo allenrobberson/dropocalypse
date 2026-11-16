@@ -1,7 +1,20 @@
 .build/
 dist/
+dist-appstore/
+build-store/
+package/
+store-dist/
+msix-stage/
 .swiftpm/
 *.xcodeproj/
 xcuserdata/
 DerivedData/
 .DS_Store
+
+# Signing material. Never commit certificates, keys, or provisioning profiles.
+*.p12
+*.pfx
+*.p8
+*.cer
+*.provisionprofile
+*.mobileprovision
