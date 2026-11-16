@@ -90,7 +90,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         view.device = device
         view.colorPixelFormat = .bgra8Unorm
-        view.framebufferOnly = false   // the recorder reads the finished frame
+        view.framebufferOnly = true    // keeps presentation fast; the recorder draws its own copy
         view.preferredFramesPerSecond = 120 // MTKView caps this to the display's real rate
         view.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         if let layer = view.layer as? CAMetalLayer {
@@ -360,7 +360,9 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
         srp.colorAttachments[0].loadAction = .dontCare
 
-        if let enc = cb.makeRenderCommandEncoder(descriptor: srp) {
+        // The final picture: feedback image + logo. Drawn to the screen, and again into the
+        // recording (at its own resolution) so the screen's drawable never has to be read back.
+        let composite: (MTLRenderCommandEncoder) -> Void = { enc in
             var pu = PresentUniforms(flash: flash * Float(settings.beatFlash),
                                      vignette: scene.vignette,
                                      brightness: Float(settings.brightness), pad: 0)
@@ -384,7 +386,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                     enc.setFragmentBytes(&gu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
                     enc.setFragmentTexture(logo, index: 0)
                     enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
-                }
+        }
 
                 lu.opacity = 1
                 lu.tintAmount = Float(settings.logoTint)
@@ -394,10 +396,13 @@ final class Renderer: NSObject, MTKViewDelegate {
                 enc.setFragmentTexture(logo, index: 0)
                 enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
             }
+        }
+        if let enc = cb.makeRenderCommandEncoder(descriptor: srp) {
+            composite(enc)
             enc.endEncoding()
         }
 
-        // Recording: copy the finished frame (no toolbar) into the video, letterboxed.
+        // Recording: draw the same picture (no toolbar) into the video frame, letterboxed.
         if let recorder = model.recorder, let frame = recorder.nextFrameTarget(now: now) {
             let rp = MTLRenderPassDescriptor()
             rp.colorAttachments[0].texture = frame.texture
@@ -411,9 +416,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                 let vh = sa > ta ? tw / sa : th
                 enc.setViewport(MTLViewport(originX: (tw - vw) / 2, originY: (th - vh) / 2,
                                             width: vw, height: vh, znear: 0, zfar: 1))
-                enc.setRenderPipelineState(blitPipeline)
-                enc.setFragmentTexture(drawable.texture, index: 0)
-                enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+                composite(enc)
                 enc.endEncoding()
                 cb.addCompletedHandler { _ in recorder.appendFrame(frame) }
             }

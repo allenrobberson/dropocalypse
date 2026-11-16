@@ -903,9 +903,11 @@ static void recordSettingsBody() {
 /// Red record button, or a stop button with the running time while recording.
 static void recordButton(const ImVec2& size = ImVec2(0, 0)) {
     bool rec = g.recorder.isRecording();
-    ImGui::PushStyleColor(ImGuiCol_Button, rec ? ImVec4(0.85f, 0.12f, 0.18f, 1) : ImVec4(0.55f, 0.08f, 0.12f, 0.85f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.2f, 0.25f, 1));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.3f, 0.3f, 1));
+    // Grey like the other buttons until recording, then red.
+    const ImGuiStyle& st = ImGui::GetStyle();
+    ImGui::PushStyleColor(ImGuiCol_Button, rec ? ImVec4(0.85f, 0.12f, 0.18f, 1) : st.Colors[ImGuiCol_Button]);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, rec ? ImVec4(0.95f, 0.2f, 0.25f, 1) : st.Colors[ImGuiCol_ButtonHovered]);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, rec ? ImVec4(1.0f, 0.3f, 0.3f, 1) : st.Colors[ImGuiCol_ButtonActive]);
     std::string label = rec ? "Stop  " + recordTimeLabel() + "###recbtn" : "Record###recbtn";
     if (ImGui::Button(label.c_str(), size)) toggleRecording();
     ImGui::PopStyleColor(3);

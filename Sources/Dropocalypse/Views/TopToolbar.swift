@@ -362,7 +362,7 @@ struct TopToolbar: View {
             .padding(.horizontal, compact ? 8 : 12)
             .padding(.vertical, compact ? 3 : 7)
             .frame(maxWidth: compact ? nil : .infinity)
-            .background(model.isRecording ? Color.red : Color.red.opacity(0.55),
+            .background(model.isRecording ? Color.red : Color.white.opacity(0.12),
                         in: RoundedRectangle(cornerRadius: compact ? 11 : 8))
             .foregroundStyle(.white)
         }
