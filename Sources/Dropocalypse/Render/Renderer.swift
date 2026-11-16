@@ -362,7 +362,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         // The final picture: feedback image + logo. Drawn to the screen, and again into the
         // recording (at its own resolution) so the screen's drawable never has to be read back.
-        let composite: (MTLRenderCommandEncoder) -> Void = { enc in
+        func composite(_ enc: MTLRenderCommandEncoder) {
             var pu = PresentUniforms(flash: flash * Float(settings.beatFlash),
                                      vignette: scene.vignette,
                                      brightness: Float(settings.brightness), pad: 0)
