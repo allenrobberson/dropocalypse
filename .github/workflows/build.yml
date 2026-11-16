@@ -255,7 +255,7 @@ jobs:
           body: |
             ## 📖 User guide
             New here? Download **Dropocalypse-User-Guide.pdf** below. It's a printable, step-by-step guide to installing and
-            using Dropocalypse on both Mac and Windows, covering every control, all 24 styles, keyboard shortcuts and troubleshooting.
+            using Dropocalypse on both Mac and Windows, covering every control, all 25 styles, keyboard shortcuts and troubleshooting.
             (It's also included inside the Mac .dmg and the Windows .zip.)
 
             ## Download

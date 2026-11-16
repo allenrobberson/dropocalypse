@@ -42,6 +42,12 @@
 |---|---|---|
 | 24 | **Tesseract** | A glowing neon hypercube (a 4D cube) rotating through the fourth dimension, so the inner cube keeps turning itself inside out through the outer one. It spins harder on every beat, swells with the bass and leaves light trails. Tip: a smaller logo **Size** lets you see the inner cube. |
 
+**Kaleidoscope:**
+
+| # | Style | What it looks like |
+|---|---|---|
+| 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
+
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
 > **Tip:** **Bass Ring** and **Particle Storm** are built around a centered logo, so try turning **Bounce** and **Slide** down so the logo stays put. For **Pulsar Ridges** and **Outrun Grid**, a smaller **Size** (around 0.2) keeps the logo from covering the scene.

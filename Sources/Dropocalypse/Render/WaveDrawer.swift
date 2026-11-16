@@ -137,6 +137,7 @@ enum WaveDrawer {
         case .ledMeter: fx.ledMeter(frame, &g)
         case .rainbowPeaks: fx.rainbowPeaks(frame, &g)
         case .tesseract: fx.tesseract(frame, &g)
+        case .fullKaleidoscope: fx.fullKaleidoscope(frame, &g)
 
         case .circle:
             ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.25 * bass), amplitude: 0.12 * s,

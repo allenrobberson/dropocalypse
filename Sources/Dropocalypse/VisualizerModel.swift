@@ -126,7 +126,7 @@ final class VisualizerModel: NSObject, ObservableObject {
         let quality = Recorder.Quality(rawValue: settings.recordQuality) ?? .p1080
         let recorder = Recorder()
         do {
-            try recorder.start(url: url, quality: quality, device: device)
+            try recorder.start(url: url, quality: quality, portrait: settings.pictureOrientation != 0, device: device)
         } catch {
             if scoped { folder.stopAccessingSecurityScopedResource() }
             recordMessage = "Couldn't start recording: \(error.localizedDescription)"

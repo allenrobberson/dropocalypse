@@ -31,6 +31,8 @@ struct RenderSettings {
     float glow = 0.6f, logoTint = 0.0f;
     bool logoTrails = false;
     float beatFlash = 0.4f, brightness = 1.0f;
+    /// False fills the window. True draws a centered 9:16 frame (and recordings match it).
+    bool portrait = false;
 };
 
 /// Premultiplied RGBA8 image, rows top to bottom.

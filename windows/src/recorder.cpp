@@ -1,4 +1,5 @@
 #include "recorder.h"
+#include "core_logic.h"
 
 #include <windows.h>
 #include <codecapi.h>
@@ -25,6 +26,12 @@ namespace {
 const char* kShader = R"(
 Texture2D tex : register(t0);
 SamplerState smp : register(s0);
+cbuffer CropCB : register(b0) {
+    float cropX;
+    float cropY;
+    float cropW;
+    float cropH;
+};
 struct VSOut { float4 pos : SV_Position; float2 uv : TEXCOORD0; };
 VSOut vs_main(uint id : SV_VertexID) {
     VSOut o;
@@ -33,7 +40,10 @@ VSOut vs_main(uint id : SV_VertexID) {
     o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
     return o;
 }
-float4 ps_main(VSOut i) : SV_Target { return float4(tex.Sample(smp, i.uv).rgb, 1); }
+float4 ps_main(VSOut i) : SV_Target {
+    float2 uv = float2(cropX, cropY) + i.uv * float2(cropW, cropH);
+    return float4(tex.Sample(smp, uv).rgb, 1);
+}
 )";
 
 const int kAudioRate = 48000;
@@ -77,7 +87,13 @@ bool Recorder::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring
     sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     sd.MaxLOD = D3D11_FLOAT32_MAX;
     device_->CreateSamplerState(&sd, &sampler_);
-    return vs_ && ps_ && sampler_;
+    D3D11_BUFFER_DESC cbd{};
+    cbd.ByteWidth = 16;
+    cbd.Usage = D3D11_USAGE_DYNAMIC;
+    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    device_->CreateBuffer(&cbd, nullptr, &cropCB_);
+    return vs_ && ps_ && sampler_ && cropCB_;
 }
 
 bool Recorder::createGpuResources(int w, int h) {
@@ -105,12 +121,13 @@ bool Recorder::createGpuResources(int w, int h) {
     return true;
 }
 
-bool Recorder::start(const std::wstring& path, int qualityIndex, std::wstring& error) {
+bool Recorder::start(const std::wstring& path, int qualityIndex, bool portrait, std::wstring& error) {
     if (recording_) return true;
     if (worker_.joinable()) worker_.join(); // a previous file is still being finished
     const Quality& q = kQualities[std::clamp(qualityIndex, 0, 2)];
-    width_ = q.width;
-    height_ = q.height;
+    const RecordingPixels px = recordingPixels(qualityIndex, portrait);
+    width_ = px.width;
+    height_ = px.height;
     fps_ = q.fps;
     if (!createGpuResources(width_, height_)) {
         error = L"Not enough graphics memory to record at this size. Try a smaller size.";
@@ -228,7 +245,7 @@ void Recorder::enqueue(Job&& j) {
     qCv_.notify_one();
 }
 
-void Recorder::captureFrame(ID3D11Texture2D* source) {
+void Recorder::captureFrame(ID3D11Texture2D* source, float uvX, float uvY, float uvW, float uvH) {
     if (!recording_ || !source) return;
     const int64_t now100ns = (qpcNow() - startQpc_) * 10000000 / qpcFreq_;
     const int64_t frameLen = 10000000 / fps_;
@@ -303,12 +320,22 @@ void Recorder::captureFrame(ID3D11Texture2D* source) {
     ComPtr<ID3D11DepthStencilState> oldDS;
     UINT oldRef;
     ctx_->OMGetDepthStencilState(&oldDS, &oldRef);
+    ComPtr<ID3D11Buffer> oldCB;
+    ctx_->PSGetConstantBuffers(0, 1, &oldCB);
 
-    // Letterbox the picture into the recording size.
+    // Letterbox the content rectangle (not the pillarbox bars) into the recording size.
     const float black[4] = {0, 0, 0, 1};
     ctx_->ClearRenderTargetView(targetRTV_.Get(), black);
-    float sa = (float)sd.Width / (float)std::max<UINT>(1, sd.Height);
+    const float srcW = std::max(uvW, 0.001f) * (float)sd.Width;
+    const float srcH = std::max(uvH, 0.001f) * (float)sd.Height;
+    float sa = srcW / srcH;
     float ta = (float)width_ / (float)height_;
+    struct Crop { float x, y, w, h; } crop{uvX, uvY, std::max(uvW, 0.001f), std::max(uvH, 0.001f)};
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (SUCCEEDED(ctx_->Map(cropCB_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+        std::memcpy(mapped.pData, &crop, sizeof(crop));
+        ctx_->Unmap(cropCB_.Get(), 0);
+    }
     D3D11_VIEWPORT vp{};
     if (sa > ta) { vp.Width = (float)width_; vp.Height = width_ / sa; }
     else { vp.Height = (float)height_; vp.Width = height_ * sa; }
@@ -326,6 +353,8 @@ void Recorder::captureFrame(ID3D11Texture2D* source) {
     ctx_->PSSetShaderResources(0, 1, &s);
     ID3D11SamplerState* smp = sampler_.Get();
     ctx_->PSSetSamplers(0, 1, &smp);
+    ID3D11Buffer* cropBuf = cropCB_.Get();
+    ctx_->PSSetConstantBuffers(0, 1, &cropBuf);
     ctx_->OMSetBlendState(nullptr, nullptr, 0xffffffff);
     ctx_->RSSetState(nullptr);
     ctx_->OMSetDepthStencilState(nullptr, 0);
@@ -350,6 +379,8 @@ void Recorder::captureFrame(ID3D11Texture2D* source) {
     ctx_->PSSetSamplers(0, 1, &osmp);
     ctx_->IASetPrimitiveTopology(oldTopo);
     ctx_->IASetInputLayout(oldLayout.Get());
+    ID3D11Buffer* ocb = oldCB.Get();
+    ctx_->PSSetConstantBuffers(0, 1, &ocb);
     ctx_->OMSetBlendState(oldBlend.Get(), oldFactor, oldMask);
     ctx_->RSSetState(oldRS.Get());
     ctx_->OMSetDepthStencilState(oldDS.Get(), oldRef);

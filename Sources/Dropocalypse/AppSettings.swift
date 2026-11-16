@@ -19,6 +19,8 @@ final class AppSettings: ObservableObject {
     /// Check GitHub for a newer version once a day and show "Update available" in the toolbar.
     @AppStorage("checkForUpdates") var checkForUpdates: Bool = true
     @AppStorage("recordQuality") var recordQuality: Int = 1          // 0 = 720p, 1 = 1080p, 2 = 4K
+    /// 0 = landscape (fills the window). 1 = portrait, a centered 9:16 frame. Recordings match it.
+    @AppStorage("pictureOrientation") var pictureOrientation: Int = 0
     @AppStorage("recordFolderBookmark") var recordFolderBookmark: Data = Data()
 
     private var skipped: Set<String> {

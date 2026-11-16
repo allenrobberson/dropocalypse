@@ -722,6 +722,48 @@ final class StyleFX {
         }
     }
 
+    // MARK: - 25. Full Kaleidoscope
+    // Thin symmetric rings and spokes on top of the shader mandala. Drawn already
+    // mirrored so the current frame stays symmetric; bass pulses them, bands set the spokes.
+
+    func fullKaleidoscope(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        let bass = f.bass
+        let pulse = 1 + bass * 0.22
+        let reach = min(0.92, f.aspect * 0.92)
+        let hues: [Float] = [0.50, 0.92, 0.62, 0.11, 0.30] // cyan, magenta, blue, gold, acid green
+        func neon(_ i: Int, _ alpha: Float) -> GeometryBuilder.RGBA {
+            let c = hsv(hues[i % hues.count] + f.audio.mid * 0.04, 1, 1)
+            return (c.0, c.1, c.2, alpha)
+        }
+        let ringCount = 3
+        let segments = 72
+        for i in 0..<ringCount {
+            let radius = min(reach, (0.16 + Float(i) * 0.22) * pulse)
+            var pts = [SIMD2<Float>]()
+            pts.reserveCapacity(segments)
+            for k in 0..<segments {
+                let a = Float(k) / Float(segments) * 2 * .pi + f.t * 0.04 * Float(i + 1)
+                pts.append(SIMD2(cos(a), sin(a)) * radius)
+            }
+            let col = neon(i, 0.28 + bass * 0.22)
+            g.polyline(pts, closed: true, width: 0.0035 + bass * 0.003) { _ in col }
+        }
+        let arms = 8
+        let bands = f.bands
+        let n = bands.count
+        if n > 0 {
+            for arm in 0..<arms {
+                let a = Float(arm) / Float(arms) * 2 * .pi
+                let dir = SIMD2<Float>(cos(a), sin(a))
+                let band = bands[(arm * n / arms) % n]
+                let inner = min(reach * 0.18, 0.08 * pulse)
+                let outer = min(reach, inner + 0.1 + band * (0.55 + f.audio.treble * 0.4))
+                g.line(dir * inner, dir * outer, width: 0.005 + band * 0.008, neon(arm, 0.4 + band * 0.45))
+                g.softDot(dir * outer, radius: 0.012 + band * 0.02, neon(arm + 1, 0.35 + band * 0.4), segments: 8)
+            }
+        }
+    }
+
     // MARK: - Shared particle update
 
     private func updateAndDraw(_ list: inout [Particle], _ f: FXFrame, _ g: inout GeometryBuilder,

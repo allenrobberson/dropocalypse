@@ -19,7 +19,7 @@ From left to right:
 | **Motion** | Opens the [Motion panel](Your-Logo-and-Motion#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](Your-Logo-and-Motion#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](Audio-Sources#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
-| **Look** | Opens the [Look panel](Controls-and-Settings#look-panel): flash, brightness, auto-cycle timing |
+| **Look** | Opens the [Look panel](Controls-and-Settings#look-panel): flash, brightness, landscape or portrait, auto-cycle timing |
 | ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window), not in the Look panel. Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
@@ -36,14 +36,14 @@ From left to right:
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
 3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
 
-Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. If your window isn't 16:9, the video gets black bars; full screen on a 16:9 display fills the frame.
+Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape**, if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** (in the Look panel) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. On a landscape screen that frame is centered with black bars on either side, so the preview matches the file.
 
 ## Style controls
 
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Opens the style list. Click a name to jump straight to any of the [24 styles](Styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [25 styles](Styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ## Look panel
@@ -52,6 +52,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 |---|---|---|
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
+| **Frame** | Landscape | **Landscape** fills the window. **Portrait** centers a 9:16 frame. Recordings use the same shape (720×1280, 1080×1920 or 2160×3840 in portrait). It can't be changed while a recording is in progress. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
 
 ## Other panels

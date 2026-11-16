@@ -27,11 +27,11 @@ PERFECT FOR
 • Anyone who misses the classic Winamp visuals
 
 FEATURES
-• 24 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter and a 4D Tesseract
+• 25 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract and Full Kaleidoscope
 • Your logo reacts to the music: pulse, squash, bounce, slide, wobble, glow and trails, each adjustable
 • Listens to whatever your PC is playing (no microphone needed), one output device, a microphone or a line-in
 • Two screens: detach the controls onto your laptop and send the visuals full screen to a TV or projector
-• Record the visuals and the music to an MP4 video (720p, 1080p or 4K)
+• Record the visuals and the music to an MP4 video (720p, 1080p or 4K, landscape or 9:16 portrait)
 • Auto-cycle through the styles you pick, from 5 seconds to 6 minutes each
 • Low-latency audio analysis so the visuals land on the beat
 
@@ -47,7 +47,7 @@ Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion i
 Record videos with sound, detachable controls for two-screen shows, auto-cycle up to 6 minutes, and a refreshed User Guide.
 
 ## Product features (up to 20, short)
-- 24 music-reactive visual styles
+- 25 music-reactive visual styles
 - Your logo dances to the bass
 - Listens to any audio playing on your PC
 - Two-screen mode for live shows

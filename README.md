@@ -14,14 +14,14 @@ A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Wind
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **24 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks) and a 4D Tesseract. Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **25 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, and **Full Kaleidoscope** (a full-frame neon mandala). Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
-- 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok.
+- 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok. **Portrait** records a 9:16 frame (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
 - ⬇ **One-click updates**: the **Updates** menu (not the Look panel) tells you when a new version is out, checks the download, and installs it for you.
 - 🔏 **Signed and notarized Mac app** that opens without a security warning.
 
@@ -148,7 +148,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 24 styles](#the-24-styles)
+- [The 25 styles](#the-25-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -181,7 +181,7 @@ From left to right:
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
-| **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing (5 seconds to 6 minutes) |
+| **Look** | Opens the [Look panel](#look-panel): flash, brightness, landscape or portrait, auto-cycle timing (5 seconds to 6 minutes) |
 | ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window), not in the Look panel. Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
@@ -209,7 +209,7 @@ You can also **drag an image** from Finder, or straight from a web browser, onto
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Opens the style list. Click a name to jump straight to any of the [24 styles](#the-24-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [25 styles](#the-25-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
@@ -257,9 +257,10 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 |---|---|---|
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
+| **Frame** | Landscape | **Landscape** fills the window. **Portrait** centers a 9:16 frame (pillarboxed on a wide screen) so what you see is what a Reel or TikTok recording captures. It can't be changed while a recording is in progress. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
 
-### The 24 styles
+### The 25 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -303,6 +304,12 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 |---|---|---|
 | 24 | **Tesseract** | A glowing neon hypercube (a 4D cube) rotating through the fourth dimension, so the inner cube keeps turning itself inside out through the outer one. It spins harder on every beat, swells with the bass and leaves light trails. Tip: a smaller logo **Size** lets you see the inner cube. |
 
+**Kaleidoscope:**
+
+| # | Style | What it looks like |
+|---|---|---|
+| 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
+
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
 > **Tip:** **Bass Ring** and **Particle Storm** are built around a centered logo, so try turning **Bounce** and **Slide** down so the logo stays put. For **Pulsar Ridges** and **Outrun Grid**, a smaller **Size** (around 0.2) keeps the logo from covering the scene.
@@ -331,7 +338,7 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
 3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
 
-Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. If your window isn't 16:9, the video gets black bars; full screen on a 16:9 display fills the frame.
+Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape** (the Look panel), if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** records a vertical 9:16 frame instead: 720×1280, 1080×1920 or 2160×3840. On a landscape screen the same frame is centered with black bars on either side, so the preview matches the file.
 
 ### Two screens: controls on one, visuals on the other
 1. Click **Detach** in the toolbar (or press **D**). The controls move into their own **Dropocalypse Controls** window, stacked top to bottom, with every panel shown in place.
@@ -345,7 +352,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
-5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**, or **Detach** the controls and pick the screen so you can keep adjusting things from your laptop (see [Two screens](#two-screens-controls-on-one-visuals-on-the-other)). Full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too.
+5. **Go full screen** on the projector or TV: drag the window onto that screen and press **F**, or **Detach** the controls and pick the screen so you can keep adjusting things from your laptop (see [Two screens](#two-screens-controls-on-one-visuals-on-the-other)). In landscape, full screen covers every pixel, edge to edge: the Mac's menu bar and Dock are hidden, and on MacBooks with a camera notch the visuals fill the strip beside the notch too. In portrait, full screen centers the 9:16 frame and leaves the sides black.
 6. Turn **auto-cycle** on so the show keeps changing without you touching it: 30 to 60 seconds per style keeps things lively, and up to 6 minutes suits a slower, ambient night. Uncheck any styles in the style list that don't fit the night.
 7. **Want a clip of the night?** Press **R** to record the visuals and the music, and **R** again to stop.
 
@@ -423,7 +430,7 @@ Sources/Dropocalypse/
   UpdateChecker.swift         update check, download, verify and one-click install
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 24 built-in styles (add your own here!)
+  Render/Scenes.swift         the 25 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
@@ -432,7 +439,7 @@ Sources/Dropocalypse/
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
-  src/scenes.h                the 24 styles (Windows copy)
+  src/scenes.h                the 25 styles (Windows copy)
   src/shaders.h               HLSL port of the Metal shaders
   src/logo.cpp                logo loading (PNG, JPG, …)
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)

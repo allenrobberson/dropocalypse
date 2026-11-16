@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreVideo
+import DropocalypseCore
 import Metal
 import QuartzCore
 
@@ -43,8 +44,10 @@ final class Recorder: @unchecked Sendable {
     var isRecording: Bool { lock.lock(); defer { lock.unlock() }; return active }
     var elapsed: TimeInterval { isRecording ? CACurrentMediaTime() - startTime : 0 }
 
-    func start(url: URL, quality: Quality, device: MTLDevice) throws {
-        let (w, h) = quality.size
+    func start(url: URL, quality: Quality, portrait: Bool, device: MTLDevice) throws {
+        let pixels = FrameLayout.recordingSize(quality: quality.rawValue, portrait: portrait)
+        let w = pixels.width
+        let h = pixels.height
         width = w
         height = h
         fps = quality.fps

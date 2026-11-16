@@ -10,7 +10,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 
 | Feature | What you get |
 |---|---|
-| 🎛 **24 styles** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers and a 4D Tesseract. See [[Styles]]. |
+| 🎛 **25 styles** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers, a 4D Tesseract and Full Kaleidoscope. See [[Styles]]. |
 | 🖼 **Your logo** | Drag any image onto the window. It reacts to the bass with five separate motions plus glow, tint and trails. See [[Your Logo and Motion]]. |
 | 🎧 **No mic needed** | Listen straight to Spotify or any app on a Mac (macOS 14.2+), or to whatever your PC is playing on Windows. Mics and line-in work too. See [[Audio Sources]]. |
 | ⚡ **Low latency** | About 10–20 ms from sound to screen, so drops land on the beat. See [[How It Works]]. |
@@ -22,7 +22,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 1. [[Installation]]: download and open it on Mac or Windows
 2. [[Quick Start]]: from first launch to full-screen visuals in a minute
 3. [[Audio Sources]]: choose what Dropocalypse listens to
-4. [[Styles]]: all 24 looks, and how auto-cycle picks between them
+4. [[Styles]]: all 25 looks, and how auto-cycle picks between them
 
 ## All pages
 

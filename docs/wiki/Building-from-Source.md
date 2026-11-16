@@ -36,7 +36,7 @@ Sources/Dropocalypse/
   Audio/AudioAnalysis.swift   real-time filters, envelopes, auto-gain, beat detection
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 24 built-in styles (add your own here!)
+  Render/Scenes.swift         the 25 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
