@@ -304,6 +304,7 @@ struct TopToolbar: View {
             slider("Brightness", $settings.brightness, 0.4...1.6)
             slider("Auto-cycle every", $settings.cycleSeconds, 5...120) { "\(Int($0)) s" }
             Divider()
+            if UpdateChecker.isEnabled {
             Toggle("Check for updates automatically", isOn: $settings.checkForUpdates)
                 .onChange(of: settings.checkForUpdates) { on in
                     if on { updates.check(userInitiated: false) }
@@ -315,6 +316,10 @@ struct TopToolbar: View {
                 Text("Version \(updates.currentVersion)").foregroundStyle(.secondary)
             }
             .font(.caption)
+            } else {
+                Text("Version \(updates.currentVersion) · Updates come from the App Store.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 

@@ -31,9 +31,17 @@ final class UpdateChecker: ObservableObject {
     /// Shows the toolbar's update panel (set by the model), used by the menu's "Update now".
     var presentPanel: (() -> Void)?
 
+    /// The Mac App Store edition is updated by the App Store, so it never checks GitHub
+    /// (built with `-Xswiftc -DAPP_STORE`).
+    #if APP_STORE
+    static let isEnabled = false
+    #else
+    static let isEnabled = true
+    #endif
+
     /// Whether the toolbar should show the "Update" button right now.
     var showBadge: Bool {
-        guard available != nil else { return false }
+        guard Self.isEnabled, available != nil else { return false }
         if let until = snoozedUntil, Date() < until { return false }
         return true
     }
@@ -66,7 +74,7 @@ final class UpdateChecker: ObservableObject {
 
     /// Called at launch: checks if enabled and the last check was more than 20 hours ago.
     func checkAutomatically(enabled: Bool) {
-        guard enabled, !isDevBuild else { return }
+        guard Self.isEnabled, enabled, !isDevBuild else { return }
         let last = defaults.double(forKey: lastCheckKey)
         guard Date().timeIntervalSince1970 - last > 20 * 3600 else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in self?.check(userInitiated: false) }
@@ -74,7 +82,7 @@ final class UpdateChecker: ObservableObject {
 
     /// "Check for Updates…": always checks, and reports the result in an alert.
     func check(userInitiated: Bool) {
-        guard !checking else { return }
+        guard Self.isEnabled, !checking else { return }
         checking = true
         var request = URLRequest(url: Self.api, timeoutInterval: 15)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -142,6 +150,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     func installUpdate() {
+        guard Self.isEnabled else { return }
         guard !isBusy else { return }
         if let blocker = installBlocker {
             phase = .failed(blocker)
