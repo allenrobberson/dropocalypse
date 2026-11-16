@@ -25,6 +25,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.2: smooth from the start
+- 🛠 Mac: fixed a stutter during the first few minutes after opening the app.
+
 ### 1.2.1: Updates menu, smoother
 - ⬇ An **Updates** menu is always in the toolbar (and the detached controls window), turning pink when a new version is out.
 - The **Record** button is grey until you record and red while recording. Smoother visuals on the Mac and steadier recordings.

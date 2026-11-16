@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.2
+- 🛠 Mac: fixed the stutter in the first few minutes after opening the app. Audio-system change notices no longer rebuild the audio engine on the drawing thread, so the visuals stay smooth from the start.
+
 ## 1.2.1
 - ⬇ A dedicated **Updates** menu, always in the toolbar and in the detached controls window (moved out of the Look panel). It turns pink when a new version is out.
 - 🔴 The **Record** button is grey until you record, and red only while recording.
