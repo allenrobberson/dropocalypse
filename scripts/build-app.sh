@@ -121,8 +121,19 @@ if [ -n "$SIGN_IDENTITY" ]; then
     if xcrun notarytool submit "$DMG" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" \
          --issuer "$NOTARY_ISSUER" --wait --timeout "${NOTARY_TIMEOUT:-20m}" | tee "$DIST/notary.log" \
        && grep -q "status: Accepted" "$DIST/notary.log"; then
-      xcrun stapler staple "$DMG"
-      xcrun stapler staple "$APP"     # the app inside was notarized with the disk image
+      # Apple's ticket servers can take a moment to publish a fresh approval (stapler error 68),
+      # so retry; if it still isn't there, ship anyway: macOS finds the approval online.
+      staple() {
+        for i in 1 2 3 4 5 6; do
+          xcrun stapler staple "$1" && return 0
+          echo "Ticket not available yet; retrying in 20 s ($i/6)"
+          sleep 20
+        done
+        echo "::warning::Couldn't staple $1; it is notarized and macOS will verify it online."
+        return 0
+      }
+      staple "$DMG"
+      staple "$APP"     # the app inside was notarized with the disk image
       spctl --assess --type execute --verbose "$APP" || true
     else
       echo "::warning::Notarization not finished or not accepted; publishing without a stapled ticket."
