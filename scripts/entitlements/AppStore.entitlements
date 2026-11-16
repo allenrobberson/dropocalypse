@@ -6,8 +6,11 @@
     <key>com.apple.security.app-sandbox</key><true/>
     <!-- Microphone / line-in, and audio from other apps via Core Audio process taps. -->
     <key>com.apple.security.device.audio-input</key><true/>
-    <!-- Reading the logo image the user picks in the Open panel. -->
-    <key>com.apple.security.files.user-selected.read-only</key><true/>
+    <!-- Reading the logo the user picks, and saving recordings to a folder they choose. -->
+    <key>com.apple.security.files.user-selected.read-write</key><true/>
+    <key>com.apple.security.files.bookmarks.app-scope</key><true/>
+    <!-- Recordings are saved to Movies by default. -->
+    <key>com.apple.security.assets.movies.read-write</key><true/>
     <key>com.apple.application-identifier</key><string>FZAS899962.io.github.allenrobberson.dropocalypse</string>
     <key>com.apple.developer.team-identifier</key><string>FZAS899962</string>
 </dict>

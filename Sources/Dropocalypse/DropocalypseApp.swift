@@ -52,6 +52,10 @@ struct DropocalypseApp: App {
                     .keyboardShortcut(",", modifiers: [.command])
                 Button(model.controlsDetached ? "Attach Controls" : "Detach Controls") { model.toggleControlsDetached() }
                     .keyboardShortcut("d", modifiers: [.command, .shift])
+                Divider()
+                Button(model.isRecording ? "Stop Recording" : "Start Recording") { model.toggleRecording() }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                Divider()
                 Button("Restart Audio") { model.startAudio() }
             }
         }

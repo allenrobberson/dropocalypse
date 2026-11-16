@@ -54,6 +54,15 @@ struct TopToolbar: View {
                         .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
 
+                section("Record") {
+                    recordButton(compact: false)
+                    if let message = model.recordMessage {
+                        Text(message).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    DisclosureGroup("Recording settings") { recordSettings }
+                }
+
                 section("Logo") {
                     Text(model.hasCustomLogo ? (model.logoName ?? "Your logo") : "No logo chosen")
                         .lineLimit(1).truncationMode(.middle)
@@ -108,6 +117,9 @@ struct TopToolbar: View {
             logoMenu
             separator
             styleControls
+            separator
+            recordButton(compact: true)
+            popoverButton(nil, icon: "chevron.down", id: "record") { recordSettings }
             separator
             popoverButton("Motion", icon: "waveform.path.ecg", id: "motion") { motionControls }
             popoverButton("Logo", icon: "sparkles", id: "logo") { logoLookControls }
@@ -335,6 +347,60 @@ struct TopToolbar: View {
         .frame(width: 300)
     }
 
+    // MARK: Recording
+
+    private func recordButton(compact: Bool) -> some View {
+        Button {
+            model.toggleRecording()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: model.isRecording ? "stop.circle.fill" : "record.circle")
+                Text(model.isRecording ? "Stop  \(VisualizerModel.timeLabel(model.recordingElapsed))" : "Record")
+                    .monospacedDigit()
+            }
+            .font(.system(size: compact ? 11 : 13, weight: .semibold))
+            .padding(.horizontal, compact ? 8 : 12)
+            .padding(.vertical, compact ? 3 : 7)
+            .frame(maxWidth: compact ? nil : .infinity)
+            .background(model.isRecording ? Color.red : Color.red.opacity(0.55),
+                        in: RoundedRectangle(cornerRadius: compact ? 11 : 8))
+            .foregroundStyle(.white)
+        }
+        .buttonStyle(.plain)
+        .help(model.isRecording ? "Stop recording and save the video (R)"
+                                : "Record the visuals and music to a video (R)")
+    }
+
+    private var recordSettings: some View {
+        PopoverForm(title: "Recording") {
+            Picker("Video size", selection: $settings.recordQuality) {
+                ForEach(Recorder.Quality.allCases) { q in Text(q.detail).tag(q.rawValue) }
+            }
+            .pickerStyle(.radioGroup)
+            .disabled(model.isRecording)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Save recordings to").font(.caption)
+                Text(model.recordFolderName)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(2).truncationMode(.middle)
+                HStack {
+                    Button("Change…") { model.chooseRecordFolder() }
+                    Button("Open") { model.openRecordFolder() }
+                    if !settings.recordFolderBookmark.isEmpty {
+                        Button("Use Movies") { model.useMoviesFolder() }
+                    }
+                }
+                .font(.caption)
+            }
+            if model.lastRecordingURL != nil {
+                Button("Show last recording") { model.showLastRecording() }.font(.caption)
+            }
+            Text("Records the visuals and the music you're listening to, without the toolbar. Sizes other than your window are letterboxed.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     // MARK: Popover contents
 
     private var motionControls: some View {
@@ -453,7 +519,7 @@ struct TopToolbar: View {
         ["F", "Full screen"], ["T / S", "Show / hide toolbar"], ["Esc", "Hide toolbar"],
         ["L", "Choose logo"], ["G", "Show / hide logo"],
         ["Left / Right", "Previous / next style"], ["A", "Auto-cycle on / off"],
-        ["D", "Detach / attach the controls"],
+        ["D", "Detach / attach the controls"], ["R", "Start / stop recording"],
     ]
 
     // MARK: Helpers

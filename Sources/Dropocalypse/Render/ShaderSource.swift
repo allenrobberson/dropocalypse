@@ -207,6 +207,13 @@ fragment float4 fs_logo(LogoOut in [[stage_in]],
     float3 tinted = mix(c.rgb, float3(u.r, u.g, u.b) * c.a, u.tintAmount);
     return float4(tinted, c.a) * u.opacity;
 }
+// ---------------------------------------------------------------- recording
+// Copies the finished frame into the recording's pixel buffer (scaled to the viewport).
+fragment float4 fs_blit(FSOut in [[stage_in]], texture2d<float> tex [[texture(0)]]) {
+    constexpr sampler s(filter::linear, address::clamp_to_edge);
+    return float4(tex.sample(s, in.uv).rgb, 1.0);
+}
+
 // METAL-END
 """#
 }

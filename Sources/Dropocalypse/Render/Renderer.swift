@@ -43,6 +43,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var geomPipeline: MTLRenderPipelineState!
     private var geomOverPipeline: MTLRenderPipelineState!
     private var presentPipeline: MTLRenderPipelineState!
+    private var blitPipeline: MTLRenderPipelineState!
     private var logoPipeline: MTLRenderPipelineState!
     private var logoGlowPipeline: MTLRenderPipelineState!
     private var logoTrailPipeline: MTLRenderPipelineState!
@@ -89,7 +90,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         view.device = device
         view.colorPixelFormat = .bgra8Unorm
-        view.framebufferOnly = true
+        view.framebufferOnly = false   // the recorder reads the finished frame
         view.preferredFramesPerSecond = 120 // MTKView caps this to the display's real rate
         view.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         if let layer = view.layer as? CAMetalLayer {
@@ -174,6 +175,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         geomOverPipeline = try make("vs_geom", "fs_geom", feedbackFormat, .premultiplied)
         logoTrailPipeline = try make("vs_logo", "fs_logo", feedbackFormat, .premultiplied)
         presentPipeline = try make("vs_fullscreen", "fs_present", pixelFormat, .none)
+        blitPipeline = try make("vs_fullscreen", "fs_blit", .bgra8Unorm, .none)
         logoGlowPipeline = try make("vs_logo", "fs_logo", pixelFormat, .additive)
         logoPipeline = try make("vs_logo", "fs_logo", pixelFormat, .premultiplied)
     }
@@ -393,6 +395,28 @@ final class Renderer: NSObject, MTKViewDelegate {
                 enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
             }
             enc.endEncoding()
+        }
+
+        // Recording: copy the finished frame (no toolbar) into the video, letterboxed.
+        if let recorder = model.recorder, let frame = recorder.nextFrameTarget(now: now) {
+            let rp = MTLRenderPassDescriptor()
+            rp.colorAttachments[0].texture = frame.texture
+            rp.colorAttachments[0].loadAction = .clear
+            rp.colorAttachments[0].storeAction = .store
+            rp.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+            if let enc = cb.makeRenderCommandEncoder(descriptor: rp) {
+                let tw = Double(recorder.width), th = Double(recorder.height)
+                let sa = Double(size.width / size.height), ta = tw / th
+                let vw = sa > ta ? tw : th * sa
+                let vh = sa > ta ? tw / sa : th
+                enc.setViewport(MTLViewport(originX: (tw - vw) / 2, originY: (th - vh) / 2,
+                                            width: vw, height: vh, znear: 0, zfar: 1))
+                enc.setRenderPipelineState(blitPipeline)
+                enc.setFragmentTexture(drawable.texture, index: 0)
+                enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+                enc.endEncoding()
+                cb.addCompletedHandler { _ in recorder.appendFrame(frame) }
+            }
         }
 
         cb.present(drawable)

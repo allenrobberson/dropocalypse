@@ -336,7 +336,10 @@ final class ExtractorBox: @unchecked Sendable {
     private let mono: UnsafeMutablePointer<Float>
     private let maxFrames: Int
 
+    private let sampleRate: Double
+
     init(sampleRate: Double, maxFrames: Int) {
+        self.sampleRate = sampleRate
         extractor = FeatureExtractor(sampleRate: sampleRate)
         self.maxFrames = maxFrames
         mono = .allocate(capacity: maxFrames)
@@ -347,6 +350,7 @@ final class ExtractorBox: @unchecked Sendable {
 
     func process(bufferList: UnsafePointer<AudioBufferList>, frameCount: Int, into analysis: AudioAnalysis) {
         let list = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: bufferList))
+        RecordingAudioTap.shared.feed(list, frameCount: frameCount, sampleRate: sampleRate)
         var offset = 0
         while offset < frameCount {
             let n = min(maxFrames, frameCount - offset)

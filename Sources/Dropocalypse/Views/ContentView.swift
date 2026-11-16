@@ -24,6 +24,21 @@ struct ContentView: View {
                     .zIndex(1)
             }
 
+            // Recording messages ("Saved …"); shown in the controls window instead when it's detached.
+            if let message = model.recordMessage, !model.controlsDetached {
+                HStack(spacing: 10) {
+                    Text(message)
+                    if model.lastRecordingURL != nil, message.hasPrefix("Saved") {
+                        Button("Show in Finder") { model.showLastRecording() }
+                    }
+                }
+                .font(.system(size: 12, weight: .medium))
+                .padding(10)
+                .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 10))
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+
             // Problems stay on screen until fixed, independent of the toolbar.
             if capture.permissionDenied || model.errorMessage != nil {
                 VStack(spacing: 8) {

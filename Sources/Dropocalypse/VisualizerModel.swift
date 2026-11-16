@@ -16,6 +16,15 @@ final class VisualizerModel: NSObject, ObservableObject {
     /// The toolbar lives in its own window (so it can stay on the main screen while the visuals
     /// play full screen on another display).
     @Published private(set) var controlsDetached = false
+
+    // Recording
+    private(set) var recorder: Recorder?
+    @Published private(set) var isRecording = false
+    @Published private(set) var recordingElapsed: TimeInterval = 0
+    @Published var recordMessage: String?
+    @Published private(set) var lastRecordingURL: URL?
+    private var recordTimer: Timer?
+    private var recordFolderAccess: URL?
     private var controlsWindow: NSWindow?
     private var lastActivity = Date()
     private var hideTimer: Timer?
@@ -47,6 +56,131 @@ final class VisualizerModel: NSObject, ObservableObject {
         if UserDefaults.standard.bool(forKey: "controlsDetached") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.detachControls() }
         }
+    }
+
+    // MARK: Recording
+
+    /// The real ~/Movies (inside the App Store sandbox, too).
+    static var moviesFolder: URL {
+        if let pw = getpwuid(getuid()), let home = pw.pointee.pw_dir {
+            return URL(fileURLWithPath: String(cString: home)).appendingPathComponent("Movies", isDirectory: true)
+        }
+        return FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first!
+    }
+
+    /// The folder recordings are saved to (a folder the user picked, or Movies).
+    var recordFolder: URL {
+        if !settings.recordFolderBookmark.isEmpty {
+            var stale = false
+            if let url = try? URL(resolvingBookmarkData: settings.recordFolderBookmark, options: [.withSecurityScope],
+                                  relativeTo: nil, bookmarkDataIsStale: &stale) {
+                return url
+            }
+        }
+        return Self.moviesFolder
+    }
+
+    var recordFolderName: String {
+        let url = recordFolder
+        return url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
+    }
+
+    func chooseRecordFolder() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose where to save recordings"
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = recordFolder
+        panel.prompt = "Choose"
+        if panel.runModal() == .OK, let url = panel.url,
+           let data = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil,
+                                             relativeTo: nil) {
+            settings.recordFolderBookmark = data
+            objectWillChange.send()
+        }
+    }
+
+    func useMoviesFolder() {
+        settings.recordFolderBookmark = Data()
+        objectWillChange.send()
+    }
+
+    func toggleRecording() {
+        isRecording ? stopRecording() : startRecording()
+    }
+
+    func startRecording() {
+        guard !isRecording else { return }
+        guard let device = renderer?.device else { return }
+        let folder = recordFolder
+        let scoped = folder.startAccessingSecurityScopedResource()
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        let url = folder.appendingPathComponent("Dropocalypse \(f.string(from: Date())).mp4")
+        let quality = Recorder.Quality(rawValue: settings.recordQuality) ?? .p1080
+        let recorder = Recorder()
+        do {
+            try recorder.start(url: url, quality: quality, device: device)
+        } catch {
+            if scoped { folder.stopAccessingSecurityScopedResource() }
+            recordMessage = "Couldn't start recording: \(error.localizedDescription)"
+            return
+        }
+        recordFolderAccess = scoped ? folder : nil
+        self.recorder = recorder
+        RecordingAudioTap.shared.attach(recorder)
+        isRecording = true
+        recordMessage = nil
+        recordingElapsed = 0
+        recordTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self, let r = self.recorder else { return }
+            self.recordingElapsed = r.elapsed
+        }
+    }
+
+    func stopRecording() {
+        guard isRecording, let recorder else { return }
+        RecordingAudioTap.shared.attach(nil)
+        recordTimer?.invalidate()
+        recordTimer = nil
+        isRecording = false
+        recordMessage = "Finishing the video…"
+        recorder.stop { [weak self] url, error in
+            guard let self else { return }
+            self.recorder = nil
+            self.recordFolderAccess?.stopAccessingSecurityScopedResource()
+            self.recordFolderAccess = nil
+            if let url {
+                self.lastRecordingURL = url
+                self.recordMessage = "Saved \(url.lastPathComponent)"
+            } else {
+                self.recordMessage = "Recording failed: \(error?.localizedDescription ?? "unknown error")"
+            }
+            let message = self.recordMessage
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+                if self?.recordMessage == message { self?.recordMessage = nil }
+            }
+        }
+    }
+
+    func showLastRecording() {
+        if let url = lastRecordingURL { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+    }
+
+    func openRecordFolder() {
+        let folder = recordFolder
+        let scoped = folder.startAccessingSecurityScopedResource()
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(folder)
+        if scoped { folder.stopAccessingSecurityScopedResource() }
+    }
+
+    static func timeLabel(_ t: TimeInterval) -> String {
+        let s = Int(t)
+        return String(format: "%d:%02d", s / 60, s % 60)
     }
 
     // MARK: Detached controls window
@@ -375,6 +509,7 @@ final class VisualizerModel: NSObject, ObservableObject {
             case "a": self.settings.autoCycle.toggle(); return nil
             case "g": self.settings.showLogo.toggle(); return nil
             case "d": self.toggleControlsDetached(); return nil
+            case "r": self.toggleRecording(); return nil
             default: return event
             }
         }
