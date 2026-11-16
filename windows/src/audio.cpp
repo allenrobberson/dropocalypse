@@ -275,6 +275,31 @@ void toMono(const BYTE* data, UINT32 frames, const WAVEFORMATEX* wf, SampleKind 
     }
 }
 
+float sampleAt(const BYTE* data, size_t i, SampleKind kind) {
+    switch (kind) {
+    case SampleKind::Float32: return reinterpret_cast<const float*>(data)[i];
+    case SampleKind::Int16: return reinterpret_cast<const int16_t*>(data)[i] / 32768.0f;
+    case SampleKind::Int32: return reinterpret_cast<const int32_t*>(data)[i] / 2147483648.0f;
+    case SampleKind::Int24: {
+        const BYTE* p = data + i * 3;
+        return ((int32_t)((p[0] << 8) | (p[1] << 16) | (p[2] << 24)) >> 8) / 8388608.0f;
+    }
+    default: return 0;
+    }
+}
+
+/// Interleaved stereo for recording: the first two channels, or the one channel twice.
+void toStereo(const BYTE* data, UINT32 frames, const WAVEFORMATEX* wf, SampleKind kind, float* out) {
+    const int ch = std::max<int>(1, wf->nChannels);
+    for (UINT32 f = 0; f < frames; ++f) {
+        size_t base = (size_t)f * ch;
+        float l = sampleAt(data, base, kind);
+        float r = ch > 1 ? sampleAt(data, base + 1, kind) : l;
+        out[f * 2] = l;
+        out[f * 2 + 1] = r;
+    }
+}
+
 std::wstring defaultDeviceId(IMMDeviceEnumerator* en, EDataFlow flow) {
     ComPtr<IMMDevice> dev;
     if (FAILED(en->GetDefaultAudioEndpoint(flow, eConsole, &dev))) return {};
@@ -400,6 +425,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         const double sr = wf->nSamplesPerSec;
         sampleRate = (int)sr;
         FeatureExtractor extractor(sr);
+        std::vector<float> recordStereo;
         std::wstring name = dev ? friendlyName(dev.Get()) : L"";
         {
             wchar_t buf[512];
@@ -446,6 +472,15 @@ void AudioCapture::run(std::wstring id, bool loopback) {
                     else
                         toMono(data + (size_t)done * wf->nBlockAlign, n, wf, kind, mono.data());
                     extractor.process(mono.data(), (int)n, analysis);
+                    if (recordActive_) {
+                        recordStereo.resize((size_t)n * 2);
+                        if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
+                            std::fill(recordStereo.begin(), recordStereo.end(), 0.0f);
+                        else
+                            toStereo(data + (size_t)done * wf->nBlockAlign, n, wf, kind, recordStereo.data());
+                        std::lock_guard<std::mutex> lock(recordMutex_);
+                        if (recordSink_) recordSink_(recordStereo.data(), n, (uint32_t)sr);
+                    }
                     done += n;
                 }
                 cap->ReleaseBuffer(frames);

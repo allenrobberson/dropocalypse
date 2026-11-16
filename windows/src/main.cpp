@@ -4,6 +4,7 @@
 // Settings and the saved logo live in %APPDATA%\Dropocalypse.
 
 #include "audio.h"
+#include "recorder.h"
 #include "renderer.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -59,6 +60,8 @@ struct AppSettings {
     long long updateSnoozeUntil = 0;  // "Ignore for 24 hours": hide the toolbar button until then
     bool privacyNoticeSeen = false;   // first-run notice about the update check has been answered
     bool controlsDetached = false;    // toolbar lives in its own window (for a second screen)
+    int recordQuality = 1;            // 0 = 720p, 1 = 1080p, 2 = 4K
+    std::wstring recordFolder;        // empty = the Videos folder
 };
 
 static std::wstring appDataDir() {
@@ -94,6 +97,8 @@ static std::string serialize(const AppSettings& s) {
     out += "updateSnoozeUntil=" + std::to_string(s.updateSnoozeUntil) + "\n";
     out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
     out += std::string("controlsDetached=") + (s.controlsDetached ? "1" : "0") + "\n";
+    out += "recordQuality=" + std::to_string(s.recordQuality) + "\n";
+    out += "recordFolder=" + narrow(s.recordFolder) + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
     out += "logoName=" + narrow(s.logoName) + "\n";
     return out;
@@ -147,6 +152,8 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("updateSnoozeUntil")) s.updateSnoozeUntil = std::atoll(kv["updateSnoozeUntil"].c_str());
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
     flag("controlsDetached", s.controlsDetached);
+    if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
+    if (kv.count("recordFolder")) s.recordFolder = widen(kv["recordFolder"]);
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
     if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
 }
@@ -182,6 +189,13 @@ struct App {
 
     Renderer renderer;
     AudioCapture audio;
+    Recorder recorder;
+    std::mutex recordMutex;
+    std::wstring recordNotice;      // "Saved ..." / errors, shown for a few seconds
+    double recordNoticeUntil = 0;
+    std::wstring lastRecording;
+    bool recordNoticePending = false;
+    std::wstring pendingNotice;
     std::vector<AudioSource> sources;
     AppSettings settings;
     std::wstring dataDir, settingsPath;
@@ -755,6 +769,151 @@ static void chooseLogo() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Recording
+// ---------------------------------------------------------------------------------------------
+
+static double nowSeconds();
+
+static std::wstring defaultRecordFolder() {
+    PWSTR raw = nullptr;
+    std::wstring dir;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Videos, 0, nullptr, &raw))) dir = raw;
+    if (raw) CoTaskMemFree(raw);
+    return dir.empty() ? g.dataDir : dir;
+}
+
+static std::wstring recordFolder() {
+    return g.settings.recordFolder.empty() ? defaultRecordFolder() : g.settings.recordFolder;
+}
+
+static void showRecordNotice(const std::wstring& msg) {
+    g.recordNotice = msg;
+    g.recordNoticeUntil = nowSeconds() + 7.0;
+}
+
+static void startRecording() {
+    if (g.recorder.isRecording()) return;
+    std::wstring dir = recordFolder();
+    SHCreateDirectoryExW(nullptr, dir.c_str(), nullptr);
+    std::time_t t = std::time(nullptr);
+    std::tm tm{};
+    localtime_s(&tm, &t);
+    wchar_t name[64];
+    wcsftime(name, 64, L"Dropocalypse %Y-%m-%d at %H.%M.%S.mp4", &tm);
+    std::wstring path = dir + L"\\" + name;
+    std::wstring err;
+    if (!g.recorder.start(path, g.settings.recordQuality, err)) {
+        showRecordNotice(L"Couldn't start recording: " + err);
+        return;
+    }
+    g.audio.setRecordSink([](const float* stereo, uint32_t frames, uint32_t rate) {
+        g.recorder.pushAudio(stereo, frames, rate);
+    });
+}
+
+static void stopRecording() {
+    if (!g.recorder.isRecording()) return;
+    g.audio.setRecordSink(nullptr);
+    showRecordNotice(L"Finishing the video...");
+    g.recorder.stop([](const std::wstring& path, bool ok) {
+        std::lock_guard<std::mutex> lock(g.recordMutex);
+        if (ok) g.lastRecording = path;
+        size_t slash = path.find_last_of(L"\\/");
+        std::wstring file = slash == std::wstring::npos ? path : path.substr(slash + 1);
+        g.pendingNotice = ok ? L"Saved " + file : L"Recording failed while saving " + file;
+        g.recordNoticePending = true;
+    });
+}
+
+static void toggleRecording() {
+    if (g.recorder.isRecording()) stopRecording();
+    else startRecording();
+}
+
+static void showInExplorer(const std::wstring& path) {
+    std::wstring args = L"/select,\"" + path + L"\"";
+    ShellExecuteW(nullptr, L"open", L"explorer.exe", args.c_str(), nullptr, SW_SHOWNORMAL);
+}
+
+static void openRecordFolder() {
+    std::wstring dir = recordFolder();
+    SHCreateDirectoryExW(nullptr, dir.c_str(), nullptr);
+    ShellExecuteW(nullptr, L"open", dir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+static void chooseRecordFolder() {
+    ComPtr<IFileOpenDialog> dlg;
+    if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dlg)))) return;
+    DWORD opts = 0;
+    dlg->GetOptions(&opts);
+    dlg->SetOptions(opts | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+    dlg->SetTitle(L"Choose where to save recordings");
+    ComPtr<IShellItem> start;
+    if (SUCCEEDED(SHCreateItemFromParsingName(recordFolder().c_str(), nullptr, IID_PPV_ARGS(&start))))
+        dlg->SetFolder(start.Get());
+    if (FAILED(dlg->Show(g.ctrlHwnd ? g.ctrlHwnd : g.hwnd))) return;
+    ComPtr<IShellItem> item;
+    if (FAILED(dlg->GetResult(&item))) return;
+    PWSTR path = nullptr;
+    if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
+        g.settings.recordFolder = path;
+        CoTaskMemFree(path);
+    }
+}
+
+static std::string recordTimeLabel() {
+    int sec = (int)g.recorder.elapsedSeconds();
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "%d:%02d", sec / 60, sec % 60);
+    return buf;
+}
+
+/// Recording settings, shown in the toolbar's drop-down and in the controls window.
+static void recordSettingsBody() {
+    ImGui::TextUnformatted("Video size");
+    ImGui::BeginDisabled(g.recorder.isRecording());
+    for (int i = 0; i < 3; ++i) {
+        const auto& q = Recorder::kQualities[i];
+        char label[64];
+        std::snprintf(label, sizeof(label), "%s  (%d x %d, %d fps)", q.label, q.width, q.height, q.fps);
+        if (ImGui::RadioButton(label, g.settings.recordQuality == i)) g.settings.recordQuality = i;
+    }
+    ImGui::EndDisabled();
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Save recordings to");
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s", narrow(recordFolder()).c_str());
+    ImGui::PopTextWrapPos();
+    if (ImGui::Button("Change folder...")) chooseRecordFolder();
+    ImGui::SameLine();
+    if (ImGui::Button("Open folder")) openRecordFolder();
+    if (!g.settings.recordFolder.empty()) {
+        ImGui::SameLine();
+        if (ImGui::Button("Use Videos")) g.settings.recordFolder.clear();
+    }
+    std::wstring last;
+    {
+        std::lock_guard<std::mutex> lock(g.recordMutex);
+        last = g.lastRecording;
+    }
+    if (!last.empty() && ImGui::Button("Show last recording")) showInExplorer(last);
+    ImGui::TextDisabled("Records the visuals and the music, without the toolbar.");
+}
+
+/// Red record button, or a stop button with the running time while recording.
+static void recordButton(const ImVec2& size = ImVec2(0, 0)) {
+    bool rec = g.recorder.isRecording();
+    ImGui::PushStyleColor(ImGuiCol_Button, rec ? ImVec4(0.85f, 0.12f, 0.18f, 1) : ImVec4(0.55f, 0.08f, 0.12f, 0.85f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.2f, 0.25f, 1));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.3f, 0.3f, 1));
+    std::string label = rec ? "Stop  " + recordTimeLabel() + "###recbtn" : "Record###recbtn";
+    if (ImGui::Button(label.c_str(), size)) toggleRecording();
+    ImGui::PopStyleColor(3);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(rec ? "Stop recording and save the video (R)" : "Record the visuals and music to a video (R)");
+}
+
+// ---------------------------------------------------------------------------------------------
 // Window / swap chain
 // ---------------------------------------------------------------------------------------------
 
@@ -793,7 +952,7 @@ static bool createDevice(std::wstring& error) {
     DXGI_SWAP_CHAIN_DESC1 sd{};
     sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     sd.SampleDesc.Count = 1;
-    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT; // recording reads it
     sd.BufferCount = 2;
     sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     sd.Scaling = DXGI_SCALING_NONE;
@@ -1068,7 +1227,8 @@ static void keysPanelBody() {
     const char* rows[][2] = {{"F / F11", "Full screen"},    {"T / S", "Show / hide toolbar"},
                              {"Esc", "Hide toolbar / exit full screen"}, {"L", "Choose logo"},
                              {"G", "Show / hide logo"},     {"Left / Right", "Previous / next style"},
-                             {"A", "Auto-cycle on / off"},  {"D", "Detach / attach the controls"}};
+                             {"A", "Auto-cycle on / off"},  {"D", "Detach / attach the controls"},
+                             {"R", "Start / stop recording"}};
     for (auto& row : rows) {
         ImGui::TextUnformatted(row[0]);
         ImGui::SameLine(110 * g.dpi);
@@ -1132,6 +1292,19 @@ static void drawToolbar(float dt, bool docked = true) {
     if (ImGui::Button(" > ")) nextScene(1);
     ImGui::SameLine();
     ImGui::Checkbox("Auto-cycle", &r.autoCycle);
+
+    // ---- Record
+    ImGui::SameLine(0, 16 * g.dpi);
+    recordButton();
+    ImGui::SameLine(0, 2 * g.dpi);
+    if (ImGui::Button("v##recopts")) ImGui::OpenPopup("recopts");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Recording settings: video size and where to save");
+    if (ImGui::BeginPopup("recopts")) {
+        beginPanel("Recording");
+        recordSettingsBody();
+        endPanel();
+        ImGui::EndPopup();
+    }
 
     // ---- Panels
     auto panelButton = [&](const char* label, const char* id) {
@@ -1281,6 +1454,16 @@ static void drawControlsPanel() {
         if (ImGui::Button(g.fullscreen ? "Exit full screen" : "Full screen", ImVec2(full, 0))) toggleFullscreen();
     }
 
+    // Record
+    ImGui::SeparatorText("Record");
+    recordButton(ImVec2(full, 0));
+    if (nowSeconds() < g.recordNoticeUntil) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextUnformatted(narrow(g.recordNotice).c_str());
+        ImGui::PopTextWrapPos();
+    }
+    if (ImGui::CollapsingHeader("Recording settings")) recordSettingsBody();
+
     // Logo
     ImGui::SeparatorText("Logo");
     {
@@ -1333,7 +1516,16 @@ static void drawControlsPanel() {
 
 static void drawNotices() {
     std::wstring msg;
-    if (!g.errorMessage.empty()) msg = g.errorMessage;
+    {
+        std::lock_guard<std::mutex> lock(g.recordMutex);
+        if (g.recordNoticePending) {
+            g.recordNoticePending = false;
+            showRecordNotice(g.pendingNotice);
+        }
+    }
+    // With the controls detached, recording messages show there instead of on the audience's screen.
+    if (nowSeconds() < g.recordNoticeUntil && !g.settings.controlsDetached) msg = g.recordNotice;
+    else if (!g.errorMessage.empty()) msg = g.errorMessage;
     else if (!g.audio.isRunning()) msg = g.audio.status();
     if (msg.empty()) return;
     ImGuiIO& io = ImGui::GetIO();
@@ -1375,6 +1567,7 @@ static bool handleKey(WPARAM key) {
         if (!ctrl && !g.settings.controlsDetached) { g.toolbarVisible = !g.toolbarVisible; g.lastActivity = nowSeconds(); return true; }
         break;
     case 'D': if (!ctrl) { g.wantDetach = g.settings.controlsDetached ? 0 : 1; return true; } break;
+    case 'R': if (!ctrl) { toggleRecording(); return true; } break;
     case 'L': if (!ctrl) { chooseLogo(); return true; } break;
     case 'O': if (ctrl) { chooseLogo(); return true; } break;
     case 'G': if (!ctrl) { g.settings.r.showLogo = !g.settings.r.showLogo; return true; } break;
@@ -1697,6 +1890,10 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         MessageBoxW(nullptr, error.c_str(), L"Dropocalypse", MB_ICONERROR);
         return 1;
     }
+    {
+        std::wstring recErr;
+        g.recorder.init(g.device.Get(), g.ctx.Get(), recErr);
+    }
 
     IMGUI_CHECKVERSION();
     g.mainCtx = ImGui::CreateContext();
@@ -1778,6 +1975,10 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         // Visualizer.
         g.renderer.render(g.backbufferRTV.Get(), g.width, g.height, g.audio.analysis, g.audio.sampleRate.load(),
                           g.settings.r);
+        if (g.recorder.isRecording()) {   // grab the visuals before the toolbar is drawn on top
+            ComPtr<ID3D11Texture2D> back;
+            if (SUCCEEDED(g.swapChain->GetBuffer(0, IID_PPV_ARGS(&back)))) g.recorder.captureFrame(back.Get());
+        }
 
         // Toolbar auto-hide.
         if (cursorShouldHide()) io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -1824,6 +2025,8 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
         }
     }
 
+    if (g.recorder.isRecording()) stopRecording();
+    g.recorder.waitIdle();
     bool keepDetached = g.settings.controlsDetached;
     closeControlsWindow();
     g.settings.controlsDetached = keepDetached;   // reopen detached next time

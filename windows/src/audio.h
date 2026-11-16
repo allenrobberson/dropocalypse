@@ -2,6 +2,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <cmath>
 #include <mutex>
 #include <string>
@@ -136,12 +137,24 @@ public:
     void stop();
 
     bool isRunning() const { return running_.load(); }
+
+    /// Recording: while set, every captured block is also passed on as interleaved stereo float
+    /// samples (frames, sample rate). Called on the audio thread.
+    void setRecordSink(std::function<void(const float*, uint32_t, uint32_t)> sink) {
+        std::lock_guard<std::mutex> lock(recordMutex_);
+        recordSink_ = std::move(sink);
+        recordActive_ = (bool)recordSink_;
+    }
     std::atomic<int> sampleRate{48000};
     std::wstring status() const;
 
 private:
     void run(std::wstring id, bool loopback);
     void setStatus(const std::wstring& s);
+
+    std::mutex recordMutex_;
+    std::function<void(const float*, uint32_t, uint32_t)> recordSink_;
+    std::atomic<bool> recordActive_{false};
 
     std::thread thread_;
     std::atomic<bool> stopRequested_{false};
