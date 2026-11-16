@@ -409,6 +409,8 @@ def build():
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],
         ["<b>Look</b>", "Beat flash, brightness and auto-cycle timing"],
         ["Status text", "The input being used, its sample rate and buffer size (lower ms = faster reaction)"],
+        ["<b>Updates</b>", "Your version, <b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
+                           "version is out: <b>Update now</b> installs it and reopens the app."],
         ["<b>Record</b> / <b>Stop</b>", "Records the visuals and music to an MP4 video, without the toolbar. "
                                          "The ▾ next to it sets the video size and where to save."],
         ["<b>Screen</b> (display icon on Mac)", "Shows the visuals full screen on another display (TV, projector, second monitor)"],
@@ -482,7 +484,6 @@ def build():
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 120 s)"],
-        ["<b>Check for updates automatically</b>", "On", "Once a day, checks GitHub for a newer version and shows a pink <b>Update</b> button in the toolbar: <b>Update now</b> installs it and reopens the app; or <b>Download page</b> / <b>Ignore for 24 hours</b>. <b>Check now</b> checks right away."],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     # ---- Styles

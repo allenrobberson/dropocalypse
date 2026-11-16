@@ -30,7 +30,7 @@ Dropocalypse connects to the internet for one purpose: keeping the app up to dat
 
 GitHub's handling of these requests is covered by the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement).
 
-**How to turn it off:** open the **Look** panel in the toolbar and turn off **Check for updates automatically**. On Windows you can also choose **Don't check for updates** on the first-launch notice. With it off, Dropocalypse makes no network connections at all unless you click **Check now** or **Update now**.
+**How to turn it off:** open the **Updates** menu in the toolbar and turn off **Check for updates automatically**. On Windows you can also choose **Don't check for updates** on the first-launch notice. With it off, Dropocalypse makes no network connections at all unless you click **Check now** or **Update now**.
 
 ## No tracking
 

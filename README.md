@@ -27,6 +27,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ### 1.2.0: record videos
 - 🔴 **Record button.** Click **Record** (or press **R**) and Dropocalypse saves the visuals and the music as an MP4 video, without the toolbar. Click **Stop** when you're done.
+- ⬇ **Updates menu.** The toolbar (and the detached controls window) now always has an **Updates** menu with your version, **Check now** and automatic checks. It turns pink when a new version is out.
 - 🎚 Choose **720p, 1080p or 4K** and **where the videos are saved** (Movies on Mac, Videos on Windows, or any folder you pick).
 - Works on Mac and Windows, in the toolbar and in the detached controls window.
 
@@ -154,7 +155,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](#look-panel): flash, brightness, auto-cycle timing |
-| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
+| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window). Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | 🔴 **Record** / **Stop** | Records the visuals and the music to an MP4 video; shows the running time while recording. The **▾** next to it sets the video size and where to save. |
@@ -228,7 +229,6 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
-| **Check for updates automatically** | On | Once a day, asks GitHub whether a newer version is out. If so, a pink **Update available** button appears in the toolbar. **Check now** checks right away; the panel also shows which version you have. |
 
 ### The 24 styles
 

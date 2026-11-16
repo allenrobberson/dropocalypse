@@ -4,7 +4,7 @@
 Yes. No account, no ads, no tracking, no watermark, no paid tier. It's MIT licensed, so you can use it anywhere, including paid gigs and commercial streams. [Sponsorships](Support-the-Project) are optional.
 
 **Does it record or upload my audio?**
-No. Audio is analyzed live on your computer and thrown away. The only thing Dropocalypse ever connects to is GitHub: once a day to see whether a newer version is out, and to download an update when you click **Update now**. That request sends nothing about you or your audio, and you can turn it off under **Look → Check for updates automatically**.
+No. Audio is analyzed live on your computer and thrown away. The only thing Dropocalypse ever connects to is GitHub: once a day to see whether a newer version is out, and to download an update when you click **Update now**. That request sends nothing about you or your audio, and you can turn it off in the **Updates** menu (**Check for updates automatically**).
 
 **How do I know when there's an update?**
 From 0.9.0 on, a pink **Update** button appears in the toolbar when a new version is out. From 1.0, click it and choose **Update now**: Dropocalypse downloads, verifies, installs and reopens the new version by itself. You can also pick **Download page**, or **Ignore for 24 hours** to hide it until tomorrow. You can also click **Watch → Custom → Releases** on the GitHub page to get an email for each release.

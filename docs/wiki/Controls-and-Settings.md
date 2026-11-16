@@ -20,7 +20,7 @@ From left to right:
 | **Logo** | Opens the [Logo panel](Your-Logo-and-Motion#logo-panel): size, glow, tint, trails |
 | **Audio** | Opens the [Audio panel](Audio-Sources#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
 | **Look** | Opens the [Look panel](Controls-and-Settings#look-panel): flash, brightness, auto-cycle timing |
-| 🩷 **Update X.Y.Z** | Appears only when a newer version is out. Click it and choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours** to hide the button until tomorrow. |
+| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window). Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: choose **Update now** to download, install and reopen the new version automatically (your logo and settings are kept), **Download page** to get it yourself, or **Ignore for 24 hours**. |
 | *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | ⌨ / **Keys** | Shows the keyboard shortcuts |
 | 🔴 **Record** / **Stop** | Records the visuals and the music to an MP4 video, without the toolbar. The **▾** next to it sets the video size (720p, 1080p, 4K) and where to save. See [Recording](#recording). |
@@ -53,7 +53,6 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 120 seconds) |
-| **Check for updates automatically** | On | Once a day, asks GitHub whether a newer version is out. If so, a pink **Update available** button appears in the toolbar. **Check now** checks right away; the panel also shows which version you have. |
 
 ## Other panels
 

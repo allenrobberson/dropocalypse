@@ -15,6 +15,7 @@ struct TopToolbar: View {
     @State var showAudio = true
     @State var showLook = false
     @State var showKeys = false
+    @State var showUpdates = false
 
     var body: some View {
         if vertical { verticalBody } else { horizontalBody }
@@ -25,11 +26,6 @@ struct TopToolbar: View {
     private var verticalBody: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                if updates.showBadge || updates.isBusy, let update = updates.available {
-                    updatePopover(update)
-                        .background(Color(red: 0.92, green: 0.29, blue: 0.67).opacity(0.18),
-                                    in: RoundedRectangle(cornerRadius: 10))
-                }
 
                 section("Visuals") {
                     Menu {
@@ -85,7 +81,18 @@ struct TopToolbar: View {
                 DisclosureGroup("Motion", isExpanded: $showMotion) { motionControls }
                 DisclosureGroup("Logo look", isExpanded: $showLogoLook) { logoLookControls }
                 DisclosureGroup(capture.isRunning ? "Audio" : "Audio (off)", isExpanded: $showAudio) { audioControls }
-                DisclosureGroup("Look & updates", isExpanded: $showLook) { lookControls }
+                DisclosureGroup("Look", isExpanded: $showLook) { lookControls }
+                if UpdateChecker.isEnabled {
+                    DisclosureGroup(isExpanded: Binding(get: { showUpdates || updates.showBadge || updates.isBusy },
+                                                        set: { showUpdates = $0 })) {
+                        updatesPanel
+                    } label: {
+                        Text(updates.showBadge || updates.isBusy
+                             ? "Updates — \(updates.available?.version ?? "") available" : "Updates")
+                            .foregroundStyle(updates.showBadge || updates.isBusy
+                                             ? Color(red: 0.92, green: 0.29, blue: 0.67) : .primary)
+                    }
+                }
                 DisclosureGroup("Keyboard shortcuts", isExpanded: $showKeys) { shortcuts }
 
                 Divider()
@@ -128,25 +135,8 @@ struct TopToolbar: View {
 
             Spacer(minLength: 12)
 
-            if updates.showBadge || updates.isBusy, let update = updates.available {
-                Button {
-                    model.openPopover = model.openPopover == "update" ? nil : "update"
-                } label: {
-                    Label("Update \(update.version)", systemImage: "arrow.down.circle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color(red: 0.92, green: 0.29, blue: 0.67), in: Capsule())
-                        .foregroundStyle(.white)
-                }
-                .buttonStyle(.plain)
-                .help("Dropocalypse \(update.version) is available (you have \(updates.currentVersion))")
-                .popover(isPresented: Binding(
-                    get: { model.openPopover == "update" },
-                    set: { if !$0 && model.openPopover == "update" { model.openPopover = nil } }),
-                         arrowEdge: .bottom) {
-                    updatePopover(update).environment(\.colorScheme, .dark)
-                }
+            if UpdateChecker.isEnabled {
+                updatesMenuButton
             }
 
             Text(capture.isRunning ? capture.statusText : "Audio off")
@@ -347,6 +337,63 @@ struct TopToolbar: View {
         .frame(width: 300)
     }
 
+    // MARK: Updates
+
+    /// Always in the toolbar; pink with the new version number when an update is out.
+    private var updatesMenuButton: some View {
+        let isOpen = Binding<Bool>(
+            get: { model.openPopover == "update" },
+            set: { open in
+                if open { model.openPopover = "update" } else if model.openPopover == "update" { model.openPopover = nil }
+            })
+        let highlight = updates.showBadge || updates.isBusy
+        return Button {
+            isOpen.wrappedValue.toggle()
+        } label: {
+            Label(highlight ? "Update \(updates.available?.version ?? "")" : "Updates",
+                  systemImage: highlight ? "arrow.down.circle.fill" : "arrow.down.circle")
+                .font(.system(size: 11, weight: highlight ? .semibold : .regular))
+                .padding(.horizontal, highlight ? 8 : 4)
+                .padding(.vertical, 3)
+                .background(highlight ? Color(red: 0.92, green: 0.29, blue: 0.67) : Color.clear, in: Capsule())
+                .foregroundStyle(highlight ? Color.white : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .help(highlight ? "Dropocalypse \(updates.available?.version ?? "") is available (you have \(updates.currentVersion))"
+                        : "Check for updates")
+        .popover(isPresented: isOpen, arrowEdge: .bottom) {
+            updatesPanel.environment(\.colorScheme, .dark)
+        }
+    }
+
+    private var updatesPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let update = updates.available, updates.showBadge || updates.isBusy {
+                updatePopover(update)
+                Divider().padding(.horizontal, 14)
+            } else {
+                Text("Updates").font(.headline).padding([.top, .horizontal], 14)
+                Text("You have the latest version (\(updates.currentVersion)).")
+                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 14)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Check for updates automatically", isOn: $settings.checkForUpdates)
+                    .onChange(of: settings.checkForUpdates) { on in
+                        if on { updates.check(userInitiated: false) }
+                    }
+                HStack {
+                    Button(updates.checking ? "Checking…" : "Check now") { updates.check(userInitiated: true) }
+                        .disabled(updates.checking)
+                    Spacer()
+                    Text("Version \(updates.currentVersion)").foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+            .padding([.horizontal, .bottom], 14)
+        }
+        .frame(width: vertical ? nil : 360)
+    }
+
     // MARK: Recording
 
     private func recordButton(compact: Bool) -> some View {
@@ -481,20 +528,8 @@ struct TopToolbar: View {
             slider("Beat flash", $settings.beatFlash, 0...1)
             slider("Brightness", $settings.brightness, 0.4...1.6)
             slider("Auto-cycle every", $settings.cycleSeconds, 5...120) { "\(Int($0)) s" }
-            Divider()
-            if UpdateChecker.isEnabled {
-            Toggle("Check for updates automatically", isOn: $settings.checkForUpdates)
-                .onChange(of: settings.checkForUpdates) { on in
-                    if on { updates.check(userInitiated: false) }
-                }
-            HStack {
-                Button(updates.checking ? "Checking…" : "Check now") { updates.check(userInitiated: true) }
-                    .disabled(updates.checking)
-                Spacer()
-                Text("Version \(updates.currentVersion)").foregroundStyle(.secondary)
-            }
-            .font(.caption)
-            } else {
+            if !UpdateChecker.isEnabled {
+                Divider()
                 Text("Version \(updates.currentVersion) · Updates come from the App Store.")
                     .font(.caption).foregroundStyle(.secondary)
             }

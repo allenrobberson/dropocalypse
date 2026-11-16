@@ -1175,7 +1175,17 @@ static void lookPanelBody(RenderSettings& r) {
     slider("Beat flash", &r.beatFlash, 0, 1);
     slider("Brightness", &r.brightness, 0.4f, 1.6f);
     slider("Auto-cycle every", &r.cycleSeconds, 5, 120, "%.0f s");
-    ImGui::Separator();
+}
+
+/// The Updates menu: version, check now, automatic checks, and installing a new version.
+static void updatesPanelBody() {
+    if (updateAvailable() && !g.settings.latestVersion.empty()) {
+        ImGui::TextUnformatted(("Dropocalypse " + g.settings.latestVersion + " is available").c_str());
+        drawUpdatePopupBody();
+        ImGui::Separator();
+    } else {
+        ImGui::TextUnformatted("You have the latest version.");
+    }
     if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
         startUpdateCheck(false);
     if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
@@ -1184,17 +1194,6 @@ static void lookPanelBody(RenderSettings& r) {
     {
         std::lock_guard<std::mutex> lock(gUpdate.m);
         if (!gUpdate.message.empty()) ImGui::TextUnformatted(gUpdate.message.c_str());
-    }
-    if (updateAvailable()) {
-        if (ImGui::Button("Update now")) startInstall();
-        ImGui::SameLine();
-        if (ImGui::Button("Open download page")) openDownloadPage();
-        if (gInstall.phase == InstallPhase::Failed) {
-            std::lock_guard<std::mutex> lock(gInstall.m);
-            ImGui::TextWrapped("%s", gInstall.error.c_str());
-        } else if (installBusy()) {
-            ImGui::ProgressBar(gInstall.progress, ImVec2(-1, 0), "Updating...");
-        }
     }
 }
 
@@ -1346,20 +1345,25 @@ static void drawToolbar(float dt, bool docked = true) {
         ImGui::EndPopup();
     }
 
-    // ---- Update available: a bright button with Download / Ignore for 24 hours
-    if (updateAvailable() && (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil)) {
+    // ---- Updates menu: always here; turns pink with the version when an update is out.
+    {
         ImGui::SameLine(0, 12 * g.dpi);
+        bool highlight = updateAvailable() &&
+                         (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil);
         std::string label = installBusy() ? "Updating... " + std::to_string((int)(gInstall.progress * 100)) + "%"
-                                          : "Update " + g.settings.latestVersion + " available";
+                            : highlight   ? "Update " + g.settings.latestVersion
+                                          : std::string("Updates");
         label += "###updatebtn";
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
+        if (highlight) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
+        }
         if (ImGui::Button(label.c_str())) ImGui::OpenPopup("update");
-        ImGui::PopStyleColor(3);
+        if (highlight) ImGui::PopStyleColor(3);
         if (ImGui::BeginPopup("update")) {
-            beginPanel(("Dropocalypse " + g.settings.latestVersion + " is available").c_str());
-            drawUpdatePopupBody();
+            beginPanel("Updates");
+            updatesPanelBody();
             endPanel();
             ImGui::EndPopup();
         }
@@ -1431,12 +1435,16 @@ static void drawControlsPanel() {
     ImGui::PushItemWidth(-FLT_MIN);
     const float full = -FLT_MIN;
 
-    // Update banner
-    if (updateAvailable() && (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil)) {
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.92f, 0.29f, 0.67f, 0.85f));
-        if (ImGui::CollapsingHeader(("Update " + g.settings.latestVersion + " available").c_str()))
-            drawUpdatePopupBody();
-        ImGui::PopStyleColor();
+    // Updates: its own section; highlighted and open when a new version is out.
+    {
+        bool highlight = updateAvailable() &&
+                         (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil);
+        if (highlight) ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.92f, 0.29f, 0.67f, 0.85f));
+        std::string title = highlight ? "Updates - " + g.settings.latestVersion + " available###updates"
+                                      : std::string("Updates###updates");
+        if (highlight) ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+        if (ImGui::CollapsingHeader(title.c_str())) updatesPanelBody();
+        if (highlight) ImGui::PopStyleColor();
     }
 
     // Visuals: screen + full screen
@@ -1506,7 +1514,7 @@ static void drawControlsPanel() {
     if (ImGui::CollapsingHeader("Logo look")) logoPanelBody(r);
     if (ImGui::CollapsingHeader(g.audio.isRunning() ? "Audio" : "Audio (off)", ImGuiTreeNodeFlags_DefaultOpen))
         audioPanelBody();
-    if (ImGui::CollapsingHeader("Look & updates")) lookPanelBody(r);
+    if (ImGui::CollapsingHeader("Look")) lookPanelBody(r);
     if (ImGui::CollapsingHeader("Keyboard shortcuts")) keysPanelBody();
 
     ImGui::Spacing();
