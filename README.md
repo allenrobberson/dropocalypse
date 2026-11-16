@@ -1,14 +1,38 @@
-<p align="center">
-  <a href="https://github.com/sponsors/allenrobberson"><img src="https://img.shields.io/badge/Sponsor-Support%20Dropocalypse-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Dropocalypse on GitHub"></a>
-</p>
-<p align="center">
-  <b>💖 Dropocalypse is free and open source. If it makes your shows, streams or parties better, please <a href="https://github.com/sponsors/allenrobberson">become a sponsor</a>.</b><br>
-  Sponsorships keep the project going: they cover the yearly Apple Developer membership that lets Mac downloads open without a security warning, and the time that goes into new styles and features.
-</p>
-
 # Dropocalypse
 
-**The drop hits. Your logo goes off.**
+<p align="center"><b>The drop hits. Your logo goes off.</b></p>
+
+<p align="center">A free music visualizer for <b>Mac and Windows</b>. Play a song and your logo bounces, squashes and glows on the beat.</p>
+
+<p align="center">
+  <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
+  &nbsp;
+  <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
+  &nbsp;
+  <a href="https://apps.microsoft.com/detail/9n1tj9d5r5c8"><img src="https://img.shields.io/badge/Microsoft_Store-when_live-5E5E5E?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Store, when the listing is live"></a>
+</p>
+
+<p align="center">
+  <img src="docs/media/hero.gif" width="800" alt="Dropocalypse preview: the app icon bounces over Full Kaleidoscope, Spectrum Skyline, Starburst, Liquid Plasma, Vortex, then a 9:16 portrait frame">
+</p>
+<p align="center"><sub>Full Kaleidoscope → Spectrum Skyline → Starburst → Liquid Plasma → Vortex → Portrait (9:16).</sub></p>
+
+<table>
+  <tr>
+    <td align="center" width="25%"><a href="docs/media/styles/kaleidoscope.jpg"><img src="docs/media/styles/kaleidoscope.jpg" width="220" alt="Full Kaleidoscope"></a><br><b>Full Kaleidoscope</b></td>
+    <td align="center" width="25%"><a href="docs/media/styles/spectrum-skyline.jpg"><img src="docs/media/styles/spectrum-skyline.jpg" width="220" alt="Spectrum Skyline"></a><br><b>Spectrum Skyline</b></td>
+    <td align="center" width="25%"><a href="docs/media/styles/starburst.jpg"><img src="docs/media/styles/starburst.jpg" width="220" alt="Starburst"></a><br><b>Starburst</b></td>
+    <td align="center" width="25%"><a href="docs/media/styles/liquid-plasma.jpg"><img src="docs/media/styles/liquid-plasma.jpg" width="220" alt="Liquid Plasma"></a><br><b>Liquid Plasma</b></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/vortex.jpg"><img src="docs/media/styles/vortex.jpg" width="220" alt="Vortex"></a><br><b>Vortex</b></td>
+    <td align="center"><a href="docs/media/styles/oscilloscope.jpg"><img src="docs/media/styles/oscilloscope.jpg" width="220" alt="Oscilloscope Drift"></a><br><b>Oscilloscope Drift</b></td>
+    <td align="center"><a href="docs/media/styles/neon-equalizer.jpg"><img src="docs/media/styles/neon-equalizer.jpg" width="220" alt="Neon Equalizer"></a><br><b>Neon Equalizer</b></td>
+    <td align="center"><a href="docs/media/styles/portrait-frame.jpg"><img src="docs/media/styles/portrait-frame.jpg" width="220" alt="Portrait frame, Full Kaleidoscope in a 9:16 pillarbox"></a><br><b>Portrait frame</b></td>
+  </tr>
+</table>
+
+<p align="center"><sub>Eight of the 25 styles, drawn with the app's own shaders. The logo is the app icon.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Windows** that **makes your logo dance to the bass**.
 
@@ -26,6 +50,14 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🔏 **Signed and notarized Mac app** that opens without a security warning.
 
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
+
+<p align="center">
+  <a href="https://github.com/sponsors/allenrobberson"><img src="https://img.shields.io/badge/Sponsor-Support%20Dropocalypse-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Dropocalypse on GitHub"></a>
+</p>
+<p align="center">
+  <b>💖 Dropocalypse is free and open source. If it makes your shows, streams or parties better, please <a href="https://github.com/sponsors/allenrobberson">become a sponsor</a>.</b><br>
+  Sponsorships keep the project going: they cover the yearly Apple Developer membership that lets Mac downloads open without a security warning, and the time that goes into new styles and features.
+</p>
 
 ## 🆕 What's new
 
