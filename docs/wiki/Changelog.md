@@ -2,9 +2,13 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.1
+- ⬇ A dedicated **Updates** menu, always in the toolbar and in the detached controls window (moved out of the Look panel). It turns pink when a new version is out.
+- 🔴 The **Record** button is grey until you record, and red only while recording.
+- 🎞 Smoother: the Mac version presents frames the fast way again (recording now draws its own copy of the picture), and recordings use an exact 60/30 fps timeline.
+
 ## 1.2.0
 - 🔴 Record the visuals and the music to an MP4 video (H.264 + AAC) with the **Record** / **Stop** button or **R**. The toolbar is never in the video.
-- ⬇ A dedicated **Updates** menu, always in the toolbar and in the detached controls window (moved out of the Look panel).
 - Choose 720p60, 1080p60 or 4K30, and where recordings are saved (Movies / Videos by default, or any folder).
 - In the toolbar and the detached controls window, on Mac and Windows. "Saved …" messages appear in the controls window when it's detached, so the audience doesn't see them.
 

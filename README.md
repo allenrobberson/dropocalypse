@@ -25,9 +25,12 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.1: Updates menu, smoother
+- ⬇ An **Updates** menu is always in the toolbar (and the detached controls window), turning pink when a new version is out.
+- The **Record** button is grey until you record and red while recording. Smoother visuals on the Mac and steadier recordings.
+
 ### 1.2.0: record videos
 - 🔴 **Record button.** Click **Record** (or press **R**) and Dropocalypse saves the visuals and the music as an MP4 video, without the toolbar. Click **Stop** when you're done.
-- ⬇ **Updates menu.** The toolbar (and the detached controls window) now always has an **Updates** menu with your version, **Check now** and automatic checks. It turns pink when a new version is out.
 - 🎚 Choose **720p, 1080p or 4K** and **where the videos are saved** (Movies on Mac, Videos on Windows, or any folder you pick).
 - Works on Mac and Windows, in the toolbar and in the detached controls window.
 
