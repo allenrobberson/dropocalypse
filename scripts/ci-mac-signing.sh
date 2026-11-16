@@ -32,7 +32,17 @@ INST="$(security find-identity -v "$KEYCHAIN" | grep -o '"3rd Party Mac Develope
 # App Store Connect API key (used by notarytool, altool and the profile download).
 KEY_DIR="$HOME/.appstoreconnect/private_keys"; mkdir -p "$KEY_DIR"
 KEY_FILE="$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
-printf '%s\n' "$ASC_KEY_P8" > "$KEY_FILE"; chmod 600 "$KEY_FILE"
+# Rebuild a clean PEM from the pasted text: editors like TextEdit can turn the "-----" lines
+# into long dashes or add stray spaces, so keep only the base64 body.
+ASC_KEY_P8="$ASC_KEY_P8" python3 - "$KEY_FILE" <<'PY'
+import os, re, sys, textwrap
+raw = os.environ["ASC_KEY_P8"]
+body = re.sub(r"(?i)[^A-Za-z0-9+/=]*(BEGIN|END)\s+(EC\s+)?PRIVATE\s+KEY[^A-Za-z0-9+/=]*", "\n", raw)
+body = "".join(re.findall(r"[A-Za-z0-9+/=]+", body))
+open(sys.argv[1], "w").write("-----BEGIN PRIVATE KEY-----\n" + "\n".join(textwrap.wrap(body, 64)) + "\n-----END PRIVATE KEY-----\n")
+print("API key: %d base64 characters" % len(body))
+PY
+chmod 600 "$KEY_FILE"
 
 # Provisioning profile for the App Store edition, fetched by name from the App Store Connect API.
 PROFILE="$RUNNER_TEMP/appstore.provisionprofile"
