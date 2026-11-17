@@ -1024,6 +1024,15 @@ bool Renderer::compile(const char* entry, const char* profile, ComPtr<ID3DBlob>&
     return true;
 }
 
+struct SignalCB {
+    float aspect = 0, radius = 0, amplitude = 0, rotation = 0;
+    float halfWidth = 0, hue0 = 0, saturation = 0, alpha = 0;
+    float p0 = 0, p1 = 0, p2 = 0, p3 = 0;
+    int mode = 0, count = 0, stride = 0, sampleOffset = 0;
+    int closed = 0, side = 0, pad0 = 0, pad1 = 0;
+};
+static_assert(sizeof(SignalCB) == 80, "SignalCB must match the HLSL cbuffer");
+
 bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring& error) {
     device_ = device;
     ctx_ = ctx;
@@ -1229,15 +1238,6 @@ void Renderer::updateScene(double now, float dt, RenderSettings& st) {
     }
     sceneBlend_ = std::min(1.0f, sceneBlend_ + dt / 2.5f);
 }
-
-struct SignalCB {
-    float aspect = 0, radius = 0, amplitude = 0, rotation = 0;
-    float halfWidth = 0, hue0 = 0, saturation = 0, alpha = 0;
-    float p0 = 0, p1 = 0, p2 = 0, p3 = 0;
-    int mode = 0, count = 0, stride = 0, sampleOffset = 0;
-    int closed = 0, side = 0, pad0 = 0, pad1 = 0;
-};
-static_assert(sizeof(SignalCB) == 80, "SignalCB must match the HLSL cbuffer");
 
 void Renderer::drawGpuSignal(const VisualScene& scene, const AudioSnapshot& audio, float t, float aspect) {
     if (!vsSignal_ || !sampleSRV_) return;
