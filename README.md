@@ -63,6 +63,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.12: now on Linux
+- 🐧 **Dropocalypse for Linux**: an AppImage (one file, nothing to install) for Ubuntu, Debian, Fedora, Mint, Arch and more, with the same styles, logo motion, two screens, recording and one-click updates. See [Linux](#-linux-appimage-one-file-nothing-to-install).
+
 ### 1.2.11: lower CPU, same picture
 - ⚡ **Waveforms are drawn on the GPU.** Tunnel, lines, bars, dots and Lissajous look the same and use less CPU. The app also rests while the window is minimized or covered, and while the toolbar is hidden.
 - **Look → Frame rate** defaults to **Display**. Choose **60** or **30** if a laptop is working too hard. The status line shows a frame time (for example **6.2 ms**) while the toolbar is visible.

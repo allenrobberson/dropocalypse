@@ -1,6 +1,9 @@
 # Changelog
 
-All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
+All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
+
+## 1.2.12
+- 🐧 **Dropocalypse for Linux.** A new AppImage download (one file, nothing to install) for Ubuntu, Debian, Fedora, Mint, Arch and other 64-bit distributions, plus a plain .tar.gz. Same 25 styles, logo motion, two-screen mode, recording and one-click updates as Mac and Windows. By default it listens to **what the computer is playing**; works with X11 or Wayland and PulseAudio or PipeWire. Recording needs ffmpeg.
 
 ## 1.2.11
 - ⚡ **Lower CPU, same picture.** The simple waveform styles (tunnel, lines, bars, dots, Lissajous) are drawn on the GPU. The app sleeps while its window is minimized or covered, and it skips the toolbar work while the toolbar is hidden. **Look → Frame rate** stays on **Display** (the monitor's refresh). Choose **60** or **30** to use less CPU. While the toolbar is showing, the status line includes a frame time such as **6.2 ms**.
