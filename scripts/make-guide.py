@@ -435,7 +435,9 @@ def build():
                "from GitHub. Until the Store listing is available, use the zip.", body))
     s.append(sub("Listening to music on Windows"))
     s.append(P("By default the Windows version listens to <b>what your PC is playing</b> (Spotify, YouTube, DJ "
-               "software, games), so no microphone is needed. To use a microphone or line-in instead, choose it "
+               "software, games), so no microphone is needed. It listens in shared mode and does not take over "
+               "the speakers, so other apps, including Windows Media Player, keep playing. To use a microphone "
+               "or line-in instead, choose it "
                f"under <b>Audio</b> in the toolbar, and turn on <b>Settings {ARROW} Privacy &amp; security {ARROW} "
                f"Microphone {ARROW} Let desktop apps access your microphone</b>.", body))
 
@@ -543,8 +545,8 @@ def build():
          "any open app, such as Spotify (playing apps are marked ♪). <b>Microphone or line-in</b>: built-in "
          "mic, USB mic, audio interface or line-in."],
         ["<b>Input</b> (Windows)", "System audio",
-         "“System audio” listens to what the PC is playing, and “Playing on: …” listens to one "
-         "output device. You can also pick a mic or line-in."],
+         "“System audio” listens to what the PC is playing, in shared mode, so other apps keep "
+         "playing. “Playing on: …” listens to one output device. You can also pick a mic or line-in."],
         ["<b>Refresh list</b>", "", "Updates the list after you open an app or plug something in"],
         ["<b>Restart audio</b>", "", "Use if the visuals stop reacting after a device change or sleep"],
         ["<b>Sensitivity</b>", "1.00", "Raise it in a quiet room or with a distant mic; lower it if room noise makes "
@@ -716,6 +718,10 @@ def build():
         ["<b>Windows: visuals ignore Spotify / YouTube</b>",
          "Under Audio, choose <b>System audio</b>. With both headphones and speakers, pick the “Playing on: "
          "…” entry for the device you're listening on."],
+        ["<b>Windows: another app can't play while Dropocalypse is open</b>",
+         "Fixed in 1.2.9. Windows Media Player used to say it encountered a problem while playing the file. "
+         "Update from the <b>Updates</b> menu. Dropocalypse only listens, in shared mode, and the status line "
+         "shows a buffer of about 10 ms."],
         ["<b>It reacts, but only a little</b>",
          "Raise Sensitivity and lower Beat threshold. Check the input level in your system Sound settings."],
         ["<b>It twitches when no music is playing</b>", "Lower Sensitivity, or use a direct line-in feed"],

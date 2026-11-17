@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.9
+- 🪟 **Windows: other apps keep playing.** System audio is shared-mode loopback only. Dropocalypse no longer opens a silent playback stream or changes the output's period, so Windows Media Player and other apps can play while it is open. The status line shows a buffer of about 10 ms.
+
 ## 1.2.8
 - 🔮 **Full Kaleidoscope** (style 25), on Mac and Windows: a mandala that fills the frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green. Bass zooms, pulses and turns it; mids and highs change the color and detail. It is in the style list and in auto-cycle, and the logo still sits on top.
 - 📱 **Frame** in the Look panel (toolbar and the detached controls): **Landscape** fills the window, as before. **Portrait** centers a 9:16 frame, including in full screen on a landscape display, and recordings match it: 720×1280, 1080×1920 or 2160×3840. The choice is saved. It can't be changed while a recording is in progress.

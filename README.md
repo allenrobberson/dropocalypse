@@ -61,6 +61,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.9: Windows playback stays shared
+- 🪟 **Other apps can play while Dropocalypse is open.** On Windows, system audio is a shared-mode loopback and no longer takes over the speakers. Windows Media Player and other players keep working. If an older copy blocked playback, open **Updates** and click **Update now**.
+
 ### 1.2.8: Full Kaleidoscope and portrait recordings
 - 🔮 **Full Kaleidoscope** (style 25): a full-frame neon mandala. Four-way mirroring sometimes tightens into an 8-way radial pattern, in cyan, magenta, electric blue, gold and acid green. Bass zooms and turns it; mids and highs drive the color and detail.
 - 📱 **Frame** in the **Look** panel: **Landscape** fills the window. **Portrait** centers a 9:16 frame so what you see is what gets recorded (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
@@ -400,6 +403,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The Windows app isn't code-signed yet. |
 | **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
 | **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
+| **Windows: another app can't play while Dropocalypse is open** | Fixed in 1.2.9. Windows Media Player used to say it encountered a problem while playing the file. Open **Updates** and click **Update now**. System audio only listens, in shared mode, and the status line shows a buffer of about 10 ms. |
 | **Nothing reacts when listening to an app** (Mac) | Make sure the app is actually playing, then allow Dropocalypse in **System Settings → Privacy & Security → Screen & System Audio Recording** (under *System Audio Recording Only*) and click **Restart audio**. Needs macOS 14.2 or later. |
 | **Nothing reacts to the music** | Check that microphone access is on. **Mac:** System Settings → Privacy & Security → Microphone → Dropocalypse. **Windows:** Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. Then use **Audio → Restart audio** and make sure the right input is selected. |
 | **It reacts, but only a little** | Raise **Sensitivity** and lower **Beat threshold**. Check that the input's level isn't turned down in **System Settings → Sound → Input**. |

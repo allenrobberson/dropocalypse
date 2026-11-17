@@ -44,7 +44,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-Full Kaleidoscope, a full-frame neon mandala, and a Frame control: Landscape fills the window, Portrait centers a 9:16 frame and records 720×1280, 1080×1920 or 2160×3840.
+Windows listens in shared mode, so other apps, including Windows Media Player, keep playing while Dropocalypse is open.
 
 ## Product features (up to 20, short)
 - 25 music-reactive visual styles
