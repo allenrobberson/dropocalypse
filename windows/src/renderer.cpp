@@ -960,25 +960,29 @@ private:
 // `g` is blended additively (glowing light); `over` is drawn first with normal alpha blending.
 static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const Spectrum& sp, float t, float dt,
                      V2 logoCenter, float logoRadius, StyleFX& fx, GeometryBuilder& g, GeometryBuilder& over) {
-    float bass = std::min(audio.bass, 1.4f);
-    float width = 0.0065f * scene.thickness * (1 + bass * 0.6f);
-    float alpha = 0.55f + 0.45f * std::min(1.0f, std::max(bass, audio.mid));
+    float alpha = 0.55f + 0.45f * std::min(1.0f, std::max(std::min(audio.bass, 1.4f), audio.mid));
     float hue0 = scene.baseHue + t * scene.hueSpeed;
-    auto color = [&](float frac, float boost = 1.0f) {
-        Rgb c = hsv(hue0 + frac * 0.35f, scene.saturation, 1);
-        return RGBA{c.r, c.g, c.b, std::min(1.0f, alpha * boost)};
-    };
-
-    const float* wave = sp.wave;
-    const int waveCount = Spectrum::WaveCount;
     const float* bands = sp.bands;
     const int bandCount = Spectrum::BandCount;
-    float s = scene.waveScale;
     float aspect = g.aspect;
 
     FXFrame frame{scene, audio, bands, bandCount, t, dt, aspect, logoCenter, logoRadius,
                   Palette{hue0, scene.saturation, alpha}};
     fx.begin(frame);
+    // Circle, lines, bars and dots are expanded in vs_signal. The CPU only uploads samples.
+    switch (scene.wave) {
+    case WaveStyle::Circle:
+    case WaveStyle::TwinRings:
+    case WaveStyle::Line:
+    case WaveStyle::VerticalLine:
+    case WaveStyle::Bars:
+    case WaveStyle::RadialBars:
+    case WaveStyle::SpiralDots:
+    case WaveStyle::Lissajous:
+        return;
+    default:
+        break;
+    }
 
     switch (scene.wave) {
     case WaveStyle::BassRing: fx.bassRing(frame, g); break;
@@ -996,92 +1000,7 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::RainbowPeaks: fx.rainbowPeaks(frame, g); break;
     case WaveStyle::Tesseract: fx.tesseract(frame, g); break;
     case WaveStyle::FullKaleidoscope: fx.fullKaleidoscope(frame, g); break;
-
-    case WaveStyle::Circle:
-        ring(g, wave, waveCount, 2, 0, scene.centerRadius * s * (1 + 0.25f * bass), 0.12f * s, t * 0.2f, width,
-             [&](float f) { return color(f); });
-        break;
-
-    case WaveStyle::TwinRings:
-        ring(g, wave, waveCount, 2, 0, scene.centerRadius * s * (1 + 0.3f * bass), 0.07f * s, t * 0.5f, width,
-             [&](float f) { return color(f); });
-        ring(g, wave, waveCount, 2, 1, std::max(0.42f * s, scene.centerRadius * s + 0.22f) * (1 + 0.15f * bass),
-             0.1f * s, -t * 0.4f, width, [&](float f) { return color(f + 0.5f); });
-        break;
-
-    case WaveStyle::Line: {
-        const int n = 256;
-        std::vector<V2> pts;
-        pts.reserve(n);
-        for (int i = 0; i < n; ++i) {
-            float x = -0.94f * aspect + (float)i / (n - 1) * 1.88f * aspect;
-            pts.push_back({x, wave[i * 2] * 0.3f * s});
-        }
-        g.polyline(pts, false, width, [&](int i) { return color((float)i / n); });
-        break;
-    }
-
-    case WaveStyle::VerticalLine: {
-        const int n = 256;
-        for (float side : {-1.0f, 1.0f}) {
-            std::vector<V2> pts;
-            pts.reserve(n);
-            for (int i = 0; i < n; ++i) {
-                float y = -0.94f + (float)i / (n - 1) * 1.88f;
-                pts.push_back({side * 0.35f * aspect * 0.5f + wave[i * 2] * 0.22f * s, y});
-            }
-            g.polyline(pts, false, width, [&](int i) { return color((float)i / n + (side > 0 ? 0.5f : 0.0f)); });
-        }
-        break;
-    }
-
-    case WaveStyle::Bars: {
-        float total = 1.9f * aspect;
-        float slot = total / bandCount;
-        for (int i = 0; i < bandCount; ++i) {
-            float x0 = -total / 2 + i * slot + slot * 0.15f;
-            float h = 0.02f + bands[i] * 1.15f * s;
-            g.rect(x0, -0.98f, x0 + slot * 0.7f, -0.98f + h, color((float)i / bandCount, 0.9f));
-        }
-        break;
-    }
-
-    case WaveStyle::RadialBars: {
-        float inner = scene.centerRadius > 0 ? scene.centerRadius + 0.06f * bass : 0.0f;
-        for (int side = 0; side < 2; ++side) {
-            for (int i = 0; i < bandCount; ++i) {
-                float frac = (float)i / bandCount;
-                float a = (side == 0 ? frac : -frac) * kPi + kPi / 2 + t * 0.1f;
-                V2 dir{std::cos(a), std::sin(a)};
-                float len = 0.03f + bands[i] * 0.65f * s;
-                g.line(dir * inner, dir * (inner + len), width * 1.2f, color(frac));
-            }
-        }
-        break;
-    }
-
-    case WaveStyle::SpiralDots:
-        for (int arm = 0; arm < 3; ++arm) {
-            for (int i = 0; i < bandCount; ++i) {
-                float frac = (float)i / bandCount;
-                float a = i * 0.33f + arm * 2 * kPi / 3 + t * 1.2f;
-                float r = scene.centerRadius + frac * 0.85f * s;
-                float radius = 0.006f + bands[i] * 0.032f * scene.thickness;
-                g.dot(V2{std::cos(a), std::sin(a)} * r, radius, color(frac + arm * 0.2f));
-            }
-        }
-        break;
-
-    case WaveStyle::Lissajous: {
-        const int delay = 23;
-        int n = waveCount - delay;
-        std::vector<V2> pts;
-        pts.reserve(n / 2);
-        for (int i = 0; i < n; i += 2) pts.push_back({wave[i] * 0.5f * s, wave[i + delay] * 0.5f * s});
-        int total = (int)pts.size();
-        g.polyline(pts, false, width * 0.8f, [&](int i) { return color((float)i / total); });
-        break;
-    }
+    default: break;
     }
 }
 
@@ -1105,6 +1024,15 @@ bool Renderer::compile(const char* entry, const char* profile, ComPtr<ID3DBlob>&
     return true;
 }
 
+struct SignalCB {
+    float aspect = 0, radius = 0, amplitude = 0, rotation = 0;
+    float halfWidth = 0, hue0 = 0, saturation = 0, alpha = 0;
+    float p0 = 0, p1 = 0, p2 = 0, p3 = 0;
+    int mode = 0, count = 0, stride = 0, sampleOffset = 0;
+    int closed = 0, side = 0, pad0 = 0, pad1 = 0;
+};
+static_assert(sizeof(SignalCB) == 80, "SignalCB must match the HLSL cbuffer");
+
 bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring& error) {
     device_ = device;
     ctx_ = ctx;
@@ -1116,6 +1044,8 @@ bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring
     device_->CreateVertexShader(b->GetBufferPointer(), b->GetBufferSize(), nullptr, &vsLogo_);
     if (!compile("vs_geom", "vs_5_0", b, error)) return false;
     device_->CreateVertexShader(b->GetBufferPointer(), b->GetBufferSize(), nullptr, &vsGeom_);
+    if (!compile("vs_signal", "vs_5_0", b, error)) return false;
+    device_->CreateVertexShader(b->GetBufferPointer(), b->GetBufferSize(), nullptr, &vsSignal_);
     D3D11_INPUT_ELEMENT_DESC layout[] = {
         {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -1142,6 +1072,20 @@ bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring
     makeCB(sizeof(WarpCB), warpCB_);
     makeCB(sizeof(PresentCB), presentCB_);
     makeCB(sizeof(LogoCB), logoCB_);
+    makeCB(sizeof(SignalCB), signalCB_);
+    {
+        D3D11_BUFFER_DESC d{};
+        d.ByteWidth = 560 * (UINT)sizeof(float);
+        d.Usage = D3D11_USAGE_DYNAMIC;
+        d.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        d.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        device_->CreateBuffer(&d, nullptr, &sampleBuf_);
+        D3D11_SHADER_RESOURCE_VIEW_DESC sv{};
+        sv.Format = DXGI_FORMAT_R32_FLOAT;
+        sv.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+        sv.Buffer.NumElements = 560;
+        if (sampleBuf_) device_->CreateShaderResourceView(sampleBuf_.Get(), &sv, &sampleSRV_);
+    }
 
     D3D11_BUFFER_DESC vb{};
     vb.ByteWidth = sizeof(GeomVertex) * MaxVertices;
@@ -1295,6 +1239,131 @@ void Renderer::updateScene(double now, float dt, RenderSettings& st) {
     sceneBlend_ = std::min(1.0f, sceneBlend_ + dt / 2.5f);
 }
 
+void Renderer::drawGpuSignal(const VisualScene& scene, const AudioSnapshot& audio, float t, float aspect) {
+    if (!vsSignal_ || !sampleSRV_) return;
+    switch (scene.wave) {
+    case WaveStyle::Circle:
+    case WaveStyle::TwinRings:
+    case WaveStyle::Line:
+    case WaveStyle::VerticalLine:
+    case WaveStyle::Bars:
+    case WaveStyle::RadialBars:
+    case WaveStyle::SpiralDots:
+    case WaveStyle::Lissajous:
+        break;
+    default:
+        return;
+    }
+
+    float packed[560] = {};
+    for (int i = 0; i < Spectrum::WaveCount; ++i) packed[i] = spectrum_.wave[i];
+    for (int i = 0; i < Spectrum::BandCount; ++i) packed[512 + i] = spectrum_.bands[i];
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (FAILED(ctx_->Map(sampleBuf_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) return;
+    std::memcpy(mapped.pData, packed, sizeof(packed));
+    ctx_->Unmap(sampleBuf_.Get(), 0);
+
+    const float bass = std::min(audio.bass, 1.4f);
+    const float width = 0.0065f * scene.thickness * (1 + bass * 0.6f);
+    const float alpha = 0.55f + 0.45f * std::min(1.0f, std::max(bass, audio.mid));
+    const float hue0 = scene.baseHue + t * scene.hueSpeed;
+    const float scale = scene.waveScale;
+
+    auto issue = [&](SignalCB cb, GpuSignalMode mode, int count, bool closed) {
+        const int verts = gpuSignalVertices(mode, count, closed);
+        if (verts <= 0) return;
+        cb.mode = (int)mode;
+        cb.count = count;
+        cb.closed = closed ? 1 : 0;
+        updateCB(ctx_, signalCB_.Get(), cb);
+        ID3D11Buffer* buf = signalCB_.Get();
+        ctx_->VSSetConstantBuffers(3, 1, &buf);
+        ctx_->VSSetShader(vsSignal_.Get(), nullptr, 0);
+        ctx_->PSSetShader(psGeom_.Get(), nullptr, 0);
+        ctx_->IASetInputLayout(nullptr);
+        ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        ctx_->OMSetBlendState(blendAdd_.Get(), nullptr, 0xffffffff);
+        ID3D11ShaderResourceView* srv = sampleSRV_.Get();
+        ctx_->VSSetShaderResources(1, 1, &srv);
+        ctx_->Draw(verts, 0);
+    };
+
+    SignalCB base{};
+    base.aspect = aspect;
+    base.hue0 = hue0;
+    base.saturation = scene.saturation;
+    base.alpha = alpha;
+    base.halfWidth = width * 0.5f;
+
+    if (scene.wave == WaveStyle::Circle || scene.wave == WaveStyle::TwinRings) {
+        SignalCB cb = base;
+        cb.radius = scene.centerRadius * scale * (1 + (scene.wave == WaveStyle::Circle ? 0.25f : 0.3f) * bass);
+        cb.amplitude = (scene.wave == WaveStyle::Circle ? 0.12f : 0.07f) * scale;
+        cb.rotation = t * (scene.wave == WaveStyle::Circle ? 0.2f : 0.5f);
+        cb.stride = 2;
+        issue(cb, GpuSignalMode::Polyline, 256, true);
+        if (scene.wave == WaveStyle::TwinRings) {
+            cb.radius = std::max(0.42f * scale, scene.centerRadius * scale + 0.22f) * (1 + 0.15f * bass);
+            cb.amplitude = 0.1f * scale;
+            cb.rotation = -t * 0.4f;
+            cb.sampleOffset = 1;
+            cb.hue0 = hue0 + 0.5f * 0.35f;
+            issue(cb, GpuSignalMode::Polyline, 256, true);
+        }
+    } else if (scene.wave == WaveStyle::Line) {
+        SignalCB cb = base;
+        cb.p0 = -0.94f * aspect;
+        cb.p1 = 1.88f * aspect;
+        cb.p2 = 0.3f * scale;
+        cb.stride = 2;
+        issue(cb, GpuSignalMode::Polyline, 256, false);
+    } else if (scene.wave == WaveStyle::VerticalLine) {
+        for (int side : {-1, 1}) {
+            SignalCB cb = base;
+            cb.p0 = -0.94f;
+            cb.p1 = 1.88f;
+            cb.p2 = 0.35f * aspect * 0.5f;
+            cb.p3 = 0.22f * scale;
+            cb.stride = 2;
+            cb.side = side;
+            if (side > 0) cb.hue0 = hue0 + 0.5f * 0.35f;
+            issue(cb, GpuSignalMode::Polyline, 256, false);
+        }
+    } else if (scene.wave == WaveStyle::Bars) {
+        SignalCB cb = base;
+        cb.alpha = alpha * 0.9f;
+        cb.p0 = 1.9f * aspect;
+        cb.p1 = 1.15f * scale;
+        issue(cb, GpuSignalMode::Bars, 48, false);
+    } else if (scene.wave == WaveStyle::RadialBars) {
+        const float inner = scene.centerRadius > 0 ? scene.centerRadius + 0.06f * bass : 0.0f;
+        for (int side = 0; side < 2; ++side) {
+            SignalCB cb = base;
+            cb.radius = inner;
+            cb.p1 = 0.65f * scale;
+            cb.rotation = t * 0.1f;
+            cb.halfWidth = width * 1.2f * 0.5f;
+            cb.side = side;
+            issue(cb, GpuSignalMode::Radial, 48, false);
+        }
+    } else if (scene.wave == WaveStyle::Lissajous) {
+        SignalCB cb = base;
+        cb.p0 = 0.5f * scale;
+        cb.halfWidth = width * 0.8f * 0.5f;
+        issue(cb, GpuSignalMode::Lissajous, (512 - 23) / 2, false);
+    } else if (scene.wave == WaveStyle::SpiralDots) {
+        SignalCB cb = base;
+        cb.p0 = scene.centerRadius;
+        cb.p1 = 0.85f * scale;
+        cb.p2 = 0.032f * scene.thickness;
+        cb.rotation = t * 1.2f;
+        issue(cb, GpuSignalMode::Dots, 144, false);
+    }
+
+    ID3D11ShaderResourceView* none = nullptr;
+    ctx_->VSSetShaderResources(1, 1, &none);
+}
+
 void Renderer::render(ID3D11RenderTargetView* target, int width, int height, AudioAnalysis& analysis,
                       double sampleRate, RenderSettings& st) {
     if (width <= 0 || height <= 0) return;
@@ -1419,6 +1488,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
             ctx_->Draw(additiveCount, 0);
         }
     }
+    drawGpuSignal(scene, audio, t, aspect);
 
     ID3D11Buffer* cb2 = logoCB_.Get();
     ID3D11ShaderResourceView* logoSRV = logoSRV_.Get();

@@ -121,6 +121,13 @@ enum WaveDrawer {
         let frame = FXFrame(scene: scene, audio: audio, bands: bands, wave: wave, t: t, dt: dt, aspect: aspect,
                             logoCenter: logoCenter, logoRadius: logoRadius, color: { color($0, $1) })
         fx.begin(frame)
+        // These styles are expanded on the GPU in vs_signal. The CPU only keeps the samples.
+        switch scene.wave {
+        case .circle, .twinRings, .line, .verticalLine, .bars, .radialBars, .spiralDots, .lissajous:
+            return
+        default:
+            break
+        }
 
         switch scene.wave {
         case .bassRing: fx.bassRing(frame, &g)

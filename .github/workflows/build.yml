@@ -132,7 +132,7 @@ jobs:
                  Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName | Select-Object -Last 1
           if (-not $fxc) { Write-Host "fxc.exe not found; skipping offline shader check"; exit 0 }
           $entries = @(
-            @('vs_fullscreen','vs_5_0'), @('vs_geom','vs_5_0'), @('vs_logo','vs_5_0'),
+            @('vs_fullscreen','vs_5_0'), @('vs_geom','vs_5_0'), @('vs_signal','vs_5_0'), @('vs_logo','vs_5_0'),
             @('fs_warp','ps_5_0'), @('fs_geom','ps_5_0'), @('fs_present','ps_5_0'), @('fs_logo','ps_5_0'))
           foreach ($e in $entries) {
             & $fxc.FullName /nologo /T $e[1] /E $e[0] /Fo "$env:RUNNER_TEMP/$($e[0]).cso" "$env:RUNNER_TEMP/shaders.hlsl"

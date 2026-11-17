@@ -48,6 +48,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var logoPipeline: MTLRenderPipelineState!
     private var logoGlowPipeline: MTLRenderPipelineState!
     private var logoTrailPipeline: MTLRenderPipelineState!
+    private var signalPipeline: MTLRenderPipelineState!
 
     private var feedback: [MTLTexture] = []
     private var feedbackIndex = 0
@@ -60,6 +61,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private let inflight = DispatchSemaphore(value: 3)
 
     private var logoTexture: MTLTexture?
+    private var signalSamples: MTLBuffer?
     private var logoAspect: Float = 1
 
     private let spectrum = Spectrum()
@@ -92,7 +94,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         view.device = device
         view.colorPixelFormat = .bgra8Unorm
         view.framebufferOnly = true    // keeps presentation fast; the recorder draws its own copy
-        view.preferredFramesPerSecond = 120 // MTKView caps this to the display's real rate
+        view.preferredFramesPerSecond = 60 // MetalView retargets this to the display, or the Look panel cap
         view.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
         if let layer = view.layer as? CAMetalLayer {
             // Two drawables instead of three removes a frame of queueing latency.
@@ -113,6 +115,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                 vertexBuffers.append(b)
             }
         }
+        signalSamples = device.makeBuffer(length: 560 * MemoryLayout<Float>.stride, options: .storageModeShared)
 
         logoTexture = LogoTexture.placeholder(device: device)
         logoAspect = logoTexture.map { Float($0.width) / Float($0.height) } ?? 1
@@ -179,6 +182,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         blitPipeline = try make("vs_fullscreen", "fs_blit", .bgra8Unorm, .none)
         logoGlowPipeline = try make("vs_logo", "fs_logo", pixelFormat, .additive)
         logoPipeline = try make("vs_logo", "fs_logo", pixelFormat, .premultiplied)
+        signalPipeline = try make("vs_signal", "fs_geom", feedbackFormat, .additive)
     }
 
     // MARK: Feedback textures
@@ -337,6 +341,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                 enc.setRenderPipelineState(geomPipeline)
                 enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: builder.count)
             }
+            drawGpuSignal(enc, scene: scene, audio: audio, time: t, aspect: aspect)
             enc.endEncoding()
         }
 
@@ -436,6 +441,135 @@ final class Renderer: NSObject, MTKViewDelegate {
         cb.present(drawable)
         cb.commit()
         feedbackIndex = 1 - feedbackIndex
+    }
+
+    // MARK: GPU waveforms
+
+    private struct SignalUniforms {
+        var aspect: Float = 0, radius: Float = 0, amplitude: Float = 0, rotation: Float = 0
+        var halfWidth: Float = 0, hue0: Float = 0, saturation: Float = 0, alpha: Float = 0
+        var p0: Float = 0, p1: Float = 0, p2: Float = 0, p3: Float = 0
+        var mode: Int32 = 0, count: Int32 = 0, stride: Int32 = 0, sampleOffset: Int32 = 0
+        var closed: Int32 = 0, side: Int32 = 0, pad0: Int32 = 0, pad1: Int32 = 0
+    }
+
+    private func drawGpuSignal(_ enc: MTLRenderCommandEncoder, scene: VisualScene,
+                               audio: AudioAnalysis.Snapshot, time t: Float, aspect: Float) {
+        guard let pipeline = signalPipeline, let buf = signalSamples else { return }
+        let gpu: Bool
+        switch scene.wave {
+        case .circle, .twinRings, .line, .verticalLine, .bars, .radialBars, .spiralDots, .lissajous:
+            gpu = true
+        default:
+            gpu = false
+        }
+        guard gpu else { return }
+        let ptr = buf.contents().bindMemory(to: Float.self, capacity: 560)
+        for i in 0..<Spectrum.waveCount { ptr[i] = spectrum.wave[i] }
+        for i in 0..<Spectrum.bandCount { ptr[512 + i] = spectrum.bands[i] }
+
+        let bass = min(audio.bass, 1.4)
+        let width = 0.0065 * scene.thickness * (1 + bass * 0.6)
+        let alpha = 0.55 + 0.45 * min(1, max(bass, audio.mid))
+        let hue0 = scene.baseHue + t * scene.hueSpeed
+        let scale = scene.waveScale
+
+        func verts(_ mode: Int32, _ count: Int, _ closed: Bool) -> Int {
+            switch mode {
+            case 1, 4:
+                let segs = closed ? count : count - 1
+                return segs > 0 ? segs * 6 : 0
+            case 2, 3: return count * 6
+            case 5: return count * 24
+            default: return 0
+            }
+        }
+        func issue(_ cb: inout SignalUniforms, mode: Int32, count: Int, closed: Bool) {
+            let n = verts(mode, count, closed)
+            guard n > 0 else { return }
+            cb.mode = mode
+            cb.count = Int32(count)
+            cb.closed = closed ? 1 : 0
+            enc.setRenderPipelineState(pipeline)
+            enc.setVertexBytes(&cb, length: MemoryLayout<SignalUniforms>.stride, index: 0)
+            enc.setVertexBuffer(buf, offset: 0, index: 1)
+            enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: n)
+        }
+
+        var base = SignalUniforms()
+        base.aspect = aspect
+        base.hue0 = hue0
+        base.saturation = scene.saturation
+        base.alpha = alpha
+        base.halfWidth = width * 0.5
+
+        switch scene.wave {
+        case .circle, .twinRings:
+            var cb = base
+            cb.radius = scene.centerRadius * scale * (1 + (scene.wave == .circle ? 0.25 : 0.3) * bass)
+            cb.amplitude = (scene.wave == .circle ? 0.12 : 0.07) * scale
+            cb.rotation = t * (scene.wave == .circle ? 0.2 : 0.5)
+            cb.stride = 2
+            issue(&cb, mode: 1, count: 256, closed: true)
+            if scene.wave == .twinRings {
+                cb.radius = max(0.42 * scale, scene.centerRadius * scale + 0.22) * (1 + 0.15 * bass)
+                cb.amplitude = 0.1 * scale
+                cb.rotation = -t * 0.4
+                cb.sampleOffset = 1
+                cb.hue0 = hue0 + 0.5 * 0.35
+                issue(&cb, mode: 1, count: 256, closed: true)
+            }
+        case .line:
+            var cb = base
+            cb.p0 = -0.94 * aspect
+            cb.p1 = 1.88 * aspect
+            cb.p2 = 0.3 * scale
+            cb.stride = 2
+            issue(&cb, mode: 1, count: 256, closed: false)
+        case .verticalLine:
+            for side: Int32 in [-1, 1] {
+                var cb = base
+                cb.p0 = -0.94
+                cb.p1 = 1.88
+                cb.p2 = 0.35 * aspect * 0.5
+                cb.p3 = 0.22 * scale
+                cb.stride = 2
+                cb.side = side
+                if side > 0 { cb.hue0 = hue0 + 0.5 * 0.35 }
+                issue(&cb, mode: 1, count: 256, closed: false)
+            }
+        case .bars:
+            var cb = base
+            cb.alpha = alpha * 0.9
+            cb.p0 = 1.9 * aspect
+            cb.p1 = 1.15 * scale
+            issue(&cb, mode: 2, count: 48, closed: false)
+        case .radialBars:
+            let inner = scene.centerRadius > 0 ? scene.centerRadius + 0.06 * bass : 0
+            for side: Int32 in [0, 1] {
+                var cb = base
+                cb.radius = inner
+                cb.p1 = 0.65 * scale
+                cb.rotation = t * 0.1
+                cb.halfWidth = width * 1.2 * 0.5
+                cb.side = side
+                issue(&cb, mode: 3, count: 48, closed: false)
+            }
+        case .lissajous:
+            var cb = base
+            cb.p0 = 0.5 * scale
+            cb.halfWidth = width * 0.8 * 0.5
+            issue(&cb, mode: 4, count: (512 - 23) / 2, closed: false)
+        case .spiralDots:
+            var cb = base
+            cb.p0 = scene.centerRadius
+            cb.p1 = 0.85 * scale
+            cb.p2 = 0.032 * scene.thickness
+            cb.rotation = t * 1.2
+            issue(&cb, mode: 5, count: 144, closed: false)
+        default:
+            break
+        }
     }
 
     // MARK: Scenes

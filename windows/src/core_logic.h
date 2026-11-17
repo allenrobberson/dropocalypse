@@ -312,6 +312,42 @@ try {
 )ps";
 }
 
+// ---------------------------------------------------------------------------------------------
+// Frame pacing and the GPU signal draw. Simple wave styles are expanded in the vertex
+// shader; these counts are the triangle lists that shader indexes with SV_VertexID.
+// ---------------------------------------------------------------------------------------------
+
+enum class GpuSignalMode : int { None = 0, Polyline = 1, Bars = 2, Radial = 3, Lissajous = 4, Dots = 5 };
+
+/// Triangle-list length for one GPU signal draw. `count` is points, bars, or dots.
+inline int gpuSignalVertices(GpuSignalMode mode, int count, bool closed) {
+    if (count <= 0 || mode == GpuSignalMode::None) return 0;
+    switch (mode) {
+    case GpuSignalMode::Polyline:
+    case GpuSignalMode::Lissajous: {
+        const int segs = closed ? count : count - 1;
+        return segs > 0 ? segs * 6 : 0;
+    }
+    case GpuSignalMode::Bars:
+    case GpuSignalMode::Radial:
+        return count * 6;
+    case GpuSignalMode::Dots:
+        return count * 24;
+    default:
+        return 0;
+    }
+}
+
+/// Dear ImGui's full frame is skipped while the toolbar is hidden and nothing else needs it.
+inline bool uiFrameNeeded(bool toolbarVisible, bool controlsDetached, bool notice, bool privacyPending) {
+    return toolbarVisible || controlsDetached || notice || privacyPending;
+}
+
+/// Milliseconds to sleep instead of rendering. 0 means draw this refresh.
+inline int hiddenFrameSleepMs(bool iconic, bool occluded) {
+    return (iconic || occluded) ? 100 : 0;
+}
+
 /// nullptr means the update may be installed.
 /// An unsigned running copy does not require a signature, so today's unsigned builds still update.
 /// Once the running exe has a trusted Authenticode signature, the download must be trusted and

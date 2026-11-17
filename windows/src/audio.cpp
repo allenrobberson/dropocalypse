@@ -445,7 +445,8 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         bool restart = false;
 
         while (!stopRequested_ && !restart) {
-            if (useEvent) WaitForSingleObject(ev, loopback ? 4 : 20); else Sleep(2);
+            // The event still wakes as soon as samples arrive. The timeout only matters while silent.
+            if (useEvent) WaitForSingleObject(ev, loopback ? 16 : 20); else Sleep(2);
 
             UINT32 packet = 0;
             bool gotData = false;

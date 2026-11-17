@@ -223,6 +223,164 @@ float4 fs_geom(GeomOut i) : SV_Target {
     return float4(i.color.rgb * i.color.a, i.color.a);
 }
 
+// GPU expansion of the simple wave styles. The CPU uploads the 512 wave samples
+// and 48 band levels; this shader builds the same quads the CPU polyline used to.
+cbuffer SignalCB : register(b3) {
+    float sigAspect;
+    float sigRadius;
+    float sigAmplitude;
+    float sigRotation;
+    float sigHalfWidth;
+    float sigHue0;
+    float sigSaturation;
+    float sigAlpha;
+    float sigP0;
+    float sigP1;
+    float sigP2;
+    float sigP3;
+    int sigMode;
+    int sigCount;
+    int sigStride;
+    int sigOffset;
+    int sigClosed;
+    int sigSide;
+    int sigPad0;
+    int sigPad1;
+};
+Buffer<float> sigSamples : register(t1);
+
+float sigLoad(int i) { return sigSamples[clamp(i, 0, 559)]; }
+float sigWave(int i) { return sigLoad(i); }
+float sigBand(int i) { return sigLoad(512 + i); }
+
+float3 sigHsv(float h, float s, float v) {
+    float hh = frac(h) * 6.0;
+    int i = (int)floor(hh) % 6;
+    float f = frac(hh);
+    float p = v * (1.0 - s);
+    float q = v * (1.0 - s * f);
+    float t = v * (1.0 - s * (1.0 - f));
+    if (i <= 0) return float3(v, t, p);
+    if (i == 1) return float3(q, v, p);
+    if (i == 2) return float3(p, v, t);
+    if (i == 3) return float3(p, q, v);
+    if (i == 4) return float3(t, p, v);
+    return float3(v, p, q);
+}
+
+float4 sigColor(float frac) {
+    return float4(sigHsv(sigHue0 + frac * 0.35, sigSaturation, 1.0), sigAlpha);
+}
+
+float2 sigRing(int i) {
+    int n = max(sigCount, 1);
+    float w = sigWave(sigOffset + i * sigStride);
+    if (sigClosed != 0 && i >= n - 24) {
+        float k = float(i - (n - 24)) / 24.0;
+        w += (sigWave(sigOffset) - w) * k;
+    }
+    float a = float(i) / float(n) * 6.28318530718 + sigRotation;
+    float r = max(0.0, sigRadius + w * sigAmplitude);
+    return float2(cos(a), sin(a)) * r;
+}
+
+float2 sigLine(int i) {
+    float den = float(max(sigCount - 1, 1));
+    float x = sigP0 + float(i) / den * sigP1;
+    return float2(x, sigWave(sigOffset + i * sigStride) * sigP2);
+}
+
+float2 sigVertical(int i) {
+    float den = float(max(sigCount - 1, 1));
+    float y = sigP0 + float(i) / den * sigP1;
+    float x = float(sigSide) * sigP2 + sigWave(sigOffset + i * sigStride) * sigP3;
+    return float2(x, y);
+}
+
+float2 sigLissa(int j) {
+    int i = j * 2;
+    return float2(sigWave(i) * sigP0, sigWave(i + 23) * sigP0);
+}
+
+float2 sigPoint(int i) {
+    if (sigMode == 4) return sigLissa(i);
+    if (sigMode == 1 && sigSide != 0) return sigVertical(i);
+    if (sigMode == 1 && sigClosed == 0) return sigLine(i);
+    return sigRing(i);
+}
+
+int sigCorner(uint c) {
+    if (c == 0 || c == 3) return 0;
+    if (c == 1) return 1;
+    if (c == 2 || c == 4) return 2;
+    return 3;
+}
+
+GeomOut vs_signal(uint vid : SV_VertexID) {
+    uint corner = vid % 6;
+    uint seg = vid / 6;
+    float2 q[4];
+    float4 col;
+    if (sigMode == 2) {
+        float slot = sigP0 / float(max(sigCount, 1));
+        float x0 = -sigP0 * 0.5 + float(seg) * slot + slot * 0.15;
+        float x1 = x0 + slot * 0.7;
+        float y0 = -0.98;
+        float y1 = y0 + 0.02 + sigBand((int)seg) * sigP1;
+        q[0] = float2(x0, y0); q[1] = float2(x1, y0); q[2] = float2(x1, y1); q[3] = float2(x0, y1);
+        col = sigColor(float(seg) / float(max(sigCount, 1)));
+    } else if (sigMode == 5) {
+        uint dot = vid / 24;
+        uint tri = (vid % 24) / 3;
+        uint corn = (vid % 24) % 3;
+        int arm = (int)dot / 48;
+        int bi = (int)dot % 48;
+        float frac = float(bi) / 48.0;
+        float ang = float(bi) * 0.33 + float(arm) * 2.09439510239 + sigRotation;
+        float rr = sigP0 + frac * sigP1;
+        float rad = 0.006 + sigBand(bi) * sigP2;
+        float2 c = float2(cos(ang), sin(ang)) * rr;
+        float a0 = float(tri) / 8.0 * 6.28318530718;
+        float a1 = float(tri + 1) / 8.0 * 6.28318530718;
+        float2 p = corn == 0 ? c : (corn == 1 ? c + float2(cos(a0), sin(a0)) * rad
+                                              : c + float2(cos(a1), sin(a1)) * rad);
+        p.x /= sigAspect;
+        GeomOut o;
+        o.pos = float4(p, 0.0, 1.0);
+        o.color = sigColor(frac + float(arm) * 0.2);
+        return o;
+    } else if (sigMode == 3) {
+        float frac = float(seg) / float(max(sigCount, 1));
+        float ang = (sigSide == 0 ? frac : -frac) * 3.14159265359 + 1.57079632679 + sigRotation;
+        float2 dir = float2(cos(ang), sin(ang));
+        float len = 0.03 + sigBand((int)seg) * sigP1;
+        float2 a = dir * sigRadius;
+        float2 b = dir * (sigRadius + len);
+        float2 d = b - a;
+        float L = max(length(d), 1e-6);
+        float2 nrm = float2(-d.y, d.x) / L * sigHalfWidth;
+        q[0] = a + nrm; q[1] = b + nrm; q[2] = b - nrm; q[3] = a - nrm;
+        col = sigColor(frac);
+    } else {
+        int i0 = (int)seg;
+        int i1 = (sigClosed != 0 && (int)seg == sigCount - 1) ? 0 : i0 + 1;
+        float2 a = sigPoint(i0);
+        float2 b = sigPoint(i1);
+        float2 d = b - a;
+        float L = max(length(d), 1e-6);
+        float2 nrm = float2(-d.y, d.x) / L * sigHalfWidth;
+        q[0] = a + nrm; q[1] = b + nrm; q[2] = b - nrm; q[3] = a - nrm;
+        float denom = float(max(sigCount, 1));
+        col = sigColor(float(i0) / denom);
+    }
+    float2 p = q[sigCorner(corner)];
+    p.x /= sigAspect;
+    GeomOut o;
+    o.pos = float4(p, 0.0, 1.0);
+    o.color = col;
+    return o;
+}
+
 // ---------------------------------------------------------------- final composite
 
 cbuffer PresentCB : register(b1) {

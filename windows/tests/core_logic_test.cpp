@@ -191,6 +191,26 @@ static void testWindowsUpdateHandoff() {
     CHECK(text.find("throw") != std::string::npos);
 }
 
+static void testGpuSignalAndPacing() {
+    CHECK(gpuSignalVertices(GpuSignalMode::Polyline, 256, true) == 256 * 6);
+    CHECK(gpuSignalVertices(GpuSignalMode::Polyline, 256, false) == 255 * 6);
+    CHECK(gpuSignalVertices(GpuSignalMode::Bars, 48, false) == 48 * 6);
+    CHECK(gpuSignalVertices(GpuSignalMode::Radial, 48, false) == 48 * 6);
+    CHECK(gpuSignalVertices(GpuSignalMode::Lissajous, 244, false) == 243 * 6);
+    CHECK(gpuSignalVertices(GpuSignalMode::Dots, 144, false) == 144 * 24);
+    CHECK(gpuSignalVertices(GpuSignalMode::Polyline, 1, false) == 0);
+    CHECK(gpuSignalVertices(GpuSignalMode::None, 256, true) == 0);
+
+    CHECK(!uiFrameNeeded(false, false, false, false));
+    CHECK(uiFrameNeeded(true, false, false, false));
+    CHECK(uiFrameNeeded(false, true, false, false));
+    CHECK(uiFrameNeeded(false, false, true, false));
+    CHECK(uiFrameNeeded(false, false, false, true));
+    CHECK(hiddenFrameSleepMs(false, false) == 0);
+    CHECK(hiddenFrameSleepMs(true, false) == 100);
+    CHECK(hiddenFrameSleepMs(false, true) == 100);
+}
+
 static void testSignaturePolicy() {
     UpdateSignatureFacts ok;
     ok.runningIsSigned = true;
@@ -234,6 +254,7 @@ int main() {
     testRecordingLayout();
     testWasapiCapturePlan();
     testWindowsUpdateHandoff();
+    testGpuSignalAndPacing();
     testSignaturePolicy();
     if (gFailures) {
         std::fprintf(stderr, "%d check(s) failed\n", gFailures);

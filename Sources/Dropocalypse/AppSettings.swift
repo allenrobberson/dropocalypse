@@ -60,6 +60,8 @@ final class AppSettings: ObservableObject {
     @AppStorage("beatFlash") var beatFlash: Double = 0.4
     @AppStorage("brightness") var brightness: Double = 1.0
     @AppStorage("showStatus") var showStatus: Bool = true
+    /// 0 matches the display. 30 or 60 caps the visualizer to use less CPU.
+    @AppStorage("frameCap") var frameCap: Int = 0
 
     func resetMotion() {
         logoSize = 0.32; pulse = 0.7; squash = 0.6; bounce = 0.5; slide = 0.4
