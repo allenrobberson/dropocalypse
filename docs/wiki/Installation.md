@@ -29,11 +29,23 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
 
+## 🐧 Linux (AppImage: one file, nothing to install)
+
+1. Download the `Linux-x86_64.AppImage`.
+2. Make it executable: right-click it → **Properties** → **Allow executing file as program**, or run `chmod +x Dropocalypse-*.AppImage`.
+3. Double-click it (or run `./Dropocalypse-*.AppImage`).
+4. By default it listens to **what the computer is playing**, so you don't need a microphone. Pick a specific output, a mic or a line-in under **Audio**.
+
+Works on 64-bit Ubuntu 22.04 or later, Debian 12, Fedora, Linux Mint, Arch and other current distributions, with X11 or Wayland and PulseAudio or PipeWire. Recording needs **ffmpeg** (`sudo apt install ffmpeg`), and choosing files uses zenity or kdialog. Prefer a plain folder? Use the `Linux-x86_64.tar.gz`. Settings and your logo are saved in `~/.config/dropocalypse`.
+
+If the AppImage won't start on Ubuntu 22.04 or older with a message about FUSE, install `libfuse2` or run it with `--appimage-extract-and-run`.
+
 ## Updating
 
 From version **1.0**, Dropocalypse updates itself: when a new version is out, a pink **Update** button appears in the toolbar. Click it, then **Update now**. It downloads the new version, checks the SHA-256 checksum published with the release, and installs it only if that check passes. On Mac it also requires a valid Developer ID signature from the same team as the copy you're running, accepted by Gatekeeper. On Windows, once the copy you're running is code-signed, the new one must be signed by the same publisher; until then the checksum is enough. Your logo and settings are kept. (0.9.x shows the button but only opens the download page; update to 1.0 by hand once.)
 
 - **Mac:** Dropocalypse must be in a folder it can edit, such as **Applications**. If you run it straight from the disk image, it will ask you to move it first.
+- **Linux:** the AppImage replaces itself, so keep it in a folder you can edit, such as your home folder. The `.tar.gz` copy updates by downloading the new one.
 - **Windows:** keep the Dropocalypse folder somewhere you can edit (Documents, Desktop, a USB stick). The old version is swapped out in place; no admin rights are needed.
 - If anything fails, nothing is changed and the **Updates** menu says why. That includes no internet, a bad download, a locked folder, a Mac download that isn't signed by the same Developer ID or that Gatekeeper rejects, and (once your Windows copy is code-signed) a download signed by a different publisher. Use **Download page** in that menu, or try again later. For an email on every release, click **Watch → Custom → Releases** on the GitHub page. The Microsoft Store edition does not use this updater.
 
@@ -43,6 +55,7 @@ Download the new version and replace the old one: drag the new app into **Applic
 
 - **Mac:** drag **Dropocalypse** from Applications to the Trash. To also remove your saved logo and settings, delete `~/Library/Application Support/Dropocalypse`.
 - **Windows:** delete the app folder and `%APPDATA%\Dropocalypse`. Nothing else was installed.
+- **Linux:** delete the AppImage (or the folder) and `~/.config/dropocalypse`.
 
 ## Why the security warnings?
 

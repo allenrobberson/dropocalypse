@@ -241,7 +241,7 @@ def cover_page(canvas, doc):
     canvas.setFont(BOLD, 22)
     canvas.drawCentredString(w / 2, h * 0.22, "User Guide")
     canvas.setFont(FONT, 13)
-    canvas.drawCentredString(w / 2, h * 0.22 - 24, "for Mac and Windows")
+    canvas.drawCentredString(w / 2, h * 0.22 - 24, "for Mac, Windows and Linux")
     canvas.setFont(BOLD, 12)
     canvas.setFillColor(colors.HexColor("#F2C6E0"))
     canvas.drawCentredString(w / 2, h * 0.22 - 50, f"Version {VERSION}  ·  {VERSION_DATE}"
@@ -284,7 +284,7 @@ def later_pages(canvas, doc):
 
 # ---------------------------------------------------------------------------- content
 
-# Signature color of each style (its base hue in the app), used for the swatches in section 6.
+# Signature color of each style (its base hue in the app), used for the swatches in section 7.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
               0.97, 0.25, 0.7, 0.55, 0.52]
@@ -351,7 +351,7 @@ def build():
 
     # ---- Contents
     s.append(P("Contents", h1))
-    items = ["Install on Mac", "Install on Windows", "Quick start", "The toolbar",
+    items = ["Install on Mac", "Install on Windows", "Install on Linux", "Quick start", "The toolbar",
              "Logo, Motion, Audio and Look settings", "The 25 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
@@ -370,7 +370,7 @@ def build():
     toc.setStyle(TableStyle(ts))
     s.append(toc)
     s.append(Spacer(1, 10))
-    s.append(P("Dropocalypse is a free, open-source music visualizer for Mac and Windows in the spirit of "
+    s.append(P("Dropocalypse is a free, open-source music visualizer for Mac, Windows and Linux in the spirit of "
                "Winamp and MilkDrop. It listens to music and turns it into swirling, zooming, pulsing visuals, "
                "while your logo sits on top and pulses, squashes, bounces, slides and wobbles to the bass.", body))
     s.append(Spacer(1, 12))
@@ -441,8 +441,30 @@ def build():
                f"under <b>Audio</b> in the toolbar, and turn on <b>Settings {ARROW} Privacy &amp; security {ARROW} "
                f"Microphone {ARROW} Let desktop apps access your microphone</b>.", body))
 
+    # ---- Linux
+    s += section(3, "Install on Linux")
+    s.append(P("64-bit Ubuntu 22.04 or later, Debian 12, Fedora, Linux Mint, Arch and other current distributions, "
+               "with X11 or Wayland, PulseAudio or PipeWire, and OpenGL 3.3 graphics.", small))
+    s.append(Spacer(1, 6))
+    s += steps([
+        "Download the <b>Linux-x86_64.AppImage</b> file from the Releases page.",
+        f"Make it executable: right-click it {ARROW} <b>Properties</b> {ARROW} <b>Allow executing file as program</b> "
+        "(or run <b>chmod +x Dropocalypse-*.AppImage</b> in a terminal).",
+        "Double-click it. Nothing is installed: the AppImage is the whole app, and it can live anywhere.",
+    ])
+    s.append(sub("Listening to music on Linux"))
+    s.append(P("By default the Linux version listens to <b>what the computer is playing</b> (Spotify, a browser, DJ "
+               "software), so no microphone is needed. Under <b>Audio</b> you can also pick one output "
+               "(<b>Playing on: ...</b>), a microphone, a USB interface or a line-in. It works with PulseAudio and "
+               "with PipeWire, which current desktops use.", body))
+    s.append(sub("Recording and file choosers"))
+    s.append(P("Recording to MP4 uses <b>ffmpeg</b>. Install it with your package manager, for example "
+               "<b>sudo apt install ffmpeg</b>. Choosing a logo or a folder uses the desktop's file chooser (zenity "
+               "or kdialog); you can always drag an image onto the window instead. Prefer a plain folder to an "
+               "AppImage? Download the <b>Linux-x86_64.tar.gz</b> and run <b>dropocalypse</b> from it.", body))
+
     # ---- Quick start
-    s += section(3, "Quick start")
+    s += section(4, "Quick start")
     s += steps([
         "Open Dropocalypse, click <b>Audio</b> and pick what to listen to: on a Mac, an app like <b>Spotify</b> "
         "(macOS 14.2+) or a mic; on Windows, System audio is already selected. Play some music and the visuals "
@@ -458,7 +480,7 @@ def build():
 
 
     # ---- Toolbar
-    s += section(4, "The toolbar")
+    s += section(5, "The toolbar")
     s.append(P("Every control lives in one slim bar along the <b>top edge</b> of the window. It stays out of the "
                "way during a show:", body))
     s.append(shot("window.jpg", 4.4 * inch, "Dropocalypse on a Mac, with the toolbar showing along the top"))
@@ -499,7 +521,7 @@ def build():
                "same way.", small))
 
     # ---- Panels
-    s += section(5, "Logo, Motion, Audio and Look settings")
+    s += section(6, "Logo, Motion, Audio and Look settings")
     s.append(sub("Logo menu"))
     s.append(table(["Item", "What it does"], [
         ["<b>Choose Logo…</b> (L)", "Pick an image file. Empty transparent edges are trimmed automatically so the "
@@ -591,7 +613,7 @@ def build():
                           widths=[3.0 * inch, 3.5 * inch]))
 
     # ---- Styles
-    s += section(6, "The 25 visual styles")
+    s += section(7, "The 25 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(Spacer(1, 6))
@@ -640,7 +662,7 @@ def build():
                      "keeps it from covering the scene."))
 
     # ---- Shortcuts
-    s += section(7, "Keyboard shortcuts")
+    s += section(8, "Keyboard shortcuts")
     s.append(table(["Action", "Mac", "Windows"], [
         ["Full screen on / off", f"F or Ctrl+{CMD}F (or the green window button)", "F or F11"],
         ["Show / hide the toolbar", "T or S", "T or S"],
@@ -657,7 +679,7 @@ def build():
                f"<b>Full Screen</b> and <b>Restart Audio</b>.", small))
 
     # ---- Live show
-    s += section(8, "Setting up for a live show")
+    s += section(9, "Setting up for a live show")
     s += steps([
         "<b>Playing from the same computer?</b> On a Mac, pick your music or DJ app (or All Mac audio) under "
         "<b>Audio</b>. On Windows, choose <b>System audio</b>. It's the cleanest signal, with no cables or mic.",
@@ -693,7 +715,7 @@ def build():
         widths=[2.25 * inch, 4.25 * inch]))
 
     # ---- Troubleshooting
-    s += section(9, "Troubleshooting")
+    s += section(10, "Troubleshooting")
     s.append(table(["Problem", "Fix"], [
         ["<b>Mac: “Dropocalypse can't be opened”</b>",
          "Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. "
@@ -706,6 +728,11 @@ def build():
          "signed with the same Developer ID and accepted by Gatekeeper, and Dropocalypse must be in a folder you can "
          "edit, such as Applications. On Windows, once this copy is code-signed the download must be signed by the "
          "same publisher. Or use <b>Download page</b>."],
+        ["<b>Linux: the AppImage doesn't open</b>",
+         "Make it executable first (Properties, or chmod +x). On Ubuntu 22.04 and older, if it says FUSE is missing, "
+         "install <b>libfuse2</b>, or run it with <b>--appimage-extract-and-run</b>."],
+        ["<b>Linux: no file chooser, or recording won't start</b>",
+         "Install <b>zenity</b> (or kdialog on KDE) for the file chooser and <b>ffmpeg</b> for recording."],
         ["<b>Windows: nothing happens when I double-click</b>",
          "Extract the zip first; don't run the app from inside it. On work or school PCs, IT policies can block "
          "unapproved apps, so ask your IT team."],
@@ -740,15 +767,17 @@ def build():
     ], [2.3 * inch, 4.2 * inch]))
 
     # ---- Settings / uninstall
-    s += section(10, "Where your settings are saved, and how to remove the app")
-    s.append(KeepTogether(table(["", "Mac", "Windows"], [
+    s += section(11, "Where your settings are saved, and how to remove the app")
+    s.append(KeepTogether(table(["", "Mac", "Windows", "Linux"], [
         ["<b>Settings and logo</b>",
          "Saved automatically by macOS for the app, plus your logo in ~/Library/Application Support/Dropocalypse",
-         "%APPDATA%\\Dropocalypse"],
+         "%APPDATA%\\Dropocalypse",
+         "~/.config/dropocalypse"],
         ["<b>To remove the app</b>",
          "Drag Dropocalypse from Applications to the Trash, and delete the Application Support folder above",
-         "Delete the Dropocalypse folder you extracted and the %APPDATA%\\Dropocalypse folder"],
-    ], [1.5 * inch, 2.6 * inch, 2.4 * inch])))
+         "Delete the Dropocalypse folder you extracted and the %APPDATA%\\Dropocalypse folder",
+         "Delete the AppImage (or the folder) and ~/.config/dropocalypse"],
+    ], [1.0 * inch, 2.0 * inch, 1.8 * inch, 1.7 * inch])))
     s.append(Spacer(1, 14))
     s.append(KeepTogether([
         sub("About"),

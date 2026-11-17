@@ -2,12 +2,14 @@
 
 <p align="center"><b>The drop hits. Your logo goes off.</b></p>
 
-<p align="center">A free music visualizer for <b>Mac and Windows</b>. Play a song and your logo bounces, squashes and glows on the beat.</p>
+<p align="center">A free music visualizer for <b>Mac, Windows and Linux</b>. Play a song and your logo bounces, squashes and glows on the beat.</p>
 
 <p align="center">
   <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
   &nbsp;
   <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
+  &nbsp;
+  <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux"></a>
   &nbsp;
   <a href="https://apps.microsoft.com/detail/9n1tj9d5r5c8"><img src="https://img.shields.io/badge/Microsoft_Store-when_live-5E5E5E?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Store, when the listing is live"></a>
 </p>
@@ -34,7 +36,7 @@
 
 <p align="center"><sub>Eight of the 25 styles, drawn with the app's own shaders. The logo is the app icon.</sub></p>
 
-A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac and Windows** that **makes your logo dance to the bass**.
+A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
@@ -42,7 +44,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
-- 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the PC is playing** on Windows, or a built-in mic, USB mic, audio interface or line-in.
+- 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the computer is playing** on Windows and Linux, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
 - 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok. **Portrait** records a 9:16 frame (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
@@ -84,6 +86,21 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 A **Microsoft Store** edition is published through the Store. That copy is updated by the Store and has no **Update now**. Logo and settings still live in `%APPDATA%\Dropocalypse`. Until it appears in the Store, use the portable zip above.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
+
+### 🐧 Linux (AppImage: one file, nothing to install)
+
+1. Download the `Linux-x86_64.AppImage`.
+2. Make it executable: right-click it → **Properties** → **Allow executing file as program**, or run `chmod +x Dropocalypse-*.AppImage` in a terminal.
+3. Double-click it (or run `./Dropocalypse-*.AppImage`).
+4. By default it listens to **what the computer is playing**, so you don't need a microphone. Pick a specific output, a mic or a line-in under **Audio** in the toolbar.
+
+Works on 64-bit Ubuntu 22.04 or later, Debian 12, Fedora, Linux Mint, Arch and other current distributions, with X11 or Wayland and PulseAudio or PipeWire (through `pipewire-pulse`, which current desktops include). Graphics need OpenGL 3.3, which every GPU from the last decade supports.
+
+- **Recording** to MP4 uses **ffmpeg**: install it with your package manager (for example `sudo apt install ffmpeg`).
+- **Choosing a logo or folder** uses the desktop's file chooser (zenity or kdialog, usually already installed). You can always drag an image onto the window instead.
+- Prefer a plain folder? Download the `Linux-x86_64.tar.gz` and run `./dropocalypse` from it (it needs libcurl and libpulse, which nearly every desktop has).
+
+Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in the **Updates** menu replaces the AppImage in place. To remove the app, delete the AppImage and that folder.
 
 ## User guide
 
@@ -360,11 +377,23 @@ build\Release\Dropocalypse.exe
 
 The Windows build downloads [Dear ImGui](https://github.com/ocornut/imgui) (MIT) for the toolbar and links the C runtime statically, so the `.exe` runs without installing anything.
 
+**Linux** (GCC or Clang, CMake, and the development packages for OpenGL, PulseAudio, libcurl, X11 and Wayland):
+
+```bash
+sudo apt install build-essential cmake pkg-config libgl-dev libpulse-dev libcurl4-openssl-dev \
+  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libxkbcommon-dev wayland-protocols
+cmake -S linux -B build-linux -DCMAKE_BUILD_TYPE=Release
+cmake --build build-linux
+./build-linux/dropocalypse
+```
+
+The Linux build downloads Dear ImGui, [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb) (public domain). It shares the styles, the update rules and the toolbar with the Windows version: after changing the Windows toolbar code, run `python3 linux/port/generate.py` to bring the Linux toolbar up to date.
+
 **Releases are automatic.** GitHub Actions builds every push to `main`. To publish a new downloadable version, do either of these:
 - On GitHub, go to **Actions → Build → Run workflow**, type a version such as `0.2.0`, and click **Run workflow**.
 - Or push a tag: `git tag v0.2.0 && git push origin v0.2.0`
 
-Either way, the Mac and Windows versions are built side by side and published together in one GitHub Release.
+Either way, the Mac, Windows and Linux versions are built side by side and published together in one GitHub Release.
 
 Before releasing, add the new version to the top of `docs/wiki/Changelog.md` and run `python3 scripts/make-guide.py` (needs `reportlab`). The printable User Guide shows the version on its cover and on every page, taken from the newest changelog entry, and the build warns if the guide's version doesn't match the release.
 
@@ -394,6 +423,14 @@ windows/
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
   src/main.cpp                windows, swap chains, toolbar, detached controls, updater, settings
   app.manifest                "asInvoker": runs without admin rights
+
+linux/
+  src/audio.cpp               PulseAudio / PipeWire capture (outputs and inputs) + the same DSP
+  src/renderer.cpp            OpenGL 3.3 pipeline (shared style code from windows/src/renderer.cpp)
+  src/shaders.h               GLSL port of the shaders
+  src/recorder.cpp            MP4 recording through ffmpeg
+  src/main.cpp                generated by port/generate.py from the Windows toolbar + port/*.inc
+  port/*.inc                  Linux parts: GLFW windows, file dialogs, AppImage updater, main loop
 ```
 
 ### Adding a style
@@ -405,6 +442,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [ ] Load MilkDrop `.milk` presets through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL), including the ~10,000-preset "Cream of the Crop" pack
 - [x] Windows version (portable, no admin rights)
 - [x] Capture the PC's own audio output without a microphone (Windows)
+- [x] Linux version (AppImage), including listening to what the computer plays
 - [x] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone (macOS 14.2+)
 - [ ] Multiple logos and text overlays
 - [ ] Syphon / NDI output for VJ software
@@ -413,7 +451,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [x] Signed and notarized Mac builds
 - [x] Detachable controls and a screen picker for two-screen shows
 - [x] Record videos with sound
-- [ ] Code-signed Windows builds (SignPath Foundation, in progress)
+- [ ] Code-signed portable Windows builds (the Microsoft Store copy is signed by Microsoft)
 - [ ] Mac App Store edition (in review)
 
 ## Questions, ideas and bug reports
@@ -434,4 +472,4 @@ Dropocalypse is free and always will be. If it livens up your shows or streams, 
 
 [MIT](LICENSE): free to use, modify and share, including commercially.
 
-Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals in this app are original code; no MilkDrop presets or Shadertoy shaders are bundled. The Windows toolbar uses [Dear ImGui](https://github.com/ocornut/imgui) (MIT).
+Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals in this app are original code; no MilkDrop presets or Shadertoy shaders are bundled. The Windows and Linux toolbars use [Dear ImGui](https://github.com/ocornut/imgui) (MIT); the Linux version also uses [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb).
