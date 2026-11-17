@@ -21,7 +21,7 @@ Open [Partner Center](https://partner.microsoft.com/dashboard/apps-and-games/ove
 2. **Properties.** Category **Music**. Privacy policy URL: `https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md`. Website and support contact are the GitHub repository and its Discussions page.
 3. **Age ratings.** App type **All other app types** (it is not a game and not a social app). Answer no to violence, sexual content, language, controlled substances, user-generated content, sharing personal information, and purchases. If a question asks about flashing lights, answer yes: the visuals can flash. That note is already in the description.
 4. **Store listings**, English. Paste the short description and description from [listing.md](listing.md). Upload at least one screenshot from `docs/app-store/screenshots/` (the Store wants 1366×768 or larger; these are 2560×1600). Show the visualizer in use, not a blank window.
-5. **Packages.** Download `Dropocalypse-<version>-Store.msix` from the latest successful **Build** run (artifact **Dropocalypse-Microsoft-Store**) and upload it. The version inside the package is `major.minor.build.0` from `docs/guide-version.txt` (currently 1.2.10, so `1.2.10.0`).
+5. **Packages.** Download `Dropocalypse-<version>-Store.msix` from the latest successful **Build** run (artifact **Dropocalypse-Microsoft-Store**) and upload it. The version inside the package is `major.minor.build.0` from `docs/guide-version.txt` (currently 1.2.11, so `1.2.11.0`).
 6. **Submit for certification.** Certification takes a few hours, sometimes a few days. Wait until the app is published before using the workflow for updates.
 
 ## 2. Let GitHub upload later versions

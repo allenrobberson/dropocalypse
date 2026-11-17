@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.11
+- ⚡ **Lower CPU, same picture.** The simple waveform styles (tunnel, lines, bars, dots, Lissajous) are drawn on the GPU. The app sleeps while its window is minimized or covered, and it skips the toolbar work while the toolbar is hidden. **Look → Frame rate** stays on **Display** (the monitor's refresh). Choose **60** or **30** to use less CPU. While the toolbar is showing, the status line includes a frame time such as **6.2 ms**.
+
 ## 1.2.10
 - 🪟 **Windows: Update now leaves one copy running.** The old Dropocalypse closes before the new version starts, so you no longer end up with two windows. Opening the app again while it is already running brings that window forward.
 

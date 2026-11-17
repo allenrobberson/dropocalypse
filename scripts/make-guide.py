@@ -480,8 +480,8 @@ def build():
         ["<b>Motion</b>", "How your logo reacts to the bass"],
         ["<b>Logo</b>", "Logo size, glow, color tint and trails"],
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],
-        ["<b>Look</b>", "Beat flash, brightness and auto-cycle timing"],
-        ["Status text", "The input being used, its sample rate and buffer size (lower ms = faster reaction)"],
+        ["<b>Look</b>", "Beat flash, brightness, frame rate and auto-cycle timing"],
+        ["Status text", "The input, its sample rate and buffer size, plus a frame time (for example 6.2 ms) while the toolbar is showing"],
         ["<b>Updates</b>", "In the toolbar and the detached controls window, not the Look panel. Your version, "
                            "<b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
                            "version is out. <b>Update now</b> checks the download and, if the checks pass, installs "
@@ -566,6 +566,9 @@ def build():
          "<b>Landscape</b> fills the window. <b>Portrait</b> centers a 9:16 frame for Reels and TikToks. "
          "Recordings match it (720×1280, 1080×1920 or 2160×3840). It can't be changed while recording."],
         ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 360 s)"],
+        ["<b>Frame rate</b>", "Display",
+         "<b>Display</b> matches the monitor, and the picture is unchanged. <b>60</b> or <b>30</b> use less CPU "
+         "on a laptop. The status line shows a frame time, such as 6.2 ms, while the toolbar is visible."],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     s.append(CondPageBreak(3.4 * inch))

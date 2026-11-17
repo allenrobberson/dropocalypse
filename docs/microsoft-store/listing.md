@@ -44,7 +44,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-On Windows, Update now closes the copy that is already running before the new version starts, so two windows are not left open.
+Waveform styles are drawn on the GPU, so the app uses less CPU with the same picture. Look → Frame rate stays on Display; 60 or 30 use even less. The status line shows a frame time while the toolbar is visible.
 
 ## Product features (up to 20, short)
 - 25 music-reactive visual styles

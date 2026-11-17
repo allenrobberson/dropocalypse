@@ -61,6 +61,10 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.2.11: lower CPU, same picture
+- ⚡ **Waveforms are drawn on the GPU.** Tunnel, lines, bars, dots and Lissajous look the same and use less CPU. The app also rests while the window is minimized or covered, and while the toolbar is hidden.
+- **Look → Frame rate** defaults to **Display**. Choose **60** or **30** if a laptop is working too hard. The status line shows a frame time (for example **6.2 ms**) while the toolbar is visible.
+
 ### 1.2.10: Windows update closes the old copy
 - 🪟 **Update now leaves one Dropocalypse running.** On Windows the old copy closes before the new version starts, so you don't get two windows. If Dropocalypse is already open, starting it again brings that window forward.
 
