@@ -211,9 +211,99 @@ jobs:
           name: Dropocalypse-Microsoft-Store
           path: store-dist/*.msix
 
+  linux:
+    name: Linux app (AppImage)
+    runs-on: ubuntu-22.04   # oldest supported base, so the AppImage runs on older distributions too
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config ninja-build file \
+            libgl-dev libpulse-dev libcurl4-openssl-dev \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev \
+            libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules \
+            glslang-tools xvfb mesa-utils libgl1-mesa-dri fonts-dejavu-core imagemagick
+
+      - name: Check GLSL shaders compile
+        run: |
+          python3 - <<'PY'
+          import re, subprocess, sys, pathlib
+          src = pathlib.Path("linux/src/shaders.h").read_text()
+          blocks = dict(re.findall(r'static const char\* (k\w+) = R"GLSL\((.*?)\)GLSL";', src, re.S))
+          ok = True
+          for name, text in blocks.items():
+              if name == "kLogoBlock":
+                  continue
+              text = text.replace("#include LOGO_BLOCK", blocks["kLogoBlock"])
+              stage = "vert" if name.endswith("VS") else "frag"
+              path = pathlib.Path(f"/tmp/{name}.{stage}")
+              path.write_text(text)
+              r = subprocess.run(["glslangValidator", str(path)], capture_output=True, text=True)
+              print(name, "OK" if r.returncode == 0 else "FAILED")
+              if r.returncode != 0:
+                  print(r.stdout, r.stderr)
+                  ok = False
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: Configure
+        run: |
+          v="${RELEASE_VERSION#v}"
+          if [ -z "$v" ]; then v="0.0.0-dev.$GITHUB_RUN_NUMBER"; fi
+          echo "APP_VERSION=$v" >> "$GITHUB_ENV"
+          cmake -S linux -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr "-DAPP_VERSION=$v"
+
+      - name: Build
+        run: cmake --build build-linux
+
+      - name: Unit tests (shared update, auto-cycle and layout rules)
+        run: ./build-linux/dropocalypse_tests
+
+      - name: Self-test under a virtual display
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" ./build-linux/dropocalypse --self-test=selftest.ppm
+          convert selftest.ppm -resize 50% selftest.png
+          mkdir -p selftest && mv selftest.png selftest/
+
+      - name: Upload self-test picture
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Linux-self-test
+          path: selftest/selftest.png
+
+      - name: Package AppImage and tar.gz
+        run: |
+          DESTDIR="$PWD/AppDir" cmake --install build-linux
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          sha256sum linuxdeploy-x86_64.AppImage   # logged so the packaging tool used is on record
+          chmod +x linuxdeploy-x86_64.AppImage
+          mkdir -p dist
+          export LDAI_OUTPUT="dist/Dropocalypse-$APP_VERSION-Linux-x86_64.AppImage"
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            --desktop-file linux/dropocalypse.desktop --icon-file linux/dropocalypse.png --output appimage
+          # Plain archive for people who prefer not to use AppImages.
+          mkdir -p "pkg/Dropocalypse-$APP_VERSION-Linux"
+          cp build-linux/dropocalypse linux/dropocalypse.desktop linux/dropocalypse.png LICENSE "pkg/Dropocalypse-$APP_VERSION-Linux/"
+          cp linux/README.txt "pkg/Dropocalypse-$APP_VERSION-Linux/README.txt"
+          cp docs/Dropocalypse-User-Guide.pdf "pkg/Dropocalypse-$APP_VERSION-Linux/Dropocalypse User Guide.pdf"
+          tar -C pkg -czf "dist/Dropocalypse-$APP_VERSION-Linux-x86_64.tar.gz" "Dropocalypse-$APP_VERSION-Linux"
+          ls -la dist
+
+      - name: Upload Linux build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Dropocalypse-Linux
+          path: |
+            dist/*.AppImage
+            dist/*.tar.gz
+
   release:
     name: Publish release
-    needs: [macos, windows]
+    needs: [macos, windows, linux]
     if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
     runs-on: ubuntu-latest
     permissions:
@@ -230,7 +320,7 @@ jobs:
         run: |
           cd dist
           shopt -s nullglob
-          files=(*.zip *.dmg *.pdf *.msix *.pkg)
+          files=(*.zip *.dmg *.AppImage *.tar.gz *.pdf *.msix *.pkg)
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::No release files were produced."
             exit 1
@@ -247,6 +337,8 @@ jobs:
           files: |
             dist/*.zip
             dist/*.dmg
+            dist/*.AppImage
+            dist/*.tar.gz
             dist/*.pdf
             dist/*.msix
             dist/*.pkg
@@ -255,8 +347,8 @@ jobs:
           body: |
             ## 📖 User guide
             New here? Download **Dropocalypse-User-Guide.pdf** below. It's a printable, step-by-step guide to installing and
-            using Dropocalypse on both Mac and Windows, covering every control, all 25 styles, keyboard shortcuts and troubleshooting.
-            (It's also included inside the Mac .dmg and the Windows .zip.)
+            using Dropocalypse on Mac, Windows and Linux, covering every control, all 25 styles, keyboard shortcuts and troubleshooting.
+            (It's also included inside the Mac .dmg, the Windows .zip and the Linux .tar.gz.)
 
             ## Download
 
@@ -279,8 +371,16 @@ jobs:
             By default the Windows version listens to **what your PC is playing** (Spotify, YouTube, DJ software), so no microphone is needed.
             Switch to a mic or line-in under **Audio** in the toolbar.
 
+            ### 🐧 Linux (AppImage, 64-bit)
+            Download the **Linux-x86_64.AppImage** below, make it executable (right-click → Properties → Allow executing, or
+            `chmod +x Dropocalypse-*.AppImage`) and open it. Runs on current Ubuntu, Debian, Fedora, Mint, Arch and others with
+            X11 or Wayland and PulseAudio or PipeWire. Prefer a plain folder? Use the **Linux-x86_64.tar.gz**.
+
+            By default the Linux version listens to **what the computer is playing**, so no microphone is needed.
+            Recording to MP4 needs **ffmpeg** from your package manager.
+
             ## 🔄 Updating
-            Already on 1.0 or later? Open the **Updates** menu in the toolbar, then **Update now**. Dropocalypse checks the download's checksum and, on Mac, its Developer ID signature, then installs this version and reopens. If a check fails, the app you have is left in place.
+            Already on 1.0 or later? Open the **Updates** menu in the toolbar, then **Update now**. Dropocalypse checks the download's checksum and, on Mac, its Developer ID signature, then installs this version and reopens (on Linux, the AppImage replaces itself). If a check fails, the app you have is left in place.
 
             ## 🔏 Code signing policy
             See the [code signing policy](https://github.com/allenrobberson/dropocalypse/blob/main/CODE_SIGNING_POLICY.md) and [privacy policy](https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md).

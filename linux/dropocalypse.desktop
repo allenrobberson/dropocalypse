@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Dropocalypse
+GenericName=Music Visualizer
+Comment=Music visualizer that makes your logo dance to the beat
+Exec=dropocalypse
+Icon=dropocalypse
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=visualizer;music;winamp;milkdrop;dj;logo;
+StartupWMClass=dropocalypse
