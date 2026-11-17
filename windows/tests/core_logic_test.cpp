@@ -102,6 +102,62 @@ static void testRecordingLayout() {
     CHECK(empty.width == 0 && empty.height == 100);
 }
 
+static void testWasapiCapturePlan() {
+    const WasapiStreamPlan loop = planWasapiCapture(WasapiEndpointKind::RenderLoopback, true);
+    CHECK(loop.sharedMode);
+    CHECK(!loop.openRenderStream);
+    CHECK(!loop.pullSharedEnginePeriod);
+    CHECK(loop.bufferDurationHns == 0);
+    CHECK((loop.flags & WasapiFlagLoopback) != 0);
+    CHECK((loop.flags & WasapiFlagEventCallback) != 0);
+    CHECK(wasapiShareMode(loop) == kWasapiShareModeShared);
+    CHECK(wasapiStreamFlags(loop) == (kWasapiStreamFlagsLoopback | kWasapiStreamFlagsEventCallback));
+    CHECK(!wasapiPlanBlocksOtherPlayback(loop));
+
+    // Event-driven loopback is unavailable on some older builds. The fallback still
+    // listens in shared mode at the engine's default period, and still does not render.
+    const WasapiStreamPlan poll = planWasapiCapture(WasapiEndpointKind::RenderLoopback, false);
+    CHECK(!poll.openRenderStream);
+    CHECK(!poll.pullSharedEnginePeriod);
+    CHECK(poll.bufferDurationHns == 0);
+    CHECK((poll.flags & WasapiFlagLoopback) != 0);
+    CHECK((poll.flags & WasapiFlagEventCallback) == 0);
+    CHECK(wasapiStreamFlags(poll) == kWasapiStreamFlagsLoopback);
+    CHECK(wasapiShareMode(poll) == kWasapiShareModeShared);
+    CHECK(!wasapiPlanBlocksOtherPlayback(poll));
+
+    // A microphone may ask its own capture endpoint for a shorter period. It still
+    // must not open a render stream or set the loopback flag.
+    const WasapiStreamPlan mic = planWasapiCapture(WasapiEndpointKind::CaptureDevice, true);
+    CHECK(mic.sharedMode);
+    CHECK(mic.pullSharedEnginePeriod);
+    CHECK(!mic.openRenderStream);
+    CHECK((mic.flags & WasapiFlagLoopback) == 0);
+    CHECK(wasapiStreamFlags(mic) == kWasapiStreamFlagsEventCallback);
+    CHECK(!wasapiPlanBlocksOtherPlayback(mic));
+    const WasapiStreamPlan micPoll = planWasapiCapture(WasapiEndpointKind::CaptureDevice, false);
+    CHECK(micPoll.pullSharedEnginePeriod);
+    CHECK((micPoll.flags & WasapiFlagLoopback) == 0);
+    CHECK(!wasapiPlanBlocksOtherPlayback(micPoll));
+
+    // The three ways this app used to (or could) stop other programs from playing.
+    WasapiStreamPlan blocked = loop;
+    blocked.openRenderStream = true;
+    CHECK(wasapiPlanBlocksOtherPlayback(blocked));
+    blocked = loop;
+    blocked.pullSharedEnginePeriod = true;
+    CHECK(wasapiPlanBlocksOtherPlayback(blocked));
+    blocked = loop;
+    blocked.sharedMode = false;
+    CHECK(wasapiShareMode(blocked) == kWasapiShareModeExclusive);
+    CHECK(wasapiPlanBlocksOtherPlayback(blocked));
+
+    CHECK(kWasapiShareModeShared == 0u);
+    CHECK(kWasapiShareModeExclusive == 1u);
+    CHECK(kWasapiStreamFlagsLoopback == 0x00020000u);
+    CHECK(kWasapiStreamFlagsEventCallback == 0x00040000u);
+}
+
 static void testSignaturePolicy() {
     UpdateSignatureFacts ok;
     ok.runningIsSigned = true;
@@ -143,6 +199,7 @@ int main() {
     testChecksums();
     testSceneCycle();
     testRecordingLayout();
+    testWasapiCapturePlan();
     testSignaturePolicy();
     if (gFailures) {
         std::fprintf(stderr, "%d check(s) failed\n", gFailures);

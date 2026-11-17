@@ -22,7 +22,7 @@ If you denied permission by mistake, turn it on in **System Settings → Privacy
 
 ## 🪟 Windows: listen to what the PC is playing
 
-Windows listens to **System audio (what this PC is playing)** by default, so Spotify, YouTube and DJ software work with no setup. If you have more than one output (say, headphones and speakers), pick the matching **Playing on: …** entry.
+Windows listens to **System audio (what this PC is playing)** by default, so Spotify, YouTube and DJ software work with no setup. If you have more than one output (say, headphones and speakers), pick the matching **Playing on: …** entry. This is a shared-mode loopback of that output: Dropocalypse does not take the speakers over, so other apps keep playing.
 
 ## 🎤 Microphones, line-in and audio interfaces
 
