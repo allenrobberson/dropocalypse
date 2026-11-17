@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac and Windows downloads plus the PDF guide.
 
+## 1.2.10
+- 🪟 **Windows: Update now leaves one copy running.** The old Dropocalypse closes before the new version starts, so you no longer end up with two windows. Opening the app again while it is already running brings that window forward.
+
 ## 1.2.9
 - 🪟 **Windows: other apps keep playing.** System audio is shared-mode loopback only. Dropocalypse no longer opens a silent playback stream or changes the output's period, so Windows Media Player and other apps can play while it is open. The status line shows a buffer of about 10 ms.
 

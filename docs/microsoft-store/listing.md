@@ -44,7 +44,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-Windows listens in shared mode, so other apps, including Windows Media Player, keep playing while Dropocalypse is open.
+On Windows, Update now closes the copy that is already running before the new version starts, so two windows are not left open.
 
 ## Product features (up to 20, short)
 - 25 music-reactive visual styles

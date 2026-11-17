@@ -722,6 +722,10 @@ def build():
          "Fixed in 1.2.9. Windows Media Player used to say it encountered a problem while playing the file. "
          "Update from the <b>Updates</b> menu. Dropocalypse only listens, in shared mode, and the status line "
          "shows a buffer of about 10 ms."],
+        ["<b>Windows: two copies stay open after Update now</b>",
+         "Fixed in 1.2.10. Update now closes the old Dropocalypse before the new one starts. If you still see "
+         "two, quit both in Task Manager and open the app once. Starting it again while it is already open "
+         "brings that window forward."],
         ["<b>It reacts, but only a little</b>",
          "Raise Sensitivity and lower Beat threshold. Check the input level in your system Sound settings."],
         ["<b>It twitches when no music is playing</b>", "Lower Sensitivity, or use a direct line-in feed"],
