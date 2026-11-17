@@ -221,6 +221,97 @@ inline bool wasapiPlanBlocksOtherPlayback(const WasapiStreamPlan& p) {
     return false;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Windows in-app update handoff. The running process must not copy files over itself or
+// start the replacement: a helper waits for this PID, terminates it if it is still alive,
+// and only then replaces files and starts the new exe. A second ordinary launch focuses
+// the existing window; the helper's relaunch passes --updated so it can wait out a mutex
+// the old process has not released yet.
+// ---------------------------------------------------------------------------------------------
+
+struct WindowsUpdateHandoff {
+    int waitForExitMs = 8000;
+    bool terminateIfStillAlive = true;
+    /// The running process must not rename or copy the exe while it is still alive.
+    bool replaceFilesWhileRunning = false;
+    /// The running process must not CreateProcess the new exe. The helper does that
+    /// after this process is gone, or two windows stay up.
+    bool launchReplacementWhileOldAlive = false;
+    /// How long an --updated relaunch retries the single-instance mutex before giving up.
+    int relaunchMutexWaitMs = 8000;
+};
+
+inline WindowsUpdateHandoff planWindowsUpdateHandoff() {
+    WindowsUpdateHandoff h;
+    h.waitForExitMs = 8000;
+    h.terminateIfStillAlive = true;
+    h.replaceFilesWhileRunning = false;
+    h.launchReplacementWhileOldAlive = false;
+    h.relaunchMutexWaitMs = 8000;
+    return h;
+}
+
+enum class InstanceLaunch {
+    BecomePrimary,           // this process owns the single-instance mutex
+    FocusExisting,           // another instance is running; focus it and exit
+    RetryThenBecomePrimary,  // updater relaunch: the old process may still be exiting
+};
+
+inline InstanceLaunch planInstanceLaunch(bool anotherInstanceOwnsMutex, bool updaterRelaunch) {
+    if (!anotherInstanceOwnsMutex) return InstanceLaunch::BecomePrimary;
+    if (updaterRelaunch) return InstanceLaunch::RetryThenBecomePrimary;
+    return InstanceLaunch::FocusExisting;
+}
+
+/// PowerShell applied by the helper process. Order is the contract: wait for our PID,
+/// terminate if that times out, refuse to continue while that PID is alive, then copy,
+/// then start Dropocalypse.exe --updated.
+inline const char* windowsUpdateHelperScript() {
+    return R"ps(param(
+    [Parameter(Mandatory = $true)][int]$ProcessId,
+    [Parameter(Mandatory = $true)][int]$WaitMs,
+    [Parameter(Mandatory = $true)][string]$Source,
+    [Parameter(Mandatory = $true)][string]$Dest
+)
+$ErrorActionPreference = 'Stop'
+try {
+    $proc = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+    if ($null -ne $proc) {
+        if (-not $proc.WaitForExit($WaitMs)) {
+            Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
+            $null = $proc.WaitForExit(5000)
+        }
+    }
+    $still = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+    if ($null -ne $still) {
+        throw "Dropocalypse didn't close, so the update wasn't installed."
+    }
+    Get-ChildItem -LiteralPath $Source -File | ForEach-Object {
+        $name = $_.Name
+        $target = Join-Path $Dest $name
+        try {
+            Copy-Item -LiteralPath $_.FullName -Destination $target -Force
+        } catch {
+            if ($name -eq 'Dropocalypse.exe') { throw }
+        }
+    }
+    $exe = Join-Path $Dest 'Dropocalypse.exe'
+    if (-not (Test-Path -LiteralPath $exe)) {
+        throw "Couldn't copy the new Dropocalypse.exe."
+    }
+    Start-Process -FilePath $exe -ArgumentList '--updated' -WorkingDirectory $Dest
+    try {
+        $work = Split-Path -Parent (Split-Path -Parent $Source)
+        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    } catch {}
+} catch {
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Dropocalypse') | Out-Null
+    exit 1
+}
+)ps";
+}
+
 /// nullptr means the update may be installed.
 /// An unsigned running copy does not require a signature, so today's unsigned builds still update.
 /// Once the running exe has a trusted Authenticode signature, the download must be trusted and

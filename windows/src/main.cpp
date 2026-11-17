@@ -38,6 +38,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <string>
 #include <vector>
@@ -397,9 +398,11 @@ static void openDownloadPage() {
 // ---------------------------------------------------------------------------------------------
 // Update now: download the new portable zip, check it against the release's SHA256SUMS.txt,
 // and, once this copy itself is Authenticode-signed, require the new exe to be signed by the
-// same publisher. Then unpack and swap the files in this folder (a running .exe can be renamed,
-// so no admin rights or helper program are needed), start the new version and quit. Any failure
-// leaves the current version untouched. Unsigned builds keep updating on the checksum alone.
+// same publisher. A helper process then waits until this process has exited (and terminates
+// it if it is still alive) before replacing files and starting the new version. Replacing
+// files or launching the new exe from here left the old process running beside the new one.
+// Any failure before the helper starts leaves the current version untouched. Unsigned builds
+// keep updating on the checksum alone.
 
 enum class InstallPhase { Idle, Downloading, Verifying, Installing, ReadyToRelaunch, Failed };
 struct InstallState {
@@ -409,6 +412,12 @@ struct InstallState {
     std::string error;
 };
 static InstallState gInstall;
+struct PendingUpdate {
+    std::wstring source; // unpacked Dropocalypse\ folder
+    std::wstring dest;   // folder this exe is running from
+    std::wstring work;   // temp dir the helper deletes after a successful swap
+};
+static PendingUpdate gPendingUpdate;
 
 static bool installBusy() {
     InstallPhase p = gInstall.phase;
@@ -612,34 +621,21 @@ static void installWorker() {
     signature.updatePublisher = update.publisher;
     if (const char* why = updateSignatureRefusal(signature)) return failInstall(why);
 
-    // 5. Swap files in this folder: rename the running .exe out of the way, copy the new files in.
-    gInstall.phase = InstallPhase::Installing;
-    std::wstring cur = exePath();
-    std::wstring appDir = dirOf(cur);
-    std::wstring old = cur + L".old";
-    DeleteFileW(old.c_str());
-    if (!MoveFileExW(cur.c_str(), old.c_str(), MOVEFILE_REPLACE_EXISTING))
-        return failInstall("Dropocalypse can't replace itself in this folder. Move the Dropocalypse folder somewhere "
-                           "you can edit (like Documents or Desktop), or use the download page.");
-    if (!CopyFileW((newDir + L"\\Dropocalypse.exe").c_str(), cur.c_str(), FALSE)) {
-        MoveFileExW(old.c_str(), cur.c_str(), MOVEFILE_REPLACE_EXISTING);
-        return failInstall("Couldn't copy the new version into this folder. Nothing was changed.");
-    }
-    WIN32_FIND_DATAW fd;
-    HANDLE h = FindFirstFileW((newDir + L"\\*").c_str(), &fd);
-    if (h != INVALID_HANDLE_VALUE) {
-        do {
-            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-            std::wstring name = fd.cFileName;
-            if (_wcsicmp(name.c_str(), L"Dropocalypse.exe") == 0) continue;
-            CopyFileW((newDir + L"\\" + name).c_str(), (appDir + L"\\" + name).c_str(), FALSE);
-        } while (FindNextFileW(h, &fd));
-        FindClose(h);
+    // Leave the new files in the temp folder. The helper copies them only after this
+    // process is gone, so the exe is not locked and a second window is not opened first.
+    if (planWindowsUpdateHandoff().replaceFilesWhileRunning)
+        return failInstall("Couldn't install the update. Use the download page.");
+    {
+        std::lock_guard<std::mutex> lock(gInstall.m);
+        gPendingUpdate.source = newDir;
+        gPendingUpdate.dest = dirOf(exePath());
+        gPendingUpdate.work = work;
     }
     gInstall.phase = InstallPhase::ReadyToRelaunch;
 }
 
 static void startInstall() {
+    if (kStoreEdition) return; // the Store replaces the package; this exe must not
     if (installBusy()) return;
     if (isDevVersion(APP_VERSION_STR)) return failInstall("This is a development build. Use the download page.");
     gInstall.phase = InstallPhase::Downloading;
@@ -647,26 +643,71 @@ static void startInstall() {
     std::thread(installWorker).detach();
 }
 
-/// Called each frame: once the new files are in place, save settings, start the new version, quit.
-static bool relaunchIfUpdated() {
-    if (gInstall.phase != InstallPhase::ReadyToRelaunch) return false;
-    writeFile(g.settingsPath, serialize(g.settings));
-    g.lastSaved = serialize(g.settings);
-    std::wstring cur = exePath();
-    STARTUPINFOW si{sizeof(si)};
-    PROCESS_INFORMATION pi{};
-    std::wstring cmd = L"\"" + cur + L"\" --updated";
-    std::wstring dir = dirOf(cur);
-    if (CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, dir.c_str(), &si, &pi)) {
-        CloseHandle(pi.hThread);
-        CloseHandle(pi.hProcess);
-        return true;   // caller quits
-    }
-    failInstall("The update was installed, but Dropocalypse couldn't restart. Please open it again.");
-    return false;
+static bool writeExact(const std::wstring& path, const char* bytes) {
+    FILE* f = nullptr;
+    if (_wfopen_s(&f, path.c_str(), L"wb") != 0 || !f) return false;
+    const size_t n = std::strlen(bytes);
+    const bool ok = n == 0 || std::fwrite(bytes, 1, n, f) == n;
+    std::fclose(f);
+    return ok;
 }
 
-/// After an update, the previous .exe is left as "<name>.exe.old" until it has quit; tidy it up.
+/// Helper is a separate process so it can outlive us, wait on our PID, and kill us if
+/// teardown (WASAPI join, the detached install thread, D3D/ImGui) never returns.
+static bool spawnUpdateHelper() {
+    const WindowsUpdateHandoff handoff = planWindowsUpdateHandoff();
+    if (handoff.replaceFilesWhileRunning || handoff.launchReplacementWhileOldAlive) return false;
+    PendingUpdate pending;
+    {
+        std::lock_guard<std::mutex> lock(gInstall.m);
+        pending = gPendingUpdate;
+    }
+    if (pending.source.empty() || pending.dest.empty() || pending.work.empty()) return false;
+    if (pending.source.find(L'"') != std::wstring::npos || pending.dest.find(L'"') != std::wstring::npos)
+        return false;
+    const std::wstring scriptPath = pending.work + L"\\apply-update.ps1";
+    if (!writeExact(scriptPath, windowsUpdateHelperScript())) return false;
+
+    wchar_t winDir[MAX_PATH] = {};
+    GetWindowsDirectoryW(winDir, MAX_PATH);
+    const std::wstring ps = std::wstring(winDir) + L"\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
+    std::wstring cmd = L"\"" + ps + L"\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" +
+                       scriptPath + L"\" -ProcessId " + std::to_wstring(GetCurrentProcessId()) + L" -WaitMs " +
+                       std::to_wstring(handoff.waitForExitMs) + L" -Source \"" + pending.source + L"\" -Dest \"" +
+                       pending.dest + L"\"";
+    STARTUPINFOW si{sizeof(si)};
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    PROCESS_INFORMATION pi{};
+    // The helper is not a thread of this process, so ExitProcess does not stop it.
+    if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr,
+                        pending.work.c_str(), &si, &pi))
+        return false;
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+}
+
+/// Once the new files are unpacked: save settings, hand off to the helper, and leave.
+/// ExitProcess (not returning from wWinMain) so a detached install thread cannot deadlock
+/// CRT shutdown and keep this process alive next to the new one.
+static bool relaunchIfUpdated() {
+    if (gInstall.phase != InstallPhase::ReadyToRelaunch) return false;
+    static bool started = false;
+    if (started) return true;
+    writeFile(g.settingsPath, serialize(g.settings));
+    g.lastSaved = serialize(g.settings);
+    if (!spawnUpdateHelper()) {
+        failInstall("The update was downloaded, but it couldn't be applied. Nothing was changed. Use the download page.");
+        return false;
+    }
+    started = true;
+    if (g.hwnd) ShowWindow(g.hwnd, SW_HIDE);
+    if (g.ctrlHwnd) ShowWindow(g.ctrlHwnd, SW_HIDE);
+    return true;
+}
+
+/// After an older update the previous .exe may still be "<name>.exe.old". Delete it once it is unlocked.
 static void cleanupOldExe() {
     std::thread([] {
         std::wstring old = exePath() + L".old";
@@ -1928,7 +1969,57 @@ static void renderControlsWindow() {
 // Entry point
 // ---------------------------------------------------------------------------------------------
 
-int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
+static constexpr wchar_t kWindowClass[] = L"DropocalypseWindow";
+// Held until process exit. The kernel releases it when we die, including TerminateProcess.
+static HANDLE gInstanceMutex = nullptr;
+
+static bool commandLineHasUpdatedFlag(PWSTR cmdLine) {
+    if (cmdLine && wcsstr(cmdLine, L"--updated")) return true;
+    const wchar_t* full = GetCommandLineW();
+    return full && wcsstr(full, L"--updated");
+}
+
+static void focusExistingDropocalypse() {
+    HWND hwnd = FindWindowW(kWindowClass, nullptr);
+    if (!hwnd) return;
+    if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
+    HWND fore = GetForegroundWindow();
+    DWORD foreThread = fore ? GetWindowThreadProcessId(fore, nullptr) : 0;
+    DWORD thisThread = GetCurrentThreadId();
+    const bool attached = foreThread && foreThread != thisThread && AttachThreadInput(thisThread, foreThread, TRUE);
+    SetForegroundWindow(hwnd);
+    BringWindowToTop(hwnd);
+    if (attached) AttachThreadInput(thisThread, foreThread, FALSE);
+}
+
+/// False: this process should exit (an existing window was focused, or the relaunch gave up).
+static bool becomeTheOnlyInstance(bool updaterRelaunch) {
+    const WindowsUpdateHandoff handoff = planWindowsUpdateHandoff();
+    const int sliceMs = 100;
+    const int attempts = updaterRelaunch ? std::max(1, handoff.relaunchMutexWaitMs / sliceMs) : 1;
+    for (int i = 0; i < attempts; ++i) {
+        SetLastError(0);
+        HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\DropocalypseSingleInstance");
+        if (!mutex) return true; // don't refuse to run if the mutex cannot be created
+        const bool held = GetLastError() == ERROR_ALREADY_EXISTS;
+        const InstanceLaunch plan = planInstanceLaunch(held, updaterRelaunch);
+        if (plan == InstanceLaunch::BecomePrimary) {
+            gInstanceMutex = mutex;
+            return true;
+        }
+        CloseHandle(mutex);
+        if (plan == InstanceLaunch::FocusExisting) {
+            focusExistingDropocalypse();
+            return false;
+        }
+        Sleep(sliceMs);
+    }
+    focusExistingDropocalypse();
+    return false;
+}
+
+int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
+    if (!becomeTheOnlyInstance(commandLineHasUpdatedFlag(cmdLine))) return 0;
     ImGui_ImplWin32_EnableDpiAwareness();
     timeBeginPeriod(1); // 1 ms timer resolution for the audio thread's waits
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -1948,13 +2039,13 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     wc.hIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(1));
     if (!wc.hIcon) wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
     wc.hIconSm = wc.hIcon;
-    wc.lpszClassName = L"DropocalypseWindow";
+    wc.lpszClassName = kWindowClass;
     RegisterClassExW(&wc);
 
     POINT origin{0, 0};
     g.dpi = ImGui_ImplWin32_GetDpiScaleForMonitor(MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY));
     int w = (int)(1280 * g.dpi), h = (int)(720 * g.dpi);
-    g.hwnd = CreateWindowExW(0, wc.lpszClassName, L"Dropocalypse", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+    g.hwnd = CreateWindowExW(0, kWindowClass, L"Dropocalypse", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                              CW_USEDEFAULT, w, h, nullptr, nullptr, hInst, nullptr);
     if (!g.hwnd) return 1;
     g.dpi = g.mainDpi = ImGui_ImplWin32_GetDpiScaleForHwnd(g.hwnd);
@@ -2010,7 +2101,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
 
     while (running) {
         pollUpdateCheck();
-        if (relaunchIfUpdated()) running = false;
+        if (relaunchIfUpdated()) ExitProcess(0);
         // Wait until DXGI is ready for a new frame, *then* read input and audio, so what we draw is
         // as fresh as possible when it reaches the screen.
         if (g.frameWaitable && !g.occluded) WaitForSingleObjectEx(g.frameWaitable, 100, TRUE);

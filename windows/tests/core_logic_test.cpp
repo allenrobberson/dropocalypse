@@ -158,6 +158,39 @@ static void testWasapiCapturePlan() {
     CHECK(kWasapiStreamFlagsEventCallback == 0x00040000u);
 }
 
+static void testWindowsUpdateHandoff() {
+    const WindowsUpdateHandoff handoff = planWindowsUpdateHandoff();
+    CHECK(handoff.waitForExitMs >= 1000);
+    CHECK(handoff.terminateIfStillAlive);
+    CHECK(!handoff.replaceFilesWhileRunning);
+    CHECK(!handoff.launchReplacementWhileOldAlive);
+    CHECK(handoff.relaunchMutexWaitMs >= handoff.waitForExitMs);
+
+    CHECK(planInstanceLaunch(false, false) == InstanceLaunch::BecomePrimary);
+    CHECK(planInstanceLaunch(false, true) == InstanceLaunch::BecomePrimary);
+    CHECK(planInstanceLaunch(true, false) == InstanceLaunch::FocusExisting);
+    CHECK(planInstanceLaunch(true, true) == InstanceLaunch::RetryThenBecomePrimary);
+
+    const char* script = windowsUpdateHelperScript();
+    const std::string text = script ? script : "";
+    const auto waitPos = text.find("WaitForExit");
+    const auto killPos = text.find("Stop-Process");
+    const auto copyPos = text.find("Copy-Item");
+    const auto startPos = text.find("Start-Process");
+    const auto stillPos = text.find("$null -ne $still");
+    CHECK(waitPos != std::string::npos);
+    CHECK(killPos != std::string::npos);
+    CHECK(copyPos != std::string::npos);
+    CHECK(startPos != std::string::npos);
+    CHECK(stillPos != std::string::npos);
+    CHECK(waitPos < killPos);
+    CHECK(killPos < stillPos);
+    CHECK(stillPos < copyPos);
+    CHECK(copyPos < startPos);
+    CHECK(text.find("--updated") != std::string::npos);
+    CHECK(text.find("throw") != std::string::npos);
+}
+
 static void testSignaturePolicy() {
     UpdateSignatureFacts ok;
     ok.runningIsSigned = true;
@@ -200,6 +233,7 @@ int main() {
     testSceneCycle();
     testRecordingLayout();
     testWasapiCapturePlan();
+    testWindowsUpdateHandoff();
     testSignaturePolicy();
     if (gFailures) {
         std::fprintf(stderr, "%d check(s) failed\n", gFailures);
