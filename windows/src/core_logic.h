@@ -148,6 +148,79 @@ inline ContentRect fitContentRect(float viewWidth, float viewHeight, bool portra
     return r;
 }
 
+// ---------------------------------------------------------------------------------------------
+// WASAPI open plan. No Windows headers: values match audiosessiontypes.h, and audio.cpp
+// static_asserts them against the SDK. The capture thread refuses any plan that
+// wasapiPlanBlocksOtherPlayback() flags.
+// ---------------------------------------------------------------------------------------------
+
+/// AUDCLNT_SHAREMODE_SHARED / AUDCLNT_SHAREMODE_EXCLUSIVE.
+inline constexpr unsigned kWasapiShareModeShared = 0u;
+inline constexpr unsigned kWasapiShareModeExclusive = 1u;
+
+/// AUDCLNT_STREAMFLAGS_LOOPBACK and AUDCLNT_STREAMFLAGS_EVENTCALLBACK.
+inline constexpr unsigned kWasapiStreamFlagsLoopback = 0x00020000u;
+inline constexpr unsigned kWasapiStreamFlagsEventCallback = 0x00040000u;
+
+enum class WasapiEndpointKind {
+    RenderLoopback, // capture the mix already playing on an output device
+    CaptureDevice,  // microphone or line-in
+};
+
+enum WasapiStreamFlag : unsigned {
+    WasapiFlagEventCallback = 1u << 0,
+    WasapiFlagLoopback = 1u << 1,
+};
+
+/// How to open one capture stream. Dropocalypse never renders, never takes exclusive mode,
+/// and never asks a playback endpoint to leave its default engine period.
+struct WasapiStreamPlan {
+    bool sharedMode = true;
+    /// InitializeSharedAudioStream at a period below the engine default. Legal only on a
+    /// capture endpoint. On a render endpoint the period is device-wide: the engine leaves
+    /// its ~10 ms default for every app (Microsoft, "Low Latency Audio").
+    bool pullSharedEnginePeriod = false;
+    /// Activate an IAudioClient as a render stream, including a silent "helper". Never.
+    bool openRenderStream = false;
+    unsigned flags = 0;
+    /// IAudioClient::Initialize hnsBufferDuration, in 100 ns units. 0 = the engine's
+    /// default aligned period. A hand-picked duration can be misaligned to that period.
+    long long bufferDurationHns = 0;
+};
+
+inline WasapiStreamPlan planWasapiCapture(WasapiEndpointKind kind, bool eventDriven) {
+    WasapiStreamPlan p;
+    p.sharedMode = true;
+    p.openRenderStream = false;
+    p.bufferDurationHns = 0;
+    // Shortening the period is confined to the microphone / line-in endpoint. Loopback
+    // capture of a render endpoint must listen at whatever period the engine already uses.
+    p.pullSharedEnginePeriod = (kind == WasapiEndpointKind::CaptureDevice);
+    if (eventDriven) p.flags |= WasapiFlagEventCallback;
+    if (kind == WasapiEndpointKind::RenderLoopback) p.flags |= WasapiFlagLoopback;
+    return p;
+}
+
+inline unsigned wasapiShareMode(const WasapiStreamPlan& p) {
+    return p.sharedMode ? kWasapiShareModeShared : kWasapiShareModeExclusive;
+}
+
+inline unsigned wasapiStreamFlags(const WasapiStreamPlan& p) {
+    unsigned flags = 0;
+    if (p.flags & WasapiFlagEventCallback) flags |= kWasapiStreamFlagsEventCallback;
+    if (p.flags & WasapiFlagLoopback) flags |= kWasapiStreamFlagsLoopback;
+    return flags;
+}
+
+/// True when opening this plan would take the playback device away from other apps
+/// (exclusive mode, a render stream on the output, or a sub-default period on that output).
+inline bool wasapiPlanBlocksOtherPlayback(const WasapiStreamPlan& p) {
+    if (!p.sharedMode || wasapiShareMode(p) != kWasapiShareModeShared) return true;
+    if (p.openRenderStream) return true;
+    if (p.pullSharedEnginePeriod && (p.flags & WasapiFlagLoopback)) return true;
+    return false;
+}
+
 /// nullptr means the update may be installed.
 /// An unsigned running copy does not require a signature, so today's unsigned builds still update.
 /// Once the running exe has a trusted Authenticode signature, the download must be trusted and

@@ -2,12 +2,16 @@
 //
 // Latency notes:
 //  * Microphones / line-ins use IAudioClient3 with the smallest shared-mode period the driver
-//    allows (often 128-256 frames, ~3-5 ms), falling back to the default period.
-//  * "System audio" uses WASAPI loopback on the output device - no driver or admin rights.
+//    allows on that capture endpoint only (often 128-256 frames, ~3-5 ms), falling back to
+//    the default period. That request is never made against a playback device.
+//  * "System audio" is shared-mode loopback capture of the render endpoint. It uses the mix
+//    format and the engine's current period (~10 ms). It does not open a render stream and
+//    does not change the endpoint's period or format, so other programs keep playing.
 //  * The capture thread is registered with MMCSS ("Pro Audio") so it isn't starved.
 //  * Bass is tracked per sample with an IIR filter + envelope follower; nothing waits on an FFT.
 
 #include "audio.h"
+#include "core_logic.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -22,6 +26,11 @@
 #include <chrono>
 
 using Microsoft::WRL::ComPtr;
+
+static_assert(AUDCLNT_SHAREMODE_SHARED == kWasapiShareModeShared, "AUDCLNT_SHAREMODE_SHARED drifted");
+static_assert(AUDCLNT_SHAREMODE_EXCLUSIVE == kWasapiShareModeExclusive, "AUDCLNT_SHAREMODE_EXCLUSIVE drifted");
+static_assert(AUDCLNT_STREAMFLAGS_LOOPBACK == kWasapiStreamFlagsLoopback, "AUDCLNT_STREAMFLAGS_LOOPBACK drifted");
+static_assert(AUDCLNT_STREAMFLAGS_EVENTCALLBACK == kWasapiStreamFlagsEventCallback, "AUDCLNT_STREAMFLAGS_EVENTCALLBACK drifted");
 
 static constexpr double kPi = 3.14159265358979323846;
 
@@ -331,12 +340,6 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         std::wstring openedId;
         UINT32 periodFrames = 0;
         bool useEvent = true;
-        // Loopback low-latency helper: a silent render stream on the same output at the driver's
-        // smallest engine period. While it runs, Windows mixes (and so delivers loopback audio) in
-        // e.g. ~3 ms chunks instead of the default 10 ms, cutting System-audio latency several-fold.
-        ComPtr<IAudioClient3> fastRender;
-        ComPtr<IAudioRenderClient> fastRenderOut;
-        UINT32 fastRenderFrames = 0, fastPeriod = 0;
         HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&en));
         if (SUCCEEDED(hr)) {
             hr = followDefault ? en->GetDefaultAudioEndpoint(loopback ? eRender : eCapture, eConsole, &dev)
@@ -349,46 +352,46 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         }
         if (SUCCEEDED(hr)) hr = client->GetMixFormat(&wf);
 
-        if (SUCCEEDED(hr) && loopback) {
-            ComPtr<IAudioClient3> rc;
-            UINT32 def = 0, fund = 0, minP = 0, maxP = 0;
-            if (SUCCEEDED(dev->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, nullptr, (void**)rc.GetAddressOf())) &&
-                SUCCEEDED(rc->GetSharedModeEnginePeriod(wf, &def, &fund, &minP, &maxP)) && minP > 0 && minP < def &&
-                SUCCEEDED(rc->InitializeSharedAudioStream(0, minP, wf, nullptr)) &&
-                SUCCEEDED(rc->GetBufferSize(&fastRenderFrames)) &&
-                SUCCEEDED(rc->GetService(IID_PPV_ARGS(&fastRenderOut)))) {
-                BYTE* p = nullptr;
-                if (SUCCEEDED(fastRenderOut->GetBuffer(fastRenderFrames, &p)))
-                    fastRenderOut->ReleaseBuffer(fastRenderFrames, AUDCLNT_BUFFERFLAGS_SILENT);
-                if (SUCCEEDED(rc->Start())) { fastRender = rc; fastPeriod = minP; }
-                else fastRenderOut.Reset();
-            } else {
-                fastRenderOut.Reset();
-            }
-        }
+        // Shared-mode capture only. Loopback listens to the render endpoint and must not
+        // open a render stream or request a shorter engine period. The shared-mode engine
+        // stays at its default period unless a client asks for another one, and that period
+        // then applies to every app on the endpoint. The old silent helper stream asked for
+        // the driver's minimum, and Windows Media Player Legacy then failed with
+        // "encountered a problem while playing the file."
+        const WasapiStreamPlan plan = planWasapiCapture(
+            loopback ? WasapiEndpointKind::RenderLoopback : WasapiEndpointKind::CaptureDevice,
+            /*eventDriven=*/true);
+
+        auto initShared = [&](const WasapiStreamPlan& p) -> HRESULT {
+            if (wasapiPlanBlocksOtherPlayback(p)) return E_FAIL;
+            if (p.bufferDurationHns != 0) return E_FAIL;
+            return client->Initialize(AUDCLNT_SHAREMODE_SHARED, wasapiStreamFlags(p), p.bufferDurationHns, 0, wf, nullptr);
+        };
 
         if (SUCCEEDED(hr)) {
             HRESULT init = E_FAIL;
-            if (!loopback) {
-                // Smallest shared-mode period the driver supports (Windows 10+).
+            // Smallest shared-mode period, capture endpoints only. A render endpoint's period
+            // is device-wide, so loopback never takes this branch.
+            if (!loopback && plan.pullSharedEnginePeriod && !(plan.flags & WasapiFlagLoopback)) {
                 ComPtr<IAudioClient3> c3;
                 if (SUCCEEDED(client.As(&c3))) {
                     UINT32 def = 0, fund = 0, minP = 0, maxP = 0;
                     if (SUCCEEDED(c3->GetSharedModeEnginePeriod(wf, &def, &fund, &minP, &maxP)) && minP > 0) {
-                        init = c3->InitializeSharedAudioStream(AUDCLNT_STREAMFLAGS_EVENTCALLBACK, minP, wf, nullptr);
+                        init = c3->InitializeSharedAudioStream(wasapiStreamFlags(plan), minP, wf, nullptr);
                         if (SUCCEEDED(init)) periodFrames = minP;
                     }
                 }
             }
             if (FAILED(init)) {
-                DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK | (loopback ? AUDCLNT_STREAMFLAGS_LOOPBACK : 0);
-                init = client->Initialize(AUDCLNT_SHAREMODE_SHARED, flags, 0, 0, wf, nullptr);
+                init = initShared(plan);
+                useEvent = true;
                 if (FAILED(init) && loopback) {
-                    // Older Windows builds don't support event-driven loopback: poll instead.
+                    // Older Windows builds don't support event-driven loopback: poll instead,
+                    // still at the engine's default (aligned) period.
                     client.Reset();
+                    const WasapiStreamPlan poll = planWasapiCapture(WasapiEndpointKind::RenderLoopback, false);
                     if (SUCCEEDED(dev->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)client.GetAddressOf()))) {
-                        init = client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK,
-                                                  20 * 10000, 0, wf, nullptr);
+                        init = initShared(poll);
                         useEvent = false;
                     }
                 }
@@ -396,7 +399,6 @@ void AudioCapture::run(std::wstring id, bool loopback) {
                     REFERENCE_TIME defPeriod = 0, minPeriod = 0;
                     if (SUCCEEDED(client->GetDevicePeriod(&defPeriod, &minPeriod)))
                         periodFrames = (UINT32)(defPeriod * wf->nSamplesPerSec / 10000000);
-                    if (fastPeriod > 0) periodFrames = fastPeriod;   // the engine now runs at this period
                 }
             }
             hr = init;
@@ -409,7 +411,6 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         if (SUCCEEDED(hr)) hr = client->Start();
 
         if (FAILED(hr)) {
-            if (fastRender) fastRender->Stop();
             running_ = false;
             if (hr == E_ACCESSDENIED)
                 setStatus(L"Microphone access is off. Turn on Settings → Privacy & security → Microphone → "
@@ -444,17 +445,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         bool restart = false;
 
         while (!stopRequested_ && !restart) {
-            if (useEvent) WaitForSingleObject(ev, loopback ? (fastRender ? 2 : 4) : 20); else Sleep(2);
-
-            // Keep the low-latency helper stream topped up with silence (inaudible either way).
-            if (fastRenderOut) {
-                UINT32 padding = 0;
-                if (SUCCEEDED(fastRender->GetCurrentPadding(&padding)) && padding < fastRenderFrames) {
-                    BYTE* p = nullptr;
-                    UINT32 n = fastRenderFrames - padding;
-                    if (SUCCEEDED(fastRenderOut->GetBuffer(n, &p))) fastRenderOut->ReleaseBuffer(n, AUDCLNT_BUFFERFLAGS_SILENT);
-                }
-            }
+            if (useEvent) WaitForSingleObject(ev, loopback ? 4 : 20); else Sleep(2);
 
             UINT32 packet = 0;
             bool gotData = false;
@@ -511,7 +502,6 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         }
 
         client->Stop();
-        if (fastRender) fastRender->Stop();
         if (wf) CoTaskMemFree(wf);
         running_ = false;
         if (restart && !stopRequested_) {
