@@ -67,6 +67,7 @@ struct AppSettings {
     bool controlsDetached = false;    // toolbar lives in its own window (for a second screen)
     int recordQuality = 1;            // 0 = 720p, 1 = 1080p, 2 = 4K
     std::wstring recordFolder;        // empty = the Videos folder
+    int frameCap = 0;                 // 0 = the display refresh, otherwise 30 or 60
 };
 
 static std::wstring appDataDir() {
@@ -103,6 +104,7 @@ static std::string serialize(const AppSettings& s) {
     out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
     out += std::string("controlsDetached=") + (s.controlsDetached ? "1" : "0") + "\n";
     out += "recordQuality=" + std::to_string(s.recordQuality) + "\n";
+    out += "frameCap=" + std::to_string(s.frameCap) + "\n";
     out += std::string("portrait=") + (s.r.portrait ? "1" : "0") + "\n";
     out += "recordFolder=" + narrow(s.recordFolder) + "\n";
     out += "logoFile=" + narrow(s.logoFile) + "\n";
@@ -159,6 +161,10 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
     flag("controlsDetached", s.controlsDetached);
     if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
+    if (kv.count("frameCap")) {
+        int cap = std::atoi(kv["frameCap"].c_str());
+        s.frameCap = (cap == 30 || cap == 60) ? cap : 0;
+    }
     if (kv.count("portrait")) s.r.portrait = kv["portrait"] == "1";
     if (kv.count("recordFolder")) s.recordFolder = widen(kv["recordFolder"]);
     if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
@@ -193,6 +199,8 @@ struct App {
     int width = 0, height = 0;
     bool resizePending = false;
     bool occluded = false;
+    double frameMs = 0;
+    double lastPresent = 0;
 
     Renderer renderer;
     AudioCapture audio;
@@ -1280,6 +1288,13 @@ static void lookPanelBody(RenderSettings& r) {
                            ? "Portrait centers a vertical frame. Recordings are 720x1280, 1080x1920, or 2160x3840."
                            : "Landscape fills the window.");
     slider("Auto-cycle every", &r.cycleSeconds, 5, 360, "%.0f s");
+    ImGui::TextUnformatted("Frame rate");
+    if (ImGui::RadioButton("Display", g.settings.frameCap == 0)) g.settings.frameCap = 0;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("60", g.settings.frameCap == 60)) g.settings.frameCap = 60;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("30", g.settings.frameCap == 30)) g.settings.frameCap = 30;
+    ImGui::TextDisabled("Display matches the monitor. 60 and 30 use less CPU.");
 }
 
 /// The Updates menu: version, check now, automatic checks, and installing a new version.
@@ -1489,7 +1504,9 @@ static void drawToolbar(float dt, bool docked = true) {
     ImGui::SameLine(0, 16 * g.dpi);
     float statusW = ImGui::GetContentRegionAvail().x - rightW - 12 * g.dpi;
     if (statusW > 60 * g.dpi) {
-        std::string status = ellipsize(narrow(g.audio.status()), statusW);
+        char frameLabel[32] = {};
+        if (g.frameMs > 0) std::snprintf(frameLabel, sizeof(frameLabel), "  ·  %.1f ms", g.frameMs);
+        std::string status = ellipsize(narrow(g.audio.status()) + frameLabel, statusW);
         ImGui::SetCursorPosY(y + st.FramePadding.y);
         ImGui::TextDisabled("%s", status.c_str());
         ImGui::SameLine();
@@ -2104,7 +2121,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
         if (relaunchIfUpdated()) ExitProcess(0);
         // Wait until DXGI is ready for a new frame, *then* read input and audio, so what we draw is
         // as fresh as possible when it reaches the screen.
-        if (g.frameWaitable && !g.occluded) WaitForSingleObjectEx(g.frameWaitable, 100, TRUE);
+        const bool iconic = IsIconic(g.hwnd) != FALSE;
+        const int hiddenSleep = hiddenFrameSleepMs(iconic, g.occluded);
+        if (g.frameWaitable && hiddenSleep == 0) WaitForSingleObjectEx(g.frameWaitable, 100, TRUE);
 
         MSG msg;
         while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -2114,10 +2133,18 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
         }
         if (!running) break;
 
-        if (g.occluded) {
-            Sleep(50);
-            if (g.swapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) continue;
-            g.occluded = false;
+        if (hiddenSleep > 0) {
+            Sleep(hiddenSleep);
+            if (g.occluded && g.swapChain->Present(0, DXGI_PRESENT_TEST) != DXGI_STATUS_OCCLUDED) g.occluded = false;
+            if (IsIconic(g.hwnd) || g.occluded) continue;
+        }
+        if (g.settings.frameCap == 30 || g.settings.frameCap == 60) {
+            const double minDt = 1.0 / g.settings.frameCap;
+            const double elapsed = nowSeconds() - g.lastPresent;
+            if (g.lastPresent > 0 && elapsed < minDt) {
+                Sleep((DWORD)std::max(1.0, (minDt - elapsed) * 1000.0));
+                continue;
+            }
         }
         if (g.resizePending) {
             g.resizePending = false;
@@ -2137,6 +2164,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
         double now = nowSeconds();
         float dt = (float)(now - lastFrame);
         lastFrame = now;
+        if (dt > 0 && dt < 0.1) g.frameMs += ((dt * 1000.0) - g.frameMs) * 0.08;
 
         // Feed settings to the audio thread.
         g.audio.analysis.sensitivity.store(g.settings.sensitivity);
@@ -2153,6 +2181,26 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
                 const float uh = std::max(1.0f, (float)g.height);
                 g.recorder.captureFrame(back.Get(), frame.x / uw, frame.y / uh, frame.width / uw, frame.height / uh);
             }
+        }
+
+        if (g.settings.controlsDetached) g.toolbarVisible = false;
+        const bool notice = nowSeconds() < g.recordNoticeUntil || !g.errorMessage.empty() || !g.audio.isRunning();
+        const bool needUi = uiFrameNeeded(g.toolbarVisible, false, notice,
+                                          !g.settings.privacyNoticeSeen && !kStoreEdition);
+        if (!needUi) {
+            renderControlsWindow();
+            if (now - lastSaveCheck > 0.5) {
+                lastSaveCheck = now;
+                std::string s = serialize(g.settings);
+                if (s != g.lastSaved) {
+                    writeFile(g.settingsPath, s);
+                    g.lastSaved = s;
+                }
+            }
+            HRESULT hr = g.swapChain->Present(1, 0);
+            g.lastPresent = nowSeconds();
+            if (hr == DXGI_STATUS_OCCLUDED) g.occluded = true;
+            continue;
         }
 
         // Toolbar auto-hide.
@@ -2185,6 +2233,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
         }
 
         HRESULT hr = g.swapChain->Present(1, 0);
+        g.lastPresent = nowSeconds();
         if (hr == DXGI_STATUS_OCCLUDED) g.occluded = true;
 
         renderControlsWindow();

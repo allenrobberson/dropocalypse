@@ -236,6 +236,152 @@ fragment float4 fs_geom(GeomOut in [[stage_in]]) {
     return float4(in.color.rgb * in.color.a, in.color.a);
 }
 
+// GPU expansion of the simple wave styles. Matches vs_signal in the Windows HLSL.
+struct SignalUniforms {
+    float aspect;
+    float radius;
+    float amplitude;
+    float rotation;
+    float halfWidth;
+    float hue0;
+    float saturation;
+    float alpha;
+    float p0;
+    float p1;
+    float p2;
+    float p3;
+    int mode;
+    int count;
+    int stride;
+    int sampleOffset;
+    int closed;
+    int side;
+    int pad0;
+    int pad1;
+};
+
+float sigLoad(constant float* s, int i) { return s[clamp(i, 0, 559)]; }
+
+float3 sigHsv(float h, float s, float v) {
+    float hh = fract(h) * 6.0;
+    int i = int(floor(hh)) % 6;
+    float f = fract(hh);
+    float p = v * (1.0 - s);
+    float q = v * (1.0 - s * f);
+    float t = v * (1.0 - s * (1.0 - f));
+    if (i <= 0) return float3(v, t, p);
+    if (i == 1) return float3(q, v, p);
+    if (i == 2) return float3(p, v, t);
+    if (i == 3) return float3(p, q, v);
+    if (i == 4) return float3(t, p, v);
+    return float3(v, p, q);
+}
+
+float2 sigRing(constant float* samples, constant SignalUniforms& u, int i) {
+    int n = max(u.count, 1);
+    float w = sigLoad(samples, u.sampleOffset + i * u.stride);
+    if (u.closed != 0 && i >= n - 24) {
+        float k = float(i - (n - 24)) / 24.0;
+        w += (sigLoad(samples, u.sampleOffset) - w) * k;
+    }
+    float a = float(i) / float(n) * 6.28318530718 + u.rotation;
+    float r = max(0.0, u.radius + w * u.amplitude);
+    return float2(cos(a), sin(a)) * r;
+}
+
+float2 sigPoint(constant float* samples, constant SignalUniforms& u, int i) {
+    if (u.mode == 4) {
+        int idx = i * 2;
+        return float2(sigLoad(samples, idx) * u.p0, sigLoad(samples, idx + 23) * u.p0);
+    }
+    if (u.mode == 1 && u.side != 0) {
+        float den = float(max(u.count - 1, 1));
+        float y = u.p0 + float(i) / den * u.p1;
+        float x = float(u.side) * u.p2 + sigLoad(samples, u.sampleOffset + i * u.stride) * u.p3;
+        return float2(x, y);
+    }
+    if (u.mode == 1 && u.closed == 0) {
+        float den = float(max(u.count - 1, 1));
+        float x = u.p0 + float(i) / den * u.p1;
+        return float2(x, sigLoad(samples, u.sampleOffset + i * u.stride) * u.p2);
+    }
+    return sigRing(samples, u, i);
+}
+
+int sigCorner(uint c) {
+    if (c == 0 || c == 3) return 0;
+    if (c == 1) return 1;
+    if (c == 2 || c == 4) return 2;
+    return 3;
+}
+
+vertex GeomOut vs_signal(uint vid [[vertex_id]],
+                         constant SignalUniforms& u [[buffer(0)]],
+                         constant float* samples [[buffer(1)]]) {
+    uint corner = vid % 6;
+    uint seg = vid / 6;
+    float2 q[4];
+    float4 col;
+    float denom = float(max(u.count, 1));
+    if (u.mode == 2) {
+        float slot = u.p0 / denom;
+        float x0 = -u.p0 * 0.5 + float(seg) * slot + slot * 0.15;
+        float x1 = x0 + slot * 0.7;
+        float y0 = -0.98;
+        float y1 = y0 + 0.02 + sigLoad(samples, 512 + int(seg)) * u.p1;
+        q[0] = float2(x0, y0); q[1] = float2(x1, y0); q[2] = float2(x1, y1); q[3] = float2(x0, y1);
+        col = float4(sigHsv(u.hue0 + (float(seg) / denom) * 0.35, u.saturation, 1.0), u.alpha);
+    } else if (u.mode == 5) {
+        uint dot = vid / 24;
+        uint tri = (vid % 24) / 3;
+        uint corn = (vid % 24) % 3;
+        int arm = int(dot) / 48;
+        int bi = int(dot) % 48;
+        float frac = float(bi) / 48.0;
+        float ang = float(bi) * 0.33 + float(arm) * 2.09439510239 + u.rotation;
+        float rr = u.p0 + frac * u.p1;
+        float rad = 0.006 + sigLoad(samples, 512 + bi) * u.p2;
+        float2 c = float2(cos(ang), sin(ang)) * rr;
+        float a0 = float(tri) / 8.0 * 6.28318530718;
+        float a1 = float(tri + 1) / 8.0 * 6.28318530718;
+        float2 p = corn == 0 ? c : (corn == 1 ? c + float2(cos(a0), sin(a0)) * rad
+                                              : c + float2(cos(a1), sin(a1)) * rad);
+        p.x /= u.aspect;
+        GeomOut o;
+        o.position = float4(p, 0.0, 1.0);
+        o.color = float4(sigHsv(u.hue0 + (frac + float(arm) * 0.2) * 0.35, u.saturation, 1.0), u.alpha);
+        return o;
+    } else if (u.mode == 3) {
+        float frac = float(seg) / denom;
+        float ang = (u.side == 0 ? frac : -frac) * 3.14159265359 + 1.57079632679 + u.rotation;
+        float2 dir = float2(cos(ang), sin(ang));
+        float len = 0.03 + sigLoad(samples, 512 + int(seg)) * u.p1;
+        float2 a = dir * u.radius;
+        float2 b = dir * (u.radius + len);
+        float2 d = b - a;
+        float L = max(length(d), 1e-6);
+        float2 nrm = float2(-d.y, d.x) / L * u.halfWidth;
+        q[0] = a + nrm; q[1] = b + nrm; q[2] = b - nrm; q[3] = a - nrm;
+        col = float4(sigHsv(u.hue0 + frac * 0.35, u.saturation, 1.0), u.alpha);
+    } else {
+        int i0 = int(seg);
+        int i1 = (u.closed != 0 && int(seg) == u.count - 1) ? 0 : i0 + 1;
+        float2 a = sigPoint(samples, u, i0);
+        float2 b = sigPoint(samples, u, i1);
+        float2 d = b - a;
+        float L = max(length(d), 1e-6);
+        float2 nrm = float2(-d.y, d.x) / L * u.halfWidth;
+        q[0] = a + nrm; q[1] = b + nrm; q[2] = b - nrm; q[3] = a - nrm;
+        col = float4(sigHsv(u.hue0 + (float(i0) / denom) * 0.35, u.saturation, 1.0), u.alpha);
+    }
+    float2 p = q[sigCorner(corner)];
+    p.x /= u.aspect;
+    GeomOut o;
+    o.position = float4(p, 0.0, 1.0);
+    o.color = col;
+    return o;
+}
+
 // ---------------------------------------------------------------- final composite
 
 struct PresentUniforms {

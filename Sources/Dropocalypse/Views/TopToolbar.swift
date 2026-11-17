@@ -547,6 +547,16 @@ struct TopToolbar: View {
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             slider("Auto-cycle every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
+            Picker("Frame rate", selection: $settings.frameCap) {
+                Text("Display").tag(0)
+                Text("60").tag(60)
+                Text("30").tag(30)
+            }
+            .pickerStyle(.segmented)
+            Text(settings.frameCap == 0
+                 ? "Display matches the monitor."
+                 : "A lower cap uses less CPU. The picture stays the same shape.")
+                .font(.caption2).foregroundStyle(.secondary)
             if !UpdateChecker.isEnabled {
                 Divider()
                 Text("Version \(updates.currentVersion) · Updates come from the App Store.")

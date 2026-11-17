@@ -118,14 +118,16 @@ private:
     void ensureFeedback(int width, int height);
     VisualScene blendedScene() const;
     void updateScene(double now, float dt, RenderSettings& s);
+    void drawGpuSignal(const VisualScene& scene, const AudioSnapshot& audio, float t, float aspect);
 
     ID3D11Device* device_ = nullptr;
     ID3D11DeviceContext* ctx_ = nullptr;
 
-    Com<ID3D11VertexShader> vsFullscreen_, vsGeom_, vsLogo_;
+    Com<ID3D11VertexShader> vsFullscreen_, vsGeom_, vsSignal_, vsLogo_;
     Com<ID3D11PixelShader> psWarp_, psGeom_, psPresent_, psLogo_;
     Com<ID3D11InputLayout> geomLayout_;
-    Com<ID3D11Buffer> warpCB_, presentCB_, logoCB_, vertexBuffer_;
+    Com<ID3D11Buffer> warpCB_, presentCB_, logoCB_, signalCB_, sampleBuf_, vertexBuffer_;
+    Com<ID3D11ShaderResourceView> sampleSRV_;
     Com<ID3D11BlendState> blendNone_, blendAdd_, blendPremul_;
     Com<ID3D11SamplerState> sampZero_, sampClamp_, sampMip_;
     Com<ID3D11RasterizerState> raster_;
