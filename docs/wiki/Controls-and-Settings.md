@@ -13,7 +13,7 @@ From left to right:
 
 | Control | What it does |
 |---|---|
-| 🖼 **Add Logo / logo name** | Opens the [Logo menu](Your-Logo-and-Motion#logo-menu) |
+| 🖼 **Add Logo / Logos (2)** | Opens the [Logo menu](Your-Logo-and-Motion#logos-and-text): your logos and text items |
 | **‹  Style name  ›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](Your-Logo-and-Motion#motion-panel): how the logo reacts to the bass |

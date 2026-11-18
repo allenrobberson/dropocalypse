@@ -64,7 +64,7 @@ A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
 - 🎛 **25 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, and **Full Kaleidoscope** (a full-frame neon mandala). Pick one or let them auto-cycle with smooth crossfades.
-- 🖼 **Your logo**: drag any image onto the window. Transparent PNGs look best. It's remembered between launches.
+- 🖼 **Your logos and text**: up to 4 at once, side by side (or stacked in Portrait). Drag images onto the window, or add text in your choice of font and color. Transparent PNGs look best. Everything is remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the computer is playing** on Windows and Linux, or a built-in mic, USB mic, audio interface or line-in.
@@ -86,12 +86,12 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.3.0: several logos, and text
+- 🖼🖼 **Up to 4 logos at once**, side by side in landscape and stacked in **Portrait**. They all hit on the same beat, each with its own small twist, so they don't move like clones.
+- 🔤 **Text items**: type a DJ name, a night or a hashtag, pick a font and a color, and it dances like a logo, with an outline so it reads over bright visuals. See [Logos and text](#logos-and-text).
+
 ### 1.2.12: now on Linux
 - 🐧 **Dropocalypse for Linux**: an AppImage (one file, nothing to install) for Ubuntu, Debian, Fedora, Mint, Arch and more, with the same styles, logo motion, two screens, recording and one-click updates. See [Linux](#-linux-appimage-one-file-nothing-to-install).
-
-### 1.2.11: lower CPU, same picture
-- ⚡ **Waveforms are drawn on the GPU.** Tunnel, lines, bars, dots and Lissajous look the same and use less CPU. The app also rests while the window is minimized or covered, and while the toolbar is hidden.
-- **Look → Frame rate** defaults to **Display**. Choose **60** or **30** if a laptop is working too hard. The status line shows a frame time (for example **6.2 ms**) while the toolbar is visible.
 
 Older versions are in the [Changelog](../../wiki/Changelog).
 
@@ -149,7 +149,7 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 
 - [Quick start](#quick-start)
 - [The toolbar](#the-toolbar)
-- [Logo menu](#logo-menu)
+- [Logos and text](#logos-and-text)
 - [Style controls](#style-controls)
 - [Motion panel](#motion-panel)
 - [Logo panel](#logo-panel)
@@ -164,7 +164,7 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 
 1. Open **Dropocalypse** and play some music. On Windows and Linux it already listens to what the computer is playing. On a Mac, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), and allow access when macOS asks. A mic or line-in works on all three.
 2. The visuals start reacting right away.
-3. Drag your logo onto the window, or press **L** to pick a file. A PNG with a transparent background looks best.
+3. Drag your logo onto the window, or press **L** to pick a file. A PNG with a transparent background looks best. Want more? Add up to 4 logos, or text, from the **Logo menu**.
 4. Press **F** for full screen.
 
 Your logo, style and all settings are saved automatically and come back the next time you open the app.
@@ -182,7 +182,7 @@ From left to right:
 
 | Control | What it does |
 |---|---|
-| 🖼 **Add Logo / logo name** | Opens the [Logo menu](#logo-menu) |
+| 🖼 **Add Logo / Logos (2)** | Opens the [Logo menu](#logos-and-text): your logos and text items |
 | **‹  Style name  ›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
 | ⟳ | Turns auto-cycle on or off (lit = on) |
 | **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
@@ -201,15 +201,23 @@ From left to right:
 >
 > In full screen on a MacBook with a camera notch, the toolbar sits just below the notch so no button hides behind it, while the visuals still fill the whole screen.
 
-### Logo menu
+### Logos and text
+
+Show **up to 4 logos and text items at once**. In landscape they sit side by side, left to right; in **Portrait** (Look panel) they stack top to bottom. Each one shrinks to fit its space, and **Size** in the Logo panel sets them all. They all react to the same beat, each with a small offset in timing and direction so they don't move like clones.
+
+The **Logo menu** in the toolbar lists your items:
 
 | Item | What it does |
 |---|---|
-| **Choose Logo… (L)** | Pick an image file. PNGs with a transparent background look best. Empty transparent edges are trimmed automatically so the logo bounces around its visible shape. |
-| **Remove Logo** | Removes your logo and goes back to the "YOUR LOGO" placeholder |
-| **Show Logo (G)** | Hides or shows the logo without removing it, so you get visuals only |
+| **1. band.png**, **2. "DJ NIGHT"** … | Each item, with **Replace…** (images), **Move left / right** (up / down in Portrait) and **Remove** |
+| **Add Logo… (L)** | Adds an image. PNGs with a transparent background look best. Empty transparent edges are trimmed automatically so each logo bounces around its visible shape. |
+| **Add Text** | Adds a text item. Type the words in the **Logo** panel. |
+| **Remove All** | Removes every item and goes back to the "YOUR LOGO" placeholder |
+| **Show Logos (G)** | Hides or shows them all without removing them, so you get visuals only |
 
-You can also **drag an image** from Finder, or straight from a web browser, onto the window at any time.
+**Text items:** type the words (up to 60 characters), pick a font (**Bold**, **Heavy**, **Serif** or **Mono**) and a color (white, pink, cyan, gold, lime or purple). Text gets a dark outline so it stays readable over bright visuals, and glows, tints and trails like a logo. Edit text and reorder items in the **Logo** panel, or in the detached controls window.
+
+You can also **drag images** from Finder, File Explorer, your file manager or a web browser onto the window at any time. Drop several to add them all. When all 4 spaces are used, a dropped image replaces the last item.
 
 ### Style controls
 
@@ -242,7 +250,7 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Glow** | 0.60 | A soft, colored halo behind the logo that flares brighter with the bass. 0 turns it off. |
 | **Color tint** | 0.00 | Blends the logo toward the current style's color. 0 keeps your logo's original colors; 1 recolors it completely. |
 | **Logo trails** | Off | Feeds a faint copy of the logo into the visuals every frame, so it leaves echoes that swirl, zoom and fade with the effect |
-| **Show logo** | On | Same as **Show Logo** in the Logo menu |
+| **Show logos** | On | Same as **Show Logos** in the Logo menu |
 
 ### Audio panel
 
@@ -331,16 +339,16 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 | `Esc` | Hide the toolbar; press again to exit full screen |
 | `⌃⌘F` | Full screen (Mac menu shortcut; the green window button works too) |
 | `F11` | Full screen (Windows and Linux) |
-| `Ctrl+O` | Choose a logo (Windows and Linux) |
+| `Ctrl+O` | Add a logo (Windows and Linux) |
 | `Ctrl+Q` | Quit (Linux) |
-| `L` | Choose a logo |
-| `G` | Show / hide the logo |
+| `L` | Add a logo |
+| `G` | Show / hide the logos |
 | `←` `→` | Previous / next style |
 | `A` | Auto-cycle on / off |
 | `D` | Detach / attach the controls window |
 | `R` | Start / stop recording |
 
-On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)** and **Remove Logo**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Detach Controls (⇧⌘D), Start/Stop Recording (⇧⌘R), Restart Audio**, plus **Dropocalypse → Check for Updates…**.
+On the Mac, the menu bar has the same actions: **File → Add Logo… (⌘O)**, **Add Text** and **Remove All Logos**, and **Visualizer → Next Style (⌘→), Previous Style (⌘←), Full Screen (⌃⌘F), Show/Hide Toolbar (⌘,), Detach Controls (⇧⌘D), Start/Stop Recording (⇧⌘R), Restart Audio**, plus **Dropocalypse → Check for Updates…**.
 
 ### Recording a video
 1. Click **Record** in the toolbar (or press **R**). It turns red and becomes **Stop** with a running timer.
@@ -493,7 +501,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 - [x] Capture the PC's own audio output without a microphone (Windows)
 - [x] Linux version (AppImage), including listening to what the computer plays
 - [x] Capture the Mac's own audio output (Spotify, YouTube…) without a microphone (macOS 14.2+)
-- [ ] Multiple logos and text overlays
+- [x] Several logos and text items at once
 - [ ] Syphon / NDI output for VJ software
 - [x] Update notifications and one-click updates inside the app
 - [x] App icon

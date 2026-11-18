@@ -470,7 +470,7 @@ def build():
         "(macOS 14.2+) or a mic; on Windows, System audio is already selected. Play some music and the visuals "
         "start reacting right away.",
         "Drag your logo (PNG, JPG and most image types) onto the window, or press <b>L</b> to choose a file. "
-        "A PNG with a transparent background looks best.",
+        "A PNG with a transparent background looks best. You can add up to 4 logos, or text, from the Logo menu.",
         "Press <b>F</b> for full screen.",
         "Move the mouse to the top of the screen to open the toolbar and try different styles.",
     ])
@@ -496,7 +496,7 @@ def build():
                   "Audio, Look, Updates, status, Detach, keys and full screen"))
     s.append(Spacer(1, 8))
     s.append(table(["Control", "What it does"], [
-        ["<b>Add Logo</b> / logo name", "Opens the Logo menu: choose, remove, show or hide your logo"],
+        ["<b>Add Logo</b> / <b>Logos (2)</b>", "Opens the Logo menu: your logos and text items"],
         ["<b>‹  Style name  ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
         ["<b>Auto-cycle</b> (⟳ on Mac)", "Moves to the next <b>checked</b> style automatically, with a smooth crossfade. Unchecked styles are skipped; with nothing checked it uses them all"],
         ["<b>Motion</b>", "How your logo reacts to the bass"],
@@ -522,15 +522,22 @@ def build():
 
     # ---- Panels
     s += section(6, "Logo, Motion, Audio and Look settings")
-    s.append(sub("Logo menu"))
+    s.append(sub("Logos and text (the Logo menu)"))
+    s.append(P("Show up to <b>4 logos and text items at once</b>: side by side in landscape, stacked top to bottom "
+               "in Portrait. Each shrinks to fit its space, and they all hit on the same beat with a small offset "
+               "each, so they don't move like clones.", small))
+    s.append(Spacer(1, 4))
     s.append(table(["Item", "What it does"], [
-        ["<b>Choose Logo…</b> (L)", "Pick an image file. Empty transparent edges are trimmed automatically so the "
-                                         "logo moves around its visible shape."],
-        ["<b>Remove Logo</b>", "Goes back to the “YOUR LOGO” placeholder"],
-        ["<b>Show Logo</b> (G)", "Hides or shows the logo without removing it, for visuals only"],
+        ["Each item", "<b>Replace…</b> (images), move left / right (up / down in Portrait), <b>Remove</b>"],
+        ["<b>Add Logo…</b> (L)", "Adds an image. Empty transparent edges are trimmed automatically so each "
+                                 "logo moves around its visible shape."],
+        ["<b>Add Text</b>", "Adds a text item: type the words in the Logo panel, then pick Bold, Heavy, Serif or "
+                            "Mono and one of six colors. It gets an outline so it reads over bright visuals."],
+        ["<b>Remove All</b>", "Goes back to the “YOUR LOGO” placeholder"],
+        ["<b>Show Logos</b> (G)", "Hides or shows them all without removing them, for visuals only"],
     ], [1.9 * inch, 4.6 * inch]))
     s.append(Spacer(1, 4))
-    s.append(P("You can also drag an image onto the window at any time.", small))
+    s.append(P("You can also drag images onto the window at any time; drop several to add them all.", small))
 
     s.append(sub("Motion panel: how the logo reacts to the bass"))
     s.append(P("0 turns a motion off completely; the highest setting is 1.5.", small))
@@ -557,7 +564,7 @@ def build():
         ["<b>Glow</b>", "0.60", "A soft, colored halo that flares with the bass. 0 turns it off."],
         ["<b>Color tint</b>", "0.00", "Blends the logo toward the style's color. 0 keeps your original colors."],
         ["<b>Logo trails</b>", "Off", "Leaves echoes of the logo that swirl and fade with the visuals"],
-        ["<b>Show logo</b>", "On", "Same as Show Logo in the Logo menu"],
+        ["<b>Show logos</b>", "On", "Same as Show Logos in the Logo menu"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
     s.append(sub("Audio panel"))
@@ -667,8 +674,8 @@ def build():
         ["Full screen on / off", f"F or Ctrl+{CMD}F (or the green window button)", "F or F11"],
         ["Show / hide the toolbar", "T or S", "T or S"],
         ["Hide the toolbar", "Esc (press again to exit full screen)", "Esc (press again to exit full screen)"],
-        ["Choose a logo", f"L or {CMD}O", "L or Ctrl+O"],
-        ["Show / hide the logo", "G", "G"],
+        ["Add a logo", f"L or {CMD}O", "L or Ctrl+O"],
+        ["Show / hide the logos", "G", "G"],
         ["Previous / next style", f"{LEFT} / {RIGHT}  (or {CMD}{LEFT} / {CMD}{RIGHT})", f"{LEFT} / {RIGHT}"],
         ["Auto-cycle on / off", "A", "A"],
         ["Detach / attach the controls window", f"D or Shift+{CMD}D", "D"],

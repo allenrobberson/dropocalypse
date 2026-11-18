@@ -176,7 +176,7 @@ LogoImage renderTextLogo(const std::string& utf8Text, int font, int color) {
         size.cx = r.right - r.left;
         size.cy = r.bottom - r.top;
         if (size.cx <= 2400 || pixelHeight <= 60) break;
-        pixelHeight = std::max(60, pixelHeight * 2400 / std::max<LONG>(1, size.cx));
+        pixelHeight = std::max(60, (int)(pixelHeight * 2400L / std::max<LONG>(1, size.cx)));
     }
     const int outline = std::max(4, pixelHeight / 18);
     const int margin = outline + 4;

@@ -13,7 +13,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 | Feature | What you get |
 |---|---|
 | 🎛 **25 styles** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers, a 4D Tesseract and Full Kaleidoscope. See [[Styles]]. |
-| 🖼 **Your logo** | Drag any image onto the window. It reacts to the bass with five separate motions plus glow, tint and trails. See [[Your Logo and Motion]]. |
+| 🖼 **Your logos and text** | Up to 4 at once, side by side or stacked. Drag images onto the window or add text in your font and color. They react to the bass with five separate motions plus glow, tint and trails. See [[Your Logo and Motion]]. |
 | 🎧 **No mic needed** | Listen straight to Spotify or any app on a Mac (macOS 14.2+), or to whatever your computer is playing on Windows and Linux. Mics and line-in work too. See [[Audio Sources]]. |
 | ⚡ **Low latency** | About 10–20 ms from sound to screen, so drops land on the beat. See [[How It Works]]. |
 | 🔴 **Record clips** | Save the visuals and the music as an MP4 (720p, 1080p or 4K) for TikTok, Reels and YouTube, in landscape or a vertical 9:16 frame. See [[Controls and Settings]]. |
@@ -34,4 +34,4 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 - **For developers:** [[How It Works]] · [[Building from Source]] · [[Adding a Style]]
 - **Project:** [[Changelog]] · [[Support the Project]]
 
-Current version: **1.2.12**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.
+Current version: **1.3.0**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.
