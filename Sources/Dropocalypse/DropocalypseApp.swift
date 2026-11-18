@@ -36,9 +36,10 @@ struct DropocalypseApp: App {
                 }
             }
             CommandGroup(replacing: .newItem) {
-                Button("Choose Logo…") { model.chooseLogo() }
+                Button("Add Logo…") { model.chooseLogo() }
                     .keyboardShortcut("o")
-                Button("Remove Logo") { model.clearLogo() }
+                Button("Add Text") { model.addTextItem() }
+                Button("Remove All Logos") { model.clearLogo() }
             }
             CommandMenu("Visualizer") {
                 Button("Next Style") { model.nextScene(1) }

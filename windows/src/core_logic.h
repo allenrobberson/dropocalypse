@@ -362,3 +362,249 @@ inline const char* updateSignatureRefusal(const UpdateSignatureFacts& f) {
         return "The downloaded app is signed by a different publisher, so it wasn't installed.";
     return nullptr;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Logos and text items: up to four on screen at once. The Mac copy of this math lives in
+// Sources/DropocalypseCore/OverlayLayout.swift. Keep them in step.
+// ---------------------------------------------------------------------------------------------
+
+inline constexpr int kMaxOverlayItems = 4;
+
+/// Where item `index` of `count` sits, in the renderer's units: x runs from -aspect to aspect and
+/// y from -1 (bottom) to 1 (top). Landscape (aspect >= 1) spaces the items evenly across the
+/// width; portrait stacks them top to bottom. maxHalfW/maxHalfH bound the item's half size so
+/// neighbors don't overlap at rest (the beat can still push them a little past it).
+struct ItemSlot {
+    float cx = 0, cy = 0, maxHalfW = 1, maxHalfH = 1;
+};
+
+inline ItemSlot itemSlot(int index, int count, float aspect) {
+    if (count < 1) count = 1;
+    if (count > kMaxOverlayItems) count = kMaxOverlayItems;
+    if (index < 0) index = 0;
+    if (index >= count) index = count - 1;
+    if (!(aspect > 0.05f)) aspect = 1.0f;
+    ItemSlot s;
+    if (count == 1) {
+        s.maxHalfW = aspect * 0.95f;
+        s.maxHalfH = 0.95f;
+        return s;
+    }
+    const float spanFrac = 0.86f;   // leave a margin at the edges of the frame
+    const float gapFrac = 0.86f;    // and between neighbors
+    if (aspect >= 1.0f) {
+        const float span = 2.0f * aspect * spanFrac;
+        const float cell = span / (float)count;
+        s.cx = -span * 0.5f + cell * ((float)index + 0.5f);
+        s.cy = 0.0f;
+        s.maxHalfW = cell * 0.5f * gapFrac;
+        s.maxHalfH = 0.9f;
+    } else {
+        const float span = 2.0f * spanFrac;
+        const float cell = span / (float)count;
+        s.cx = 0.0f;
+        s.cy = span * 0.5f - cell * ((float)index + 0.5f);
+        s.maxHalfW = aspect * 0.92f;
+        s.maxHalfH = cell * 0.5f * gapFrac;
+    }
+    return s;
+}
+
+/// Half size of an item at rest: the longer side is `size` (the Logo panel's Size slider),
+/// then the item shrinks if needed to stay inside its slot. Aspect is the image's width/height.
+struct ItemExtent {
+    float halfW = 0, halfH = 0;
+};
+
+inline ItemExtent itemExtent(float imageAspect, float size, const ItemSlot& slot) {
+    if (!(imageAspect > 0.0f)) imageAspect = 1.0f;
+    ItemExtent e;
+    e.halfH = imageAspect >= 1.0f ? size / imageAspect : size;
+    e.halfW = e.halfH * imageAspect;
+    float fit = 1.0f;
+    if (e.halfW > slot.maxHalfW) fit = slot.maxHalfW / e.halfW;
+    if (e.halfH * fit > slot.maxHalfH) fit = slot.maxHalfH / e.halfH;
+    e.halfW *= fit;
+    e.halfH *= fit;
+    return e;
+}
+
+/// Each item reacts to the same beat, with small differences so they don't move like clones:
+/// a short delay before the kick lands, which way it slides and tips first, a phase offset for
+/// the slow drift, and a slightly different strength. Item 0 is exactly the single-logo motion.
+struct MotionVariant {
+    float delay = 0;     // seconds
+    float side = 1;      // first slide / wobble direction
+    float phase = 0;     // radians added to the slow drift
+    float amount = 1;    // multiplies the beat impulses
+};
+
+inline MotionVariant motionVariant(int index) {
+    static const MotionVariant v[kMaxOverlayItems] = {
+        {0.0f, 1.0f, 0.0f, 1.0f},
+        {0.045f, -1.0f, 1.7f, 0.92f},
+        {0.020f, 1.0f, 3.1f, 1.06f},
+        {0.065f, -1.0f, 4.6f, 0.96f},
+    };
+    if (index < 0) index = 0;
+    return v[index % kMaxOverlayItems];
+}
+
+/// Text item colors (0xRRGGBB) and their names, in the order the color buttons show them.
+inline constexpr int kTextColorCount = 6;
+inline std::uint32_t textColorRGB(int index) {
+    static const std::uint32_t c[kTextColorCount] = {0xFFFFFF, 0xFF3EA5, 0x2EE6FF, 0xFFC83D, 0x9BFF3A, 0xA65CFF};
+    if (index < 0 || index >= kTextColorCount) index = 0;
+    return c[index];
+}
+inline const char* textColorName(int index) {
+    static const char* n[kTextColorCount] = {"White", "Pink", "Cyan", "Gold", "Lime", "Purple"};
+    if (index < 0 || index >= kTextColorCount) index = 0;
+    return n[index];
+}
+
+/// Text item fonts. Each platform maps these to fonts it has (Mac, Windows and Linux differ).
+inline constexpr int kTextFontCount = 4;
+inline const char* textFontName(int index) {
+    static const char* n[kTextFontCount] = {"Bold", "Heavy", "Serif", "Mono"};
+    if (index < 0 || index >= kTextFontCount) index = 0;
+    return n[index];
+}
+
+/// Turns white-on-black text coverage (one byte per pixel, rows top to bottom) into premultiplied
+/// RGBA in `rgb`, with a dark outline `outline` pixels wide so the text stays readable over bright
+/// visuals. The output is the same size as the input.
+inline std::vector<std::uint8_t> textCoverageToRGBA(const std::vector<std::uint8_t>& cov, int w, int h,
+                                                    std::uint32_t rgb, int outline) {
+    std::vector<std::uint8_t> out;
+    if (w <= 0 || h <= 0 || cov.size() < (size_t)w * (size_t)h) return out;
+    out.assign((size_t)w * h * 4, 0);
+    // Dilate the coverage (separable max filter) for the outline.
+    std::vector<std::uint8_t> tmp((size_t)w * h, 0), dil((size_t)w * h, 0);
+    if (outline < 0) outline = 0;
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            std::uint8_t m = 0;
+            const int x0 = x - outline < 0 ? 0 : x - outline, x1 = x + outline >= w ? w - 1 : x + outline;
+            for (int xx = x0; xx <= x1; ++xx) {
+                const std::uint8_t v = cov[(size_t)y * w + xx];
+                if (v > m) m = v;
+            }
+            tmp[(size_t)y * w + x] = m;
+        }
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            std::uint8_t m = 0;
+            const int y0 = y - outline < 0 ? 0 : y - outline, y1 = y + outline >= h ? h - 1 : y + outline;
+            for (int yy = y0; yy <= y1; ++yy) {
+                const std::uint8_t v = tmp[(size_t)yy * w + x];
+                if (v > m) m = v;
+            }
+            dil[(size_t)y * w + x] = m;
+        }
+    const unsigned r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+    for (size_t i = 0; i < (size_t)w * h; ++i) {
+        const unsigned fill = cov[i];
+        const unsigned edge = dil[i] * 3 / 4;                         // the outline is 75% black
+        const unsigned a = fill + edge * (255 - fill) / 255;          // fill over outline
+        out[i * 4 + 0] = (std::uint8_t)((r * fill + 127) / 255);
+        out[i * 4 + 1] = (std::uint8_t)((g * fill + 127) / 255);
+        out[i * 4 + 2] = (std::uint8_t)((b * fill + 127) / 255);
+        out[i * 4 + 3] = (std::uint8_t)(a > 255 ? 255 : a);
+    }
+    return out;
+}
+
+/// What a saved item is. Images point at a private copy in the app's data folder.
+struct OverlayItemInfo {
+    bool isText = false;
+    std::string file;   // UTF-8 path of the saved image (images only)
+    std::string name;   // what the menu shows: the original file name, or the text
+    std::string text;   // text items only
+    int font = 0;
+    int color = 0;
+};
+
+/// Text is stored on one settings line, so line breaks become spaces and it is trimmed and
+/// capped at 60 characters (counted in UTF-8 code points).
+inline std::string cleanItemText(const std::string& s) {
+    std::string t;
+    for (char c : s) t += (c == '\n' || c == '\r' || c == '\t') ? ' ' : c;
+    size_t a = t.find_first_not_of(' ');
+    if (a == std::string::npos) return std::string();
+    size_t b = t.find_last_not_of(' ');
+    t = t.substr(a, b - a + 1);
+    int points = 0;
+    for (size_t i = 0; i < t.size(); ++i) {
+        if (((unsigned char)t[i] & 0xC0) != 0x80) {
+            if (points == 60) { t.resize(i); break; }
+            ++points;
+        }
+    }
+    return t;
+}
+
+/// "item0.kind=text" style lines for the settings file.
+inline std::string serializeItems(const std::vector<OverlayItemInfo>& items) {
+    std::string out = "items=" + std::to_string(items.size() > (size_t)kMaxOverlayItems ? kMaxOverlayItems
+                                                                                       : (int)items.size()) + "\n";
+    for (size_t i = 0; i < items.size() && i < (size_t)kMaxOverlayItems; ++i) {
+        const OverlayItemInfo& it = items[i];
+        const std::string p = "item" + std::to_string(i) + ".";
+        out += p + "kind=" + (it.isText ? "text" : "image") + "\n";
+        if (it.isText) {
+            out += p + "text=" + cleanItemText(it.text) + "\n";
+            out += p + "font=" + std::to_string(it.font) + "\n";
+            out += p + "color=" + std::to_string(it.color) + "\n";
+        } else {
+            out += p + "file=" + it.file + "\n";
+            out += p + "name=" + it.name + "\n";
+        }
+    }
+    return out;
+}
+
+/// Reads items back from key/value pairs. `get(key, value)` returns false when the key is absent.
+/// Settings saved before items existed only have logoFile/logoName: that logo becomes item 0.
+template <typename Get>
+inline std::vector<OverlayItemInfo> parseItems(Get get) {
+    std::vector<OverlayItemInfo> items;
+    std::string v;
+    if (get("items", v)) {
+        int n = std::atoi(v.c_str());
+        if (n < 0) n = 0;
+        if (n > kMaxOverlayItems) n = kMaxOverlayItems;
+        for (int i = 0; i < n; ++i) {
+            const std::string p = "item" + std::to_string(i) + ".";
+            OverlayItemInfo it;
+            std::string kind;
+            get(p + "kind", kind);
+            it.isText = kind == "text";
+            if (it.isText) {
+                get(p + "text", it.text);
+                it.text = cleanItemText(it.text);
+                std::string f, c;
+                if (get(p + "font", f)) it.font = std::atoi(f.c_str());
+                if (get(p + "color", c)) it.color = std::atoi(c.c_str());
+                if (it.font < 0 || it.font >= kTextFontCount) it.font = 0;
+                if (it.color < 0 || it.color >= kTextColorCount) it.color = 0;
+                if (it.text.empty()) continue;
+                it.name = it.text;
+            } else {
+                get(p + "file", it.file);
+                get(p + "name", it.name);
+                if (it.file.empty()) continue;
+            }
+            items.push_back(it);
+        }
+        return items;
+    }
+    std::string file;
+    if (get("logoFile", file) && !file.empty()) {
+        OverlayItemInfo it;
+        it.file = file;
+        get("logoName", it.name);
+        items.push_back(it);
+    }
+    return items;
+}

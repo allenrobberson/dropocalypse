@@ -2,7 +2,9 @@
 
 #include <cmath>
 #include <cstdio>
+#include <map>
 #include <string>
+#include <vector>
 
 static int gFailures = 0;
 
@@ -247,6 +249,146 @@ static void testSignaturePolicy() {
     CHECK(updateSignatureRefusal(blankRunning) != nullptr);
 }
 
+
+static void testOverlayLayout() {
+    // One item: centered, the whole frame to itself.
+    ItemSlot one = itemSlot(0, 1, 16.0f / 9.0f);
+    CHECK(near(one.cx, 0) && near(one.cy, 0));
+    // Landscape: a row, left to right, evenly spaced and symmetric.
+    const float a = 16.0f / 9.0f;
+    ItemSlot l0 = itemSlot(0, 2, a), l1 = itemSlot(1, 2, a);
+    CHECK(l0.cx < 0 && l1.cx > 0 && near(l0.cx, -l1.cx) && near(l0.cy, 0) && near(l1.cy, 0));
+    for (int n = 2; n <= 4; ++n) {
+        for (int i = 0; i + 1 < n; ++i) {
+            ItemSlot s = itemSlot(i, n, a), t = itemSlot(i + 1, n, a);
+            CHECK(t.cx > s.cx);
+            CHECK(s.cx + s.maxHalfW <= t.cx - t.maxHalfW + 1e-4f);   // no overlap at rest
+        }
+        ItemSlot first = itemSlot(0, n, a), last = itemSlot(n - 1, n, a);
+        CHECK(first.cx - first.maxHalfW >= -a);                      // inside the frame
+        CHECK(last.cx + last.maxHalfW <= a);
+    }
+    // Portrait: a column, top to bottom.
+    const float p = 9.0f / 16.0f;
+    for (int n = 2; n <= 4; ++n) {
+        for (int i = 0; i + 1 < n; ++i) {
+            ItemSlot s = itemSlot(i, n, p), t = itemSlot(i + 1, n, p);
+            CHECK(near(s.cx, 0) && s.cy > t.cy);
+            CHECK(s.cy - s.maxHalfH >= t.cy + t.maxHalfH - 1e-4f);
+        }
+        CHECK(itemSlot(0, n, p).cy + itemSlot(0, n, p).maxHalfH <= 1.0f);
+    }
+    // Out-of-range input is clamped, not trusted.
+    ItemSlot c = itemSlot(9, 9, a);
+    CHECK(near(c.cx, itemSlot(3, 4, a).cx));
+    // Extents: Size controls the longer side, then the slot caps it.
+    ItemExtent e1 = itemExtent(2.0f, 0.32f, one);
+    CHECK(near(e1.halfW, 0.32f) && near(e1.halfH, 0.16f));
+    ItemExtent e4 = itemExtent(4.0f, 0.8f, itemSlot(0, 4, a));
+    CHECK(e4.halfW <= itemSlot(0, 4, a).maxHalfW + 1e-5f);
+    CHECK(near(e4.halfW / e4.halfH, 4.0f));                          // keeps its shape
+    ItemExtent tall = itemExtent(0.5f, 0.8f, itemSlot(0, 3, p));
+    CHECK(tall.halfH <= itemSlot(0, 3, p).maxHalfH + 1e-5f && near(tall.halfW / tall.halfH, 0.5f));
+}
+
+static void testOverlayMotionAndText() {
+    MotionVariant v0 = motionVariant(0);
+    CHECK(near(v0.delay, 0) && near(v0.side, 1) && near(v0.phase, 0) && near(v0.amount, 1));
+    for (int i = 1; i < kMaxOverlayItems; ++i) {
+        MotionVariant v = motionVariant(i);
+        CHECK(v.delay >= 0 && v.delay <= 0.08f);      // small offsets: still on the beat
+        CHECK(v.amount > 0.85f && v.amount < 1.15f);
+    }
+    CHECK(motionVariant(1).side != motionVariant(0).side);
+    CHECK(textColorRGB(0) == 0xFFFFFF && textColorRGB(99) == 0xFFFFFF);
+    CHECK(std::string(textFontName(3)) == "Mono");
+
+    // Coverage -> premultiplied color with a dark outline around it.
+    const int w = 9, h = 5;
+    std::vector<std::uint8_t> cov(w * h, 0);
+    cov[2 * w + 4] = 255;
+    std::vector<std::uint8_t> px = textCoverageToRGBA(cov, w, h, 0xFF3EA5, 2);
+    CHECK(px.size() == (size_t)w * h * 4);
+    const std::uint8_t* c = &px[(2 * w + 4) * 4];
+    CHECK(c[0] == 0xFF && c[1] == 0x3E && c[2] == 0xA5 && c[3] == 255);
+    const std::uint8_t* o = &px[(2 * w + 6) * 4];                  // 2 px away: outline only
+    CHECK(o[0] == 0 && o[1] == 0 && o[2] == 0 && o[3] > 150);
+    const std::uint8_t* far = &px[(2 * w + 8) * 4];                // 4 px away: transparent
+    CHECK(far[3] == 0);
+
+    CHECK(cleanItemText("  DJ\nNight\t ") == "DJ Night");
+    CHECK(cleanItemText("   ").empty());
+    CHECK(cleanItemText(std::string(80, 'x')).size() == 60);
+    CHECK(cleanItemText(std::string(70, 'x') + "\xC3\xA9").size() == 60);   // counts code points
+}
+
+static void testOverlaySettings() {
+    std::vector<OverlayItemInfo> items(2);
+    items[0].file = "C:\\Users\\a\\AppData\\Roaming\\Dropocalypse\\logo-1.png";
+    items[0].name = "band.png";
+    items[1].isText = true;
+    items[1].text = "Friday = Bass\nNight";
+    items[1].font = 2;
+    items[1].color = 3;
+    const std::string text = serializeItems(items);
+    std::map<std::string, std::string> kv;
+    size_t i = 0;
+    while (i < text.size()) {
+        size_t j = text.find('\n', i);
+        std::string line = text.substr(i, j - i);
+        size_t eq = line.find('=');
+        kv[line.substr(0, eq)] = line.substr(eq + 1);
+        i = j + 1;
+    }
+    auto get = [&](const std::string& k, std::string& v) {
+        auto it = kv.find(k);
+        if (it == kv.end()) return false;
+        v = it->second;
+        return true;
+    };
+    std::vector<OverlayItemInfo> back = parseItems(get);
+    CHECK(back.size() == 2);
+    CHECK(!back[0].isText && back[0].file == items[0].file && back[0].name == "band.png");
+    CHECK(back[1].isText && back[1].text == "Friday = Bass Night" && back[1].font == 2 && back[1].color == 3);
+    CHECK(back[1].name == back[1].text);
+
+    // Older settings: a single logo becomes item 0. No logo means no items.
+    std::map<std::string, std::string> old = {{"logoFile", "/home/a/.config/dropocalypse/logo.png"},
+                                              {"logoName", "mine.png"}};
+    auto getOld = [&](const std::string& k, std::string& v) {
+        auto it = old.find(k);
+        if (it == old.end()) return false;
+        v = it->second;
+        return true;
+    };
+    std::vector<OverlayItemInfo> migrated = parseItems(getOld);
+    CHECK(migrated.size() == 1 && !migrated[0].isText && migrated[0].name == "mine.png");
+    std::map<std::string, std::string> none;
+    auto getNone = [&](const std::string& k, std::string& v) {
+        auto it = none.find(k);
+        if (it == none.end()) return false;
+        v = it->second;
+        return true;
+    };
+    CHECK(parseItems(getNone).empty());
+    // An explicit empty list wins over an old logoFile key.
+    old["items"] = "0";
+    CHECK(parseItems(getOld).empty());
+    // Bad values are clamped or dropped.
+    std::map<std::string, std::string> bad = {{"items", "9"}, {"item0.kind", "text"}, {"item0.text", "Hi"},
+                                              {"item0.font", "42"}, {"item0.color", "-3"},
+                                              {"item1.kind", "image"}, {"item1.file", ""},
+                                              {"item2.kind", "text"}, {"item2.text", "  "}};
+    auto getBad = [&](const std::string& k, std::string& v) {
+        auto it = bad.find(k);
+        if (it == bad.end()) return false;
+        v = it->second;
+        return true;
+    };
+    std::vector<OverlayItemInfo> cleaned = parseItems(getBad);
+    CHECK(cleaned.size() == 1 && cleaned[0].font == 0 && cleaned[0].color == 0);
+}
+
 int main() {
     testVersions();
     testChecksums();
@@ -256,6 +398,9 @@ int main() {
     testWindowsUpdateHandoff();
     testGpuSignalAndPacing();
     testSignaturePolicy();
+    testOverlayLayout();
+    testOverlayMotionAndText();
+    testOverlaySettings();
     if (gFailures) {
         std::fprintf(stderr, "%d check(s) failed\n", gFailures);
         return 1;

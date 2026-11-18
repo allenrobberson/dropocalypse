@@ -78,7 +78,8 @@ static void onCursorEnter(GLFWwindow* w, int entered) {
     withContextOf(w, [&] { ImGui_ImplGlfw_CursorEnterCallback(w, entered); });
 }
 static void onDrop(GLFWwindow*, int count, const char** paths) {
-    if (count > 0 && paths[0]) g.pendingDrop = paths[0];
+    for (int i = 0; i < count && i < kMaxOverlayItems; ++i)
+        if (paths[i]) g.pendingDrop.push_back(paths[i]);
 }
 /// Layout scale and font raster scale for a window. On X11 window units are pixels, so the layout
 /// follows the desktop scale; on Wayland window units are already scaled, so the layout stays 1x
@@ -324,12 +325,7 @@ int main(int argc, char** argv) {
     ImGui_ImplOpenGL3_Init("#version 330 core");
     installCallbacks(g.window);
 
-    if (!g.settings.logoFile.empty()) {
-        LogoImage img;
-        std::wstring err;
-        if (loadLogoImage(g.settings.logoFile, img, err)) g.renderer.setLogo(img);
-        else { g.settings.logoFile.clear(); g.settings.logoName.clear(); }
-    }
+    loadItems();
 
     g.sources = AudioCapture::listSources();
     startAudio();
@@ -356,9 +352,9 @@ int main(int argc, char** argv) {
 
         pollDialog();
         if (!g.pendingDrop.empty()) {
-            std::string p = g.pendingDrop;
-            g.pendingDrop.clear();
-            loadLogoFrom(widen(p));
+            std::vector<std::string> dropped;
+            dropped.swap(g.pendingDrop);
+            for (const std::string& p : dropped) loadLogoFrom(widen(p));
         }
         if (g.wantDetach >= 0) {
             int want = g.wantDetach;
@@ -430,8 +426,8 @@ int main(int argc, char** argv) {
         if (selfTest && ++frameCount == 180) {
             GLenum err = glGetError();
             if (!selfTestShot.empty()) savePpm(selfTestShot, g.width, g.height);
-            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s\n", frameCount, g.width, g.height,
-                        (unsigned)err, g.renderer.sceneName());
+            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d\n", frameCount, g.width,
+                        g.height, (unsigned)err, g.renderer.sceneName(), (int)g.settings.items.size());
             exitCode = err == GL_NO_ERROR ? 0 : 2;
             running = false;
         }

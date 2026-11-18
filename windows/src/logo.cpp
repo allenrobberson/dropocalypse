@@ -142,3 +142,79 @@ LogoImage placeholderLogo() {
     DeleteDC(dc);
     return out;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Text items
+// ---------------------------------------------------------------------------------------------
+
+LogoImage renderTextLogo(const std::string& utf8Text, int font, int color) {
+    LogoImage out;
+    std::string clean = cleanItemText(utf8Text);
+    if (clean.empty()) return out;
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, clean.c_str(), (int)clean.size(), nullptr, 0);
+    if (wlen <= 0) return out;
+    std::wstring text((size_t)wlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, clean.c_str(), (int)clean.size(), &text[0], wlen);
+
+    struct Face { const wchar_t* name; int weight; };
+    static const Face faces[kTextFontCount] = {
+        {L"Segoe UI", FW_BOLD}, {L"Segoe UI Black", FW_BLACK}, {L"Georgia", FW_BOLD}, {L"Consolas", FW_BOLD}};
+    const Face& face = faces[(font >= 0 && font < kTextFontCount) ? font : 0];
+
+    HDC dc = CreateCompatibleDC(nullptr);
+    if (!dc) return out;
+    int pixelHeight = 200;
+    HFONT hfont = nullptr;
+    SIZE size{};
+    for (int attempt = 0; attempt < 6; ++attempt) {   // shrink very long text so it stays under 2400 px
+        if (hfont) DeleteObject(hfont);
+        hfont = CreateFontW(-pixelHeight, 0, 0, 0, face.weight, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                            OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, face.name);
+        SelectObject(dc, hfont);
+        RECT r{0, 0, 0, 0};
+        DrawTextW(dc, text.c_str(), (int)text.size(), &r, DT_CALCRECT | DT_SINGLELINE | DT_NOPREFIX);
+        size.cx = r.right - r.left;
+        size.cy = r.bottom - r.top;
+        if (size.cx <= 2400 || pixelHeight <= 60) break;
+        pixelHeight = std::max(60, pixelHeight * 2400 / std::max<LONG>(1, size.cx));
+    }
+    const int outline = std::max(4, pixelHeight / 18);
+    const int margin = outline + 4;
+    const int w = std::max<LONG>(1, size.cx) + margin * 2, h = std::max<LONG>(1, size.cy) + margin * 2;
+
+    BITMAPINFO bi{};
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = -h; // top-down
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    void* bits = nullptr;
+    HBITMAP bmp = CreateDIBSection(dc, &bi, DIB_RGB_COLORS, &bits, nullptr, 0);
+    if (!bmp || !bits) {
+        if (bmp) DeleteObject(bmp);
+        DeleteObject(hfont);
+        DeleteDC(dc);
+        return out;
+    }
+    HGDIOBJ oldBmp = SelectObject(dc, bmp);
+    SelectObject(dc, hfont);
+    std::memset(bits, 0, (size_t)w * h * 4);
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, 0x00FFFFFF);
+    RECT r{margin, margin, w - margin, h - margin};
+    DrawTextW(dc, text.c_str(), (int)text.size(), &r, DT_SINGLELINE | DT_NOPREFIX | DT_LEFT | DT_TOP);
+    GdiFlush();
+
+    std::vector<uint8_t> cov((size_t)w * h);
+    const uint8_t* src = static_cast<const uint8_t*>(bits);
+    for (size_t i = 0; i < cov.size(); ++i) cov[i] = std::max({src[i * 4 + 0], src[i * 4 + 1], src[i * 4 + 2]});
+    SelectObject(dc, oldBmp);
+    DeleteObject(bmp);
+    DeleteObject(hfont);
+    DeleteDC(dc);
+
+    std::vector<uint8_t> px = textCoverageToRGBA(cov, w, h, textColorRGB(color), outline);
+    if (px.empty()) return out;
+    return trimAndPad(px, w, h);
+}

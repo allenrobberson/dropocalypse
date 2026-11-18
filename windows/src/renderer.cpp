@@ -157,30 +157,31 @@ void Spectrum::update(const AudioAnalysis& analysis, double sampleRate) {
 // Logo motion (same physics as the macOS version)
 // ---------------------------------------------------------------------------------------------
 
-LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const RenderSettings& s) {
+LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const RenderSettings& s,
+                            const MotionVariant& variant) {
     float dt = std::min(std::max(rawDt, 0.0f), 1.0f / 20.0f);
     time_ += dt;
     float bass = std::min(audio.bass, 1.4f);
+    if (!started_) {
+        started_ = true;
+        side_ = variant.side;
+    }
 
     if (audio.beatCount != lastBeat_) {
         bool fresh = lastBeat_ != 0;
         lastBeat_ = audio.beatCount;
         if (fresh) {
-            float st = audio.beatStrength;
-            side_ = -side_;
-            // Snap on the hit: part of every kick moves the logo this frame (direct displacement),
-            // the rest goes into the spring's velocity for the follow-through.
-            squash_.x += s.squash * 0.22f * st;
-            squash_.v += s.squash * 3.5f * st;
-            if (bounceY_ < 0.05f) {
-                bounceY_ += s.bounce * 0.05f * st;
-                bounceV_ += s.bounce * 1.7f * st;
-            }
-            slide_.x += s.slide * 0.09f * st * side_;
-            slide_.v += s.slide * 1.1f * st * side_;
-            wobble_.x += s.wobble * 0.22f * st * side_;
-            wobble_.v += s.wobble * 2.2f * st * side_;
+            // A kick still waiting from the last beat lands now, so none are lost.
+            if (pending_) kick(pendingStrength_, s);
+            pending_ = true;
+            pendingStrength_ = audio.beatStrength * variant.amount;
+            pendingAt_ = time_ + variant.delay;
         }
+    }
+    // Item 0 has no delay, so its kick lands on the same frame as the beat.
+    if (pending_ && time_ >= pendingAt_) {
+        pending_ = false;
+        kick(pendingStrength_, s);
     }
 
     const int steps = 4;
@@ -206,9 +207,25 @@ LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const Rende
     pose.scaleX = pulse * (1 + sq) * (1 - stretch * 0.5f);
     pose.scaleY = pulse * (1 - sq * 0.85f) * (1 + stretch);
     pose.y = bounceY_ * 0.55f;
-    pose.x = slide_.x * 0.5f + std::sin(time_ * 0.45f) * 0.04f * s.slide;
-    pose.rotation = wobble_.x * 0.35f + std::sin(time_ * 0.3f) * 0.02f * s.wobble;
+    pose.x = slide_.x * 0.5f + std::sin(time_ * 0.45f + variant.phase) * 0.04f * s.slide;
+    pose.rotation = wobble_.x * 0.35f + std::sin(time_ * 0.3f + variant.phase) * 0.02f * s.wobble;
     return pose;
+}
+
+void LogoMotion::kick(float st, const RenderSettings& s) {
+    side_ = -side_;
+    // Snap on the hit: part of every kick moves the logo this frame (direct displacement),
+    // the rest goes into the spring's velocity for the follow-through.
+    squash_.x += s.squash * 0.22f * st;
+    squash_.v += s.squash * 3.5f * st;
+    if (bounceY_ < 0.05f) {
+        bounceY_ += s.bounce * 0.05f * st;
+        bounceV_ += s.bounce * 1.7f * st;
+    }
+    slide_.x += s.slide * 0.09f * st * side_;
+    slide_.v += s.slide * 1.1f * st * side_;
+    wobble_.x += s.wobble * 0.22f * st * side_;
+    wobble_.v += s.wobble * 2.2f * st * side_;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1137,31 +1154,44 @@ bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring
     qpcLast_ = qpcStart_;
 
     current_ = previous_ = builtInScenes()[0];
-    setLogo(placeholderLogo());
+    setItems({});
     return true;
 }
 
-void Renderer::setLogo(const LogoImage& img) {
-    if (img.width <= 0 || img.height <= 0 || !device_) return;
-    D3D11_TEXTURE2D_DESC d{};
-    d.Width = img.width;
-    d.Height = img.height;
-    d.MipLevels = 0; // full chain
-    d.ArraySize = 1;
-    d.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    d.SampleDesc.Count = 1;
-    d.Usage = D3D11_USAGE_DEFAULT;
-    d.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-    d.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-    ComPtr<ID3D11Texture2D> tex;
-    if (FAILED(device_->CreateTexture2D(&d, nullptr, &tex))) return;
-    ctx_->UpdateSubresource(tex.Get(), 0, nullptr, img.rgba.data(), img.width * 4, 0);
-    ComPtr<ID3D11ShaderResourceView> srv;
-    if (FAILED(device_->CreateShaderResourceView(tex.Get(), nullptr, &srv))) return;
-    ctx_->GenerateMips(srv.Get());
-    logoTex_ = tex;
-    logoSRV_ = srv;
-    logoAspect_ = (float)img.width / (float)img.height;
+void Renderer::setItems(const std::vector<LogoImage>& images) {
+    if (!device_) return;
+    std::vector<LogoImage> list;
+    for (const LogoImage& img : images)
+        if (img.width > 0 && img.height > 0 && (int)list.size() < kMaxOverlayItems) list.push_back(img);
+    if (list.empty()) list.push_back(placeholderLogo());
+    int count = 0;
+    for (const LogoImage& img : list) {
+        D3D11_TEXTURE2D_DESC d{};
+        d.Width = img.width;
+        d.Height = img.height;
+        d.MipLevels = 0; // full chain
+        d.ArraySize = 1;
+        d.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        d.SampleDesc.Count = 1;
+        d.Usage = D3D11_USAGE_DEFAULT;
+        d.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        d.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+        ComPtr<ID3D11Texture2D> tex;
+        if (FAILED(device_->CreateTexture2D(&d, nullptr, &tex))) continue;
+        ctx_->UpdateSubresource(tex.Get(), 0, nullptr, img.rgba.data(), img.width * 4, 0);
+        ComPtr<ID3D11ShaderResourceView> srv;
+        if (FAILED(device_->CreateShaderResourceView(tex.Get(), nullptr, &srv))) continue;
+        ctx_->GenerateMips(srv.Get());
+        logoTex_[count] = tex;
+        logoSRV_[count] = srv;
+        logoAspect_[count] = (float)img.width / (float)img.height;
+        ++count;
+    }
+    for (int i = count; i < kMaxOverlayItems; ++i) {
+        logoTex_[i].Reset();
+        logoSRV_[i].Reset();
+    }
+    itemCount_ = count;
 }
 
 void Renderer::ensureFeedback(int width, int height) {
@@ -1445,19 +1475,25 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ctx_->Draw(3, 0);
     ctx_->PSSetShaderResources(0, 1, nullSRV);
 
-    // ---- Logo pose ----
-    LogoPose pose = motion_.update(dt, audio, st);
+    // ---- Logo and text item poses: a row in landscape, a column in portrait ----
     Rgb col = hsv(scene.baseHue + t * scene.hueSpeed + 0.5f, 0.8f, 1);
-    LogoCB lu{};
-    float baseH = logoAspect_ >= 1 ? st.logoSize / logoAspect_ : st.logoSize;
-    float baseW = baseH * logoAspect_;
-    lu.hx = baseW * pose.scaleX;
-    lu.hy = baseH * pose.scaleY;
-    lu.cx = pose.x;
-    lu.cy = pose.y - 0.08f * st.bounce;
-    lu.rotation = pose.rotation;
-    lu.aspect = aspect;
-    lu.r = col.r; lu.g = col.g; lu.b = col.b;
+    const int items = std::max(1, itemCount_);
+    LogoCB lus[kMaxOverlayItems]{};
+    float firstRadius = 0;
+    for (int i = 0; i < items; ++i) {
+        ItemSlot slot = itemSlot(i, items, aspect);
+        ItemExtent ext = itemExtent(logoAspect_[i], st.logoSize, slot);
+        LogoPose pose = motion_[i].update(dt, audio, st, motionVariant(i));
+        LogoCB& lu = lus[i];
+        lu.hx = ext.halfW * pose.scaleX;
+        lu.hy = ext.halfH * pose.scaleY;
+        lu.cx = slot.cx + pose.x;
+        lu.cy = slot.cy + pose.y - 0.08f * st.bounce;
+        lu.rotation = pose.rotation;
+        lu.aspect = aspect;
+        lu.r = col.r; lu.g = col.g; lu.b = col.b;
+        if (i == 0) firstRadius = std::max(ext.halfW, ext.halfH) * 0.9f;
+    }
 
     // ---- Pass 2: shapes (solid "over" shapes first, then glowing additive ones) ----
     D3D11_MAPPED_SUBRESOURCE mapped;
@@ -1466,8 +1502,9 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         GeomVertex* verts = (GeomVertex*)mapped.pData;
         GeometryBuilder g{verts, AdditiveCapacity, aspect};
         GeometryBuilder over{verts + AdditiveCapacity, MaxVertices - AdditiveCapacity, aspect};
-        float logoRadius = st.showLogo ? std::max(baseW, baseH) * 0.9f : 0.0f;
-        drawWave(scene, audio, spectrum_, t, dt, V2{lu.cx, lu.cy}, logoRadius, *fx_, g, over);
+        // Styles built around the logo (Bass Ring, Particle Storm, Lightning) follow the first item.
+        float logoRadius = st.showLogo ? firstRadius : 0.0f;
+        drawWave(scene, audio, spectrum_, t, dt, V2{lus[0].cx, lus[0].cy}, logoRadius, *fx_, g, over);
         additiveCount = g.count;
         overCount = over.count;
         ctx_->Unmap(vertexBuffer_.Get(), 0);
@@ -1491,7 +1528,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     drawGpuSignal(scene, audio, t, aspect);
 
     ID3D11Buffer* cb2 = logoCB_.Get();
-    ID3D11ShaderResourceView* logoSRV = logoSRV_.Get();
+    ID3D11ShaderResourceView* logoSRV = nullptr;
     auto drawLogo = [&](const LogoCB& data, ID3D11BlendState* blend) {
         updateCB(ctx_, logoCB_.Get(), data);
         ctx_->IASetInputLayout(nullptr);
@@ -1506,11 +1543,15 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     };
 
-    if (st.showLogo && st.logoTrails && logoSRV) {
-        LogoCB tu = lu;
-        tu.opacity = 0.18f;
-        tu.tintAmount = 0.6f;
-        drawLogo(tu, blendPremul_.Get());
+    if (st.showLogo && st.logoTrails) {
+        for (int i = 0; i < items; ++i) {
+            logoSRV = logoSRV_[i].Get();
+            if (!logoSRV) continue;
+            LogoCB tu = lus[i];
+            tu.opacity = 0.18f;
+            tu.tintAmount = 0.6f;
+            drawLogo(tu, blendPremul_.Get());
+        }
     }
 
     // ---- Pass 3: composite to the screen. Portrait is a centered 9:16 viewport; bars stay black. ----
@@ -1532,7 +1573,10 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ctx_->PSSetShaderResources(0, 1, &dstSRV);
     ctx_->Draw(3, 0);
 
-    if (st.showLogo && logoSRV) {
+    for (int i = 0; st.showLogo && i < items; ++i) {
+        logoSRV = logoSRV_[i].Get();
+        if (!logoSRV) continue;
+        LogoCB& lu = lus[i];
         if (st.glow > 0.01f) {
             LogoCB gu = lu;
             gu.hx *= 1.18f;

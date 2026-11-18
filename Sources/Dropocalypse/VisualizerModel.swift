@@ -1,4 +1,5 @@
 import AppKit
+import DropocalypseCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -35,19 +36,33 @@ final class VisualizerModel: NSObject, ObservableObject {
     static let revealZone: CGFloat = 90          // points from the top edge that reveal the bar
     @Published var currentSceneName = VisualScene.builtIn[0].name
     @Published var errorMessage: String?
-    @Published private(set) var hasCustomLogo = false
-    @Published private(set) var logoName: String?
+    /// Logos and text items, left to right (top to bottom in portrait). Up to OverlayLayout.maxItems.
+    @Published private(set) var items: [OverlayItem] = []
+    /// The next image chosen in the file panel replaces this item instead of being added.
+    private var pendingReplace: UUID?
+    private var imageCache: [UUID: NSImage] = [:]
+
+    var hasCustomLogo: Bool { !items.isEmpty }
+    var canAddItem: Bool { items.count < OverlayLayout.maxItems }
+
+    /// The toolbar's Logo menu label.
+    var logoMenuTitle: String {
+        switch items.count {
+        case 0: return "Add Logo"
+        case 1: return items[0].isText ? "Text: \(items[0].name)" : items[0].name
+        default: return "Logos (\(items.count))"
+        }
+    }
 
     weak var renderer: Renderer? {
-        didSet { renderer?.setLogo(savedLogo()) }
+        didSet { pushItems() }
     }
 
     private var keyMonitor: Any?
 
     override init() {
         super.init()
-        hasCustomLogo = FileManager.default.fileExists(atPath: Self.savedLogoURL.path)
-        logoName = UserDefaults.standard.string(forKey: "logoName")
+        items = Self.loadSavedItems()
         installKeyMonitor()
         startHideTimer()
         updates.presentPanel = { [weak self] in
@@ -414,22 +429,72 @@ final class VisualizerModel: NSObject, ObservableObject {
     }
 
     static var savedLogoURL: URL { supportDirectory.appendingPathComponent("logo.png") }
+    static var itemsURL: URL { supportDirectory.appendingPathComponent("items.json") }
 
-    private func savedLogo() -> NSImage? {
-        guard hasCustomLogo else { return nil }
-        return NSImage(contentsOf: Self.savedLogoURL)
+    /// Saved items. The first time 1.3 runs, a logo saved by an earlier version becomes item 1.
+    private static func loadSavedItems() -> [OverlayItem] {
+        let fm = FileManager.default
+        if let data = try? Data(contentsOf: itemsURL),
+           let saved = try? JSONDecoder().decode([OverlayItem].self, from: data) {
+            return Array(saved.filter { item in
+                item.isText ? !OverlayLayout.cleanText(item.text).isEmpty
+                            : fm.fileExists(atPath: supportDirectory.appendingPathComponent(item.file).path)
+            }.prefix(OverlayLayout.maxItems))
+        }
+        if fm.fileExists(atPath: savedLogoURL.path) {
+            let name = UserDefaults.standard.string(forKey: "logoName") ?? "Your logo"
+            return [OverlayItem(image: "logo.png", name: name)]
+        }
+        return []
     }
 
+    private func saveItems() {
+        if let data = try? JSONEncoder().encode(items) {
+            try? data.write(to: Self.itemsURL, options: .atomic)
+        }
+    }
+
+    private func image(for item: OverlayItem) -> NSImage? {
+        if let cached = imageCache[item.id] { return cached }
+        let image = NSImage(contentsOf: Self.supportDirectory.appendingPathComponent(item.file))
+        imageCache[item.id] = image
+        return image
+    }
+
+    /// Sends the current items to the renderer and saves them.
+    private func pushItems() {
+        let sources: [Renderer.ItemSource] = items.compactMap { (item: OverlayItem) -> Renderer.ItemSource? in
+            if item.isText {
+                return Renderer.ItemSource.text(OverlayLayout.cleanText(item.text), font: item.font, color: item.color)
+            }
+            guard let picture = self.image(for: item) else { return nil }
+            return Renderer.ItemSource.image(key: item.file, picture)
+        }
+        renderer?.setItems(sources)
+        saveItems()
+    }
+
+    /// Adds a logo (or, after Replace…, swaps one). L, ⌘O and the Logo menu all come here.
     func chooseLogo() {
+        guard canAddItem || pendingReplace != nil else {
+            errorMessage = "That's the most: \(OverlayLayout.maxItems) logos or text items at once. Remove one to add another."
+            return
+        }
         let panel = NSOpenPanel()
-        panel.title = "Choose your logo"
+        panel.title = pendingReplace == nil ? "Add a logo" : "Choose a logo to replace this one"
         panel.message = "PNG with a transparent background works best."
         panel.allowedContentTypes = [.png, .jpeg, .tiff, .heic, .gif, .bmp, .pdf, .svg, .image]
-        panel.allowsMultipleSelection = false
+        panel.allowsMultipleSelection = pendingReplace == nil
         panel.canChooseDirectories = false
-        if panel.runModal() == .OK, let url = panel.url {
-            loadLogo(from: url)
+        if panel.runModal() == .OK {
+            for url in panel.urls { loadLogo(from: url) }
         }
+        pendingReplace = nil
+    }
+
+    func replaceItem(_ id: UUID) {
+        pendingReplace = id
+        chooseLogo()
     }
 
     func loadLogo(from url: URL) {
@@ -440,32 +505,111 @@ final class VisualizerModel: NSObject, ObservableObject {
         setLogo(image, name: url.lastPathComponent)
     }
 
+    /// Adds an image as a new item (or replaces the one picked with Replace…). When all slots
+    /// are full, a new image replaces the last one.
     func setLogo(_ image: NSImage, name: String?) {
         // Save a PNG copy so the logo is still there next launch.
-        if let tiff = image.tiffRepresentation,
-           let rep = NSBitmapImageRep(data: tiff),
-           let png = rep.representation(using: .png, properties: [:]) {
-            try? png.write(to: Self.savedLogoURL)
+        let file = "logo-\(UUID().uuidString).png"
+        guard let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]),
+              (try? png.write(to: Self.supportDirectory.appendingPathComponent(file))) != nil else {
+            errorMessage = "Couldn't save a copy of that image."
+            return
         }
-        hasCustomLogo = true
-        logoName = name
-        UserDefaults.standard.set(name, forKey: "logoName")
-        renderer?.setLogo(image)
+        let item = OverlayItem(image: file, name: name ?? "Logo")
+        imageCache[item.id] = image
+        if let target = pendingReplace ?? (canAddItem ? nil : items.last?.id),
+           let index = items.firstIndex(where: { $0.id == target }) {
+            deleteFile(of: items[index])
+            items[index] = item
+            pendingReplace = nil
+        } else {
+            items.append(item)
+        }
         settings.showLogo = true
         errorMessage = nil
+        pushItems()
     }
 
+    func addTextItem() {
+        guard canAddItem else { return }
+        items.append(OverlayItem(text: "YOUR TEXT", font: 1, color: 0))
+        settings.showLogo = true
+        errorMessage = nil
+        pushItems()
+        // The words are typed in the Logo panel.
+        if !controlsDetached { openLogoPanel() }
+    }
+
+    func setText(_ id: UUID, _ text: String) {
+        guard let i = items.firstIndex(where: { $0.id == id }) else { return }
+        items[i].text = String(text.prefix(120))
+        let clean = OverlayLayout.cleanText(text)
+        if !clean.isEmpty {   // keep showing the last text until something is typed
+            items[i].name = clean
+            pushItems()
+        }
+    }
+
+    func setFont(_ id: UUID, _ font: Int) {
+        guard let i = items.firstIndex(where: { $0.id == id }) else { return }
+        items[i].font = font
+        pushItems()
+    }
+
+    func setColor(_ id: UUID, _ color: Int) {
+        guard let i = items.firstIndex(where: { $0.id == id }) else { return }
+        items[i].color = color
+        pushItems()
+    }
+
+    func moveItem(_ id: UUID, by delta: Int) {
+        guard let i = items.firstIndex(where: { $0.id == id }) else { return }
+        let j = i + delta
+        guard items.indices.contains(j) else { return }
+        items.swapAt(i, j)
+        pushItems()
+    }
+
+    func removeItem(_ id: UUID) {
+        guard let i = items.firstIndex(where: { $0.id == id }) else { return }
+        deleteFile(of: items[i])
+        imageCache[id] = nil
+        items.remove(at: i)
+        errorMessage = nil
+        pushItems()
+    }
+
+    /// Opens the Logo panel, where text items are typed and items are reordered.
+    func openLogoPanel() {
+        noteActivity(reveal: true)
+        openPopover = "logo"
+    }
+
+    /// Removes every logo and text item.
     func clearLogo() {
-        try? FileManager.default.removeItem(at: Self.savedLogoURL)
-        hasCustomLogo = false
-        logoName = nil
+        for item in items { deleteFile(of: item) }
+        items.removeAll()
+        imageCache.removeAll()
         UserDefaults.standard.removeObject(forKey: "logoName")
-        renderer?.setLogo(nil)
+        pushItems()
+    }
+
+    private func deleteFile(of item: OverlayItem) {
+        guard !item.isText, !item.file.isEmpty, !item.file.contains("/") else { return }
+        try? FileManager.default.removeItem(at: Self.supportDirectory.appendingPathComponent(item.file))
     }
 
     /// Handles files or images dragged onto the window.
     func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
+        guard !providers.isEmpty else { return false }
+        var handled = false
+        for provider in providers.prefix(OverlayLayout.maxItems) where handleDrop(provider) { handled = true }
+        return handled
+    }
+
+    private func handleDrop(_ provider: NSItemProvider) -> Bool {
         if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
             provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
                 var url: URL?
@@ -496,6 +640,8 @@ final class VisualizerModel: NSObject, ObservableObject {
                 self.noteActivity(reveal: true)
                 return event
             }
+            // Typing in a text field (a text item's words) is not a shortcut.
+            if event.window?.firstResponder is NSTextView { return event }
             // Leave shortcuts that use ⌘/⌃/⌥ to the menus.
             if !event.modifierFlags.intersection([.command, .control, .option]).isEmpty { return event }
             switch event.keyCode {

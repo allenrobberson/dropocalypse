@@ -56,8 +56,7 @@ struct AppSettings {
     std::string audioSource = "loop:"; // default: what the PC is playing
     float sensitivity = 1.0f;
     float beatThreshold = 1.35f;
-    std::wstring logoFile;
-    std::wstring logoName;
+    std::vector<OverlayItemInfo> items; // logos and text, left to right (top to bottom in portrait)
     bool checkForUpdates = true;      // ask GitHub for a newer version once a day
     long long lastUpdateCheck = 0;    // unix time of the last successful check
     std::string latestVersion;        // newest version GitHub reported
@@ -107,8 +106,7 @@ static std::string serialize(const AppSettings& s) {
     out += "frameCap=" + std::to_string(s.frameCap) + "\n";
     out += std::string("portrait=") + (s.r.portrait ? "1" : "0") + "\n";
     out += "recordFolder=" + narrow(s.recordFolder) + "\n";
-    out += "logoFile=" + narrow(s.logoFile) + "\n";
-    out += "logoName=" + narrow(s.logoName) + "\n";
+    out += serializeItems(s.items);
     return out;
 }
 
@@ -167,8 +165,12 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     }
     if (kv.count("portrait")) s.r.portrait = kv["portrait"] == "1";
     if (kv.count("recordFolder")) s.recordFolder = widen(kv["recordFolder"]);
-    if (kv.count("logoFile")) s.logoFile = widen(kv["logoFile"]);
-    if (kv.count("logoName")) s.logoName = widen(kv["logoName"]);
+    s.items = parseItems([&](const std::string& k, std::string& v) {
+        auto it = kv.find(k);
+        if (it == kv.end()) return false;
+        v = it->second;
+        return true;
+    });
 }
 
 static void writeFile(const std::wstring& path, const std::string& text) {
@@ -216,6 +218,8 @@ struct App {
     std::wstring dataDir, settingsPath;
     std::string lastSaved;
     std::wstring errorMessage;
+    std::vector<LogoImage> itemImages; // one per settings.items entry, as the renderer shows them
+    int pendingReplace = -1;           // the next chosen image replaces this item instead of adding one
 
     // Toolbar auto-hide.
     float dpi = 1.0f;
@@ -824,7 +828,60 @@ static std::wstring extensionOf(const std::wstring& path) {
     return p == std::wstring::npos ? L"" : name.substr(p);
 }
 
+static bool copyItemFile(const std::wstring& from, const std::wstring& to) {
+    return _wcsicmp(from.c_str(), to.c_str()) == 0 || CopyFileW(from.c_str(), to.c_str(), FALSE) != 0;
+}
+
+static void deleteItemFile(const std::wstring& path) { DeleteFileW(path.c_str()); }
+
+static std::wstring dataPath(const std::wstring& name) { return g.dataDir + L"\\" + name; }
+
+/// Only files Dropocalypse copied into its own data folder are ever deleted.
+static bool isOwnItemFile(const OverlayItemInfo& it) {
+    if (it.isText || it.file.empty()) return false;
+    std::wstring f = widen(it.file), dir = g.dataDir;
+    return f.size() > dir.size() && f.compare(0, dir.size(), dir) == 0;
+}
+
+static LogoImage imageForItem(const OverlayItemInfo& it, std::wstring* error = nullptr) {
+    LogoImage img;
+    if (it.isText) {
+        img = renderTextLogo(it.text, it.font, it.color);
+        if (img.width <= 0 && error) *error = L"Couldn't draw that text: no usable font was found.";
+        return img;
+    }
+    std::wstring err;
+    if (!loadLogoImage(widen(it.file), img, err) && error) *error = err;
+    return img;
+}
+
+/// Sends the current images to the renderer (an empty list shows the "YOUR LOGO" placeholder).
+static void applyItems() {
+    std::vector<LogoImage> list;
+    for (const LogoImage& img : g.itemImages)
+        if (img.width > 0) list.push_back(img);
+    g.renderer.setItems(list);
+}
+
+/// At launch: load every saved item. Items whose image file has gone missing are dropped.
+static void loadItems() {
+    std::vector<OverlayItemInfo> kept;
+    g.itemImages.clear();
+    for (const OverlayItemInfo& it : g.settings.items) {
+        LogoImage img = imageForItem(it);
+        if (img.width <= 0) continue;
+        kept.push_back(it);
+        g.itemImages.push_back(std::move(img));
+    }
+    g.settings.items = kept;
+    applyItems();
+}
+
+/// Adds an image as a new item, or replaces the item picked with Replace... When all four slots
+/// are full, a new image replaces the last one.
 static void loadLogoFrom(const std::wstring& path) {
+    int slot = g.pendingReplace;
+    g.pendingReplace = -1;
     LogoImage img;
     std::wstring err;
     if (!loadLogoImage(path, img, err)) {
@@ -832,27 +889,86 @@ static void loadLogoFrom(const std::wstring& path) {
         return;
     }
     // Keep a private copy so the logo survives the original being moved or deleted.
-    std::wstring dest = g.dataDir + L"\\logo" + extensionOf(path);
-    if (_wcsicmp(dest.c_str(), path.c_str()) != 0) {
-        if (!g.settings.logoFile.empty() && _wcsicmp(g.settings.logoFile.c_str(), dest.c_str()) != 0)
-            DeleteFileW(g.settings.logoFile.c_str());
-        CopyFileW(path.c_str(), dest.c_str(), FALSE);
+    static unsigned counter = 0;
+    std::wstring dest = dataPath(L"logo-" + std::to_wstring((long long)std::time(nullptr)) + L"-" +
+                                 std::to_wstring(++counter) + extensionOf(path));
+    if (!copyItemFile(path, dest)) dest = path;
+    OverlayItemInfo it;
+    it.file = narrow(dest);
+    it.name = narrow(fileNameOf(path));
+    int n = (int)g.settings.items.size();
+    if (slot < 0 || slot >= n) slot = n < kMaxOverlayItems ? n : n - 1;
+    if (slot < n) {
+        if (isOwnItemFile(g.settings.items[slot])) deleteItemFile(widen(g.settings.items[slot].file));
+        g.settings.items[slot] = it;
+        g.itemImages[slot] = std::move(img);
+    } else {
+        g.settings.items.push_back(it);
+        g.itemImages.push_back(std::move(img));
     }
-    g.renderer.setLogo(img);
-    g.settings.logoFile = dest;
-    g.settings.logoName = fileNameOf(path);
     g.settings.r.showLogo = true;
     g.errorMessage.clear();
+    applyItems();
+}
+
+static void addTextItem() {
+    if ((int)g.settings.items.size() >= kMaxOverlayItems) return;
+    OverlayItemInfo it;
+    it.isText = true;
+    it.text = it.name = "YOUR TEXT";
+    it.font = 1;
+    std::wstring err;
+    LogoImage img = imageForItem(it, &err);
+    if (img.width <= 0) {
+        g.errorMessage = err;
+        return;
+    }
+    g.settings.items.push_back(it);
+    g.itemImages.push_back(std::move(img));
+    g.settings.r.showLogo = true;
+    g.errorMessage.clear();
+    applyItems();
+}
+
+/// Redraws a text item after its text, font or color changed.
+static void refreshTextItem(int i) {
+    if (i < 0 || i >= (int)g.settings.items.size() || !g.settings.items[i].isText) return;
+    OverlayItemInfo& it = g.settings.items[i];
+    it.name = cleanItemText(it.text);
+    if (it.name.empty()) return;   // keep showing the last text until something is typed
+    LogoImage img = imageForItem(it);
+    if (img.width <= 0) return;
+    g.itemImages[i] = std::move(img);
+    applyItems();
+}
+
+static void removeItem(int i) {
+    if (i < 0 || i >= (int)g.settings.items.size()) return;
+    if (isOwnItemFile(g.settings.items[i])) deleteItemFile(widen(g.settings.items[i].file));
+    g.settings.items.erase(g.settings.items.begin() + i);
+    g.itemImages.erase(g.itemImages.begin() + i);
+    g.errorMessage.clear();
+    applyItems();
 }
 
 static void clearLogo() {
-    if (!g.settings.logoFile.empty()) DeleteFileW(g.settings.logoFile.c_str());
-    g.settings.logoFile.clear();
-    g.settings.logoName.clear();
-    g.renderer.setLogo(placeholderLogo());
+    while (!g.settings.items.empty()) removeItem((int)g.settings.items.size() - 1);
+}
+
+static void moveItem(int i, int delta) {
+    int j = i + delta;
+    int n = (int)g.settings.items.size();
+    if (i < 0 || i >= n || j < 0 || j >= n) return;
+    std::swap(g.settings.items[i], g.settings.items[j]);
+    std::swap(g.itemImages[i], g.itemImages[j]);
+    applyItems();
 }
 
 static void chooseLogo() {
+    if (g.pendingReplace < 0 && (int)g.settings.items.size() >= kMaxOverlayItems) {
+        g.errorMessage = L"That's the most: 4 logos or text items at once. Remove one to add another.";
+        return;
+    }
     ComPtr<IFileOpenDialog> dlg;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dlg)))) return;
     COMDLG_FILTERSPEC filters[] = {
@@ -860,15 +976,16 @@ static void chooseLogo() {
         {L"All files", L"*.*"},
     };
     dlg->SetFileTypes(2, filters);
-    dlg->SetTitle(L"Choose your logo (PNG with a transparent background works best)");
-    if (FAILED(dlg->Show(g.hwnd))) return;
+    dlg->SetTitle(g.pendingReplace >= 0 ? L"Choose a logo to replace this one"
+                                        : L"Add a logo (PNG with a transparent background works best)");
     ComPtr<IShellItem> item;
-    if (FAILED(dlg->GetResult(&item))) return;
     PWSTR path = nullptr;
-    if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
+    if (SUCCEEDED(dlg->Show(g.hwnd)) && SUCCEEDED(dlg->GetResult(&item)) &&
+        SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
         loadLogoFrom(path);
         CoTaskMemFree(path);
     }
+    g.pendingReplace = -1;   // cancelled: the next image is added, not swapped in
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1230,8 +1347,118 @@ static void endPanel() {
 static std::string ellipsize(const std::string& s, float maxWidth) {
     if (ImGui::CalcTextSize(s.c_str()).x <= maxWidth) return s;
     std::string t = s;
-    while (!t.empty() && ImGui::CalcTextSize((t + "...").c_str()).x > maxWidth) t.pop_back();
+    while (!t.empty() && ImGui::CalcTextSize((t + "...").c_str()).x > maxWidth) {
+        t.pop_back();
+        while (!t.empty() && ((unsigned char)t.back() & 0xC0) == 0x80) t.pop_back();   // whole UTF-8 characters
+        if (!t.empty() && (unsigned char)t.back() >= 0xC0) t.pop_back();
+    }
     return t.empty() ? std::string() : t + "...";
+}
+
+/// The logos and text items: add, replace, remove, reorder, and each text item's words, font and
+/// color. Used by the toolbar's Logo menu and the detached controls window.
+static void itemsEditor(float width) {
+    std::vector<OverlayItemInfo>& items = g.settings.items;
+    const int n = (int)items.size();
+    const ImGuiStyle& st = ImGui::GetStyle();
+    const float fh = ImGui::GetFrameHeight();
+    const bool portrait = g.settings.r.portrait;
+    int removeAt = -1, moveFrom = -1, moveBy = 0, replaceAt = -1;
+    if (n == 0) ImGui::TextDisabled("No logo yet: add an image or some text.");
+    for (int i = 0; i < n; ++i) {
+        OverlayItemInfo& it = items[i];
+        ImGui::PushID(i);
+        const float x0 = ImGui::GetCursorPosX();
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%d.", i + 1);
+        ImGui::SameLine();
+        const float indent = ImGui::GetCursorPosX() - x0;
+        // Right side: earlier, later, remove.
+        const float removeW = ImGui::CalcTextSize("Remove").x + st.FramePadding.x * 2;
+        const float right = fh * 2 + removeW + st.ItemSpacing.x * 3;
+        const float field = std::max(60 * g.dpi, x0 + width - ImGui::GetCursorPosX() - right);
+        if (it.isText) {
+            char buf[256];
+            std::snprintf(buf, sizeof(buf), "%s", it.text.c_str());
+            ImGui::SetNextItemWidth(field);
+            if (ImGui::InputTextWithHint("##text", "Type your text", buf, sizeof(buf))) {
+                it.text = buf;
+                refreshTextItem(i);
+            }
+        } else {
+            const float replaceW = ImGui::CalcTextSize("Replace...").x + st.FramePadding.x * 2;
+            const float nameW = std::max(20 * g.dpi, field - replaceW - st.ItemSpacing.x);
+            const float y = ImGui::GetCursorPosY();
+            ImGui::TextUnformatted(ellipsize(it.name.empty() ? std::string("Logo") : it.name, nameW).c_str());
+            if (ImGui::IsItemHovered() && !it.name.empty()) ImGui::SetTooltip("%s", it.name.c_str());
+            ImGui::SameLine(x0 + indent + nameW + st.ItemSpacing.x);
+            ImGui::SetCursorPosY(y);
+            if (ImGui::Button("Replace...")) replaceAt = i;
+        }
+        ImGui::SameLine(x0 + width - right + st.ItemSpacing.x);
+        ImGui::BeginDisabled(i == 0);
+        if (ImGui::ArrowButton("##earlier", portrait ? ImGuiDir_Up : ImGuiDir_Left)) { moveFrom = i; moveBy = -1; }
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(portrait ? "Move up" : "Move left");
+        ImGui::SameLine();
+        ImGui::BeginDisabled(i == n - 1);
+        if (ImGui::ArrowButton("##later", portrait ? ImGuiDir_Down : ImGuiDir_Right)) { moveFrom = i; moveBy = 1; }
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(portrait ? "Move down" : "Move right");
+        ImGui::SameLine();
+        if (ImGui::Button("Remove")) removeAt = i;
+
+        if (it.isText) {
+            ImGui::SetCursorPosX(x0 + indent);
+            ImGui::SetNextItemWidth(std::max(90 * g.dpi, ImGui::CalcTextSize("Heavy").x + fh * 2));
+            if (ImGui::BeginCombo("##font", textFontName(it.font))) {
+                for (int f = 0; f < kTextFontCount; ++f)
+                    if (ImGui::Selectable(textFontName(f), f == it.font) && f != it.font) {
+                        it.font = f;
+                        refreshTextItem(i);
+                    }
+                ImGui::EndCombo();
+            }
+            for (int c = 0; c < kTextColorCount; ++c) {
+                ImGui::SameLine(0, c == 0 ? st.ItemSpacing.x * 2 : st.ItemSpacing.x * 0.6f);
+                const std::uint32_t rgb = textColorRGB(c);
+                const ImVec4 col(((rgb >> 16) & 255) / 255.0f, ((rgb >> 8) & 255) / 255.0f, (rgb & 255) / 255.0f, 1);
+                const bool picked = it.color == c;
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, picked ? 2.5f * g.dpi : 0.0f);
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 1));
+                ImGui::PushID(c);
+                if (ImGui::ColorButton("##color", col, ImGuiColorEditFlags_NoTooltip, ImVec2(fh, fh)) && !picked) {
+                    it.color = c;
+                    refreshTextItem(i);
+                }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", textColorName(c));
+                ImGui::PopID();
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
+            }
+        }
+        if (i + 1 < n) ImGui::Spacing();
+        ImGui::PopID();
+    }
+    if (replaceAt >= 0) {
+        g.pendingReplace = replaceAt;
+        chooseLogo();
+    }
+    if (moveFrom >= 0) moveItem(moveFrom, moveBy);
+    if (removeAt >= 0) removeItem(removeAt);
+
+    ImGui::Spacing();
+    const bool full = (int)items.size() >= kMaxOverlayItems;
+    const float half = (width - st.ItemSpacing.x) * 0.5f;
+    ImGui::BeginDisabled(full);
+    if (ImGui::Button("Add image... (L)", ImVec2(half, 0))) chooseLogo();
+    ImGui::SameLine();
+    if (ImGui::Button("Add text", ImVec2(half, 0))) addTextItem();
+    ImGui::EndDisabled();
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width);
+    ImGui::TextDisabled(full ? "That's the most: 4 at once. Remove one to add another."
+                             : "Up to 4. They sit side by side, or top to bottom in Portrait.");
+    ImGui::PopTextWrapPos();
 }
 
 // ---- Panel contents, shared by the toolbar's drop-downs and the detached controls window.
@@ -1249,7 +1476,7 @@ static void logoPanelBody(RenderSettings& r) {
     slider("Glow", &r.glow, 0, 1.5f);
     slider("Color tint", &r.logoTint, 0, 1);
     ImGui::Checkbox("Logo trails (feeds into the visuals)", &r.logoTrails);
-    ImGui::Checkbox("Show logo", &r.showLogo);
+    ImGui::Checkbox("Show logos (G)", &r.showLogo);
 }
 
 static void audioPanelBody() {
@@ -1351,7 +1578,7 @@ static void styleListBody(RenderSettings& r, int cur) {
 
 static void keysPanelBody() {
     const char* rows[][2] = {{"F / F11", "Full screen"},    {"T / S", "Show / hide toolbar"},
-                             {"Esc", "Hide toolbar / exit full screen"}, {"L", "Choose logo"},
+                             {"Esc", "Hide toolbar / exit full screen"}, {"L", "Add a logo"},
                              {"G", "Show / hide logo"},     {"Left / Right", "Previous / next style"},
                              {"A", "Auto-cycle on / off"},  {"D", "Detach / attach the controls"},
                              {"R", "Start / stop recording"}};
@@ -1390,15 +1617,19 @@ static void drawToolbar(float dt, bool docked = true) {
     const float y = (h - ImGui::GetFrameHeight()) * 0.5f;
     ImGui::SetCursorPosY(y);
 
-    // ---- Logo menu
-    std::string logoLabel = g.settings.logoName.empty() ? "Add Logo" : "Logo: " + narrow(g.settings.logoName);
+    // ---- Logo menu: the list of logos and text items
+    const auto& items = g.settings.items;
+    std::string logoLabel = items.empty()       ? std::string("Add Logo")
+                            : items.size() == 1 ? (items[0].isText ? "Text: " : "Logo: ") + items[0].name
+                                                : "Logos (" + std::to_string(items.size()) + ")";
     logoLabel = ellipsize(logoLabel, 180 * g.dpi) + "##logomenu";
     if (ImGui::Button(logoLabel.c_str())) ImGui::OpenPopup("logo_menu");
     if (ImGui::BeginPopup("logo_menu")) {
-        if (ImGui::MenuItem("Choose Logo...", "L")) chooseLogo();
-        if (ImGui::MenuItem("Remove Logo", nullptr, false, !g.settings.logoFile.empty())) clearLogo();
+        ImGui::SeparatorText("Logos and text");
+        itemsEditor(420 * g.dpi);
         ImGui::Separator();
-        ImGui::MenuItem("Show Logo", "G", &r.showLogo);
+        ImGui::MenuItem("Show logos", "G", &r.showLogo);
+        if (ImGui::MenuItem("Remove all", nullptr, false, !items.empty())) clearLogo();
         ImGui::EndPopup();
     }
 
@@ -1601,18 +1832,10 @@ static void drawControlsPanel() {
     }
     if (ImGui::CollapsingHeader("Recording settings")) recordSettingsBody();
 
-    // Logo
-    ImGui::SeparatorText("Logo");
-    {
-        std::string name = g.settings.logoName.empty() ? "No logo chosen" : narrow(g.settings.logoName);
-        ImGui::TextUnformatted(ellipsize(name, ImGui::GetContentRegionAvail().x).c_str());
-        float half = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-        if (ImGui::Button("Choose logo...", ImVec2(half, 0))) chooseLogo();
-        ImGui::SameLine();
-        ImGui::BeginDisabled(g.settings.logoFile.empty());
-        if (ImGui::Button("Remove", ImVec2(half, 0))) clearLogo();
-        ImGui::EndDisabled();
-    }
+    // Logos and text
+    ImGui::SeparatorText("Logos and text");
+    itemsEditor(ImGui::GetContentRegionAvail().x);
+    ImGui::Checkbox("Show logos (G)", &r.showLogo);
 
     // Style
     ImGui::SeparatorText("Style");
@@ -1769,7 +1992,9 @@ static LRESULT MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_DROPFILES: {
         HDROP drop = (HDROP)wParam;
         wchar_t path[MAX_PATH * 4];
-        if (DragQueryFileW(drop, 0, path, (UINT)(sizeof(path) / sizeof(path[0])))) loadLogoFrom(path);
+        UINT files = DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0);
+        for (UINT i = 0; i < files && i < (UINT)kMaxOverlayItems; ++i)
+            if (DragQueryFileW(drop, i, path, (UINT)(sizeof(path) / sizeof(path[0])))) loadLogoFrom(path);
         DragFinish(drop);
         return 0;
     }
@@ -1828,7 +2053,9 @@ static LRESULT ControlsWndProcImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
     case WM_DROPFILES: {
         HDROP drop = (HDROP)wParam;
         wchar_t path[MAX_PATH * 4];
-        if (DragQueryFileW(drop, 0, path, (UINT)(sizeof(path) / sizeof(path[0])))) loadLogoFrom(path);
+        UINT files = DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0);
+        for (UINT i = 0; i < files && i < (UINT)kMaxOverlayItems; ++i)
+            if (DragQueryFileW(drop, i, path, (UINT)(sizeof(path) / sizeof(path[0])))) loadLogoFrom(path);
         DragFinish(drop);
         return 0;
     }
@@ -2097,12 +2324,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int nCmdShow) {
     g.height = rc.bottom - rc.top;
     handleResize();
 
-    if (!g.settings.logoFile.empty()) {
-        LogoImage img;
-        std::wstring err;
-        if (loadLogoImage(g.settings.logoFile, img, err)) g.renderer.setLogo(img);
-        else { g.settings.logoFile.clear(); g.settings.logoName.clear(); }
-    }
+    loadItems();
 
     g.sources = AudioCapture::listSources();
     startAudio();

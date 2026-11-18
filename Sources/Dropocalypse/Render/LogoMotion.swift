@@ -1,3 +1,4 @@
+import DropocalypseCore
 import Foundation
 
 /// Physics for the logo: everything is driven by the bass envelope (continuous, instant attack)
@@ -40,33 +41,38 @@ struct LogoMotion {
     private var lastBeat = 0
     private var side: Float = 1
     private var time: Float = 0
+    private var started = false
+    private var pending = false
+    private var pendingStrength: Float = 0
+    private var pendingAt: Float = 0
 
-    mutating func update(dt rawDt: Float, audio: AudioAnalysis.Snapshot, amounts a: Amounts) -> Pose {
+    /// One per logo or text item. `variant` gives each item its own small delay, direction and
+    /// drift so several items react to the same beat without moving like clones. Item 0's
+    /// variant is exactly the single-logo motion.
+    mutating func update(dt rawDt: Float, audio: AudioAnalysis.Snapshot, amounts a: Amounts,
+                         variant: OverlayLayout.MotionVariant = OverlayLayout.motionVariant(0)) -> Pose {
         let dt = min(max(rawDt, 0), 1.0 / 20.0)
         time += dt
         let bass = min(audio.bass, 1.4)
+        if !started {
+            started = true
+            side = variant.side
+        }
 
-        // Beat impulses.
+        // Beat impulses. A kick still waiting from the last beat lands now, so none are lost.
         if audio.beatCount != lastBeat {
             let fresh = lastBeat != 0
             lastBeat = audio.beatCount
             if fresh {
-                let s = audio.beatStrength
-                side = -side
-                // Snap on the hit: part of every kick moves the logo *this frame* (a direct
-                // displacement), the rest goes into the spring's velocity for the follow-through.
-                // Pushing only velocity made the visible peak land ~60-70 ms after the beat.
-                squash.x += a.squash * 0.22 * s
-                squash.v += a.squash * 3.5 * s
-                if bounceY < 0.05 {
-                    bounceY += a.bounce * 0.05 * s
-                    bounceV += a.bounce * 1.7 * s
-                }
-                slide.x += a.slide * 0.09 * s * side
-                slide.v += a.slide * 1.1 * s * side
-                wobble.x += a.wobble * 0.22 * s * side
-                wobble.v += a.wobble * 2.2 * s * side
+                if pending { kick(pendingStrength, a) }
+                pending = true
+                pendingStrength = audio.beatStrength * variant.amount
+                pendingAt = time + variant.delay
             }
+        }
+        if pending, time >= pendingAt {
+            pending = false
+            kick(pendingStrength, a)
         }
 
         // Integrate in small substeps so stiff springs stay stable at any frame rate.
@@ -94,8 +100,25 @@ struct LogoMotion {
         pose.scaleX = pulse * (1 + sq) * (1 - stretch * 0.5)
         pose.scaleY = pulse * (1 - sq * 0.85) * (1 + stretch)
         pose.y = bounceY * 0.55
-        pose.x = slide.x * 0.5 + sin(time * 0.45) * 0.04 * a.slide
-        pose.rotation = wobble.x * 0.35 + sin(time * 0.3) * 0.02 * a.wobble
+        pose.x = slide.x * 0.5 + sin(time * 0.45 + variant.phase) * 0.04 * a.slide
+        pose.rotation = wobble.x * 0.35 + sin(time * 0.3 + variant.phase) * 0.02 * a.wobble
         return pose
+    }
+
+    private mutating func kick(_ s: Float, _ a: Amounts) {
+        side = -side
+        // Snap on the hit: part of every kick moves the logo *this frame* (a direct
+        // displacement), the rest goes into the spring's velocity for the follow-through.
+        // Pushing only velocity made the visible peak land ~60-70 ms after the beat.
+        squash.x += a.squash * 0.22 * s
+        squash.v += a.squash * 3.5 * s
+        if bounceY < 0.05 {
+            bounceY += a.bounce * 0.05 * s
+            bounceV += a.bounce * 1.7 * s
+        }
+        slide.x += a.slide * 0.09 * s * side
+        slide.v += a.slide * 1.1 * s * side
+        wobble.x += a.wobble * 0.22 * s * side
+        wobble.v += a.wobble * 2.2 * s * side
     }
 }

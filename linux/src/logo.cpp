@@ -13,7 +13,9 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cmath>
 #include <cstring>
+#include <strings.h>
 
 static constexpr int kMaxLogoSize = 1024;
 
@@ -189,4 +191,132 @@ LogoImage placeholderLogo() {
         out.rgba[i * 4 + 3] = v;
     }
     return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Text items
+// ---------------------------------------------------------------------------------------------
+
+/// The font file for a text item style: asks fontconfig first (any desktop has fc-match), then
+/// tries the usual locations of DejaVu, Liberation and Noto.
+static bool loadTextFont(int font, std::vector<unsigned char>& data) {
+    static const char* patterns[kTextFontCount] = {"sans:bold", "sans:black", "serif:bold", "monospace:bold"};
+    static const char* fallbacks[kTextFontCount][6] = {
+        {"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+         "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf",
+         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", "/usr/share/fonts/noto/NotoSans-Bold.ttf",
+         nullptr},
+        {"/usr/share/fonts/truetype/noto/NotoSans-Black.ttf", "/usr/share/fonts/noto/NotoSans-Black.ttf",
+         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+         "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf", nullptr},
+        {"/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSerif-Bold.ttf",
+         "/usr/share/fonts/dejavu-serif-fonts/DejaVuSerif-Bold.ttf",
+         "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf", "/usr/share/fonts/noto/NotoSerif-Bold.ttf",
+         nullptr},
+        {"/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSansMono-Bold.ttf",
+         "/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono-Bold.ttf",
+         "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+         "/usr/share/fonts/noto/NotoSansMono-Bold.ttf", nullptr},
+    };
+    if (font < 0 || font >= kTextFontCount) font = 0;
+    std::string cmd = std::string("fc-match -f '%{file}' '") + patterns[font] + "' 2>/dev/null";
+    if (FILE* p = popen(cmd.c_str(), "r")) {
+        char buf[1024] = {};
+        size_t n = std::fread(buf, 1, sizeof(buf) - 1, p);
+        pclose(p);
+        std::string path(buf, n);
+        // stb_truetype reads TrueType/OpenType outlines; skip bitmap-only or Type 1 matches.
+        auto endsWith = [&](const char* ext) {
+            size_t l = std::strlen(ext);
+            return path.size() >= l && strcasecmp(path.c_str() + path.size() - l, ext) == 0;
+        };
+        if ((endsWith(".ttf") || endsWith(".otf")) && readFile(path.c_str(), data)) return true;
+    }
+    for (const char* f : fallbacks[font])
+        if (f && readFile(f, data)) return true;
+    return loadFont(data, true);
+}
+
+/// UTF-8 to code points; invalid bytes become U+FFFD.
+static std::vector<int> decodeUtf8(const std::string& s) {
+    std::vector<int> out;
+    for (size_t i = 0; i < s.size();) {
+        unsigned char c = (unsigned char)s[i];
+        int cp = 0xFFFD, len = 1;
+        if (c < 0x80) cp = c;
+        else if ((c >> 5) == 0x6 && i + 1 < s.size()) { cp = ((c & 0x1F) << 6) | (s[i + 1] & 0x3F); len = 2; }
+        else if ((c >> 4) == 0xE && i + 2 < s.size()) {
+            cp = ((c & 0x0F) << 12) | ((s[i + 1] & 0x3F) << 6) | (s[i + 2] & 0x3F);
+            len = 3;
+        } else if ((c >> 3) == 0x1E && i + 3 < s.size()) {
+            cp = ((c & 0x07) << 18) | ((s[i + 1] & 0x3F) << 12) | ((s[i + 2] & 0x3F) << 6) | (s[i + 3] & 0x3F);
+            len = 4;
+        }
+        out.push_back(cp);
+        i += len;
+    }
+    return out;
+}
+
+LogoImage renderTextLogo(const std::string& utf8Text, int font, int color) {
+    LogoImage out;
+    std::string clean = cleanItemText(utf8Text);
+    if (clean.empty()) return out;
+    std::vector<unsigned char> data;
+    if (!loadTextFont(font, data)) return out;
+    stbtt_fontinfo info;
+    if (!stbtt_InitFont(&info, data.data(), stbtt_GetFontOffsetForIndex(data.data(), 0))) return out;
+    std::vector<int> cps = decodeUtf8(clean);
+
+    float pixelHeight = 200;
+    auto measure = [&](float scale) {
+        float width = 0;
+        for (size_t i = 0; i < cps.size(); ++i) {
+            int adv, lsb;
+            stbtt_GetCodepointHMetrics(&info, cps[i], &adv, &lsb);
+            width += adv * scale;
+            if (i + 1 < cps.size()) width += stbtt_GetCodepointKernAdvance(&info, cps[i], cps[i + 1]) * scale;
+        }
+        return width;
+    };
+    float scale = stbtt_ScaleForPixelHeight(&info, pixelHeight);
+    float width = measure(scale);
+    if (width > 2400) {   // shrink very long text so it stays under 2400 px
+        pixelHeight = std::max(60.0f, pixelHeight * 2400 / width);
+        scale = stbtt_ScaleForPixelHeight(&info, pixelHeight);
+        width = measure(scale);
+    }
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(&info, &ascent, &descent, &lineGap);
+    const int outline = std::max(4, (int)(pixelHeight / 18));
+    const int margin = outline + 4;
+    const int w = (int)std::ceil(width) + margin * 2;
+    const int h = (int)std::ceil((ascent - descent) * scale) + margin * 2;
+    const int baseline = margin + (int)std::lround(ascent * scale);
+    std::vector<uint8_t> cov((size_t)w * h, 0);
+
+    float x = (float)margin;
+    for (size_t i = 0; i < cps.size(); ++i) {
+        int adv, lsb, x0, y0, x1, y1;
+        stbtt_GetCodepointHMetrics(&info, cps[i], &adv, &lsb);
+        stbtt_GetCodepointBitmapBox(&info, cps[i], scale, scale, &x0, &y0, &x1, &y1);
+        int gw = x1 - x0, gh = y1 - y0;
+        if (gw > 0 && gh > 0) {
+            std::vector<unsigned char> glyph((size_t)gw * gh);
+            stbtt_MakeCodepointBitmap(&info, glyph.data(), gw, gh, gw, scale, scale, cps[i]);
+            int ox = (int)std::lround(x) + x0, oy = baseline + y0;
+            for (int yy = 0; yy < gh; ++yy)
+                for (int xx = 0; xx < gw; ++xx) {
+                    int px = ox + xx, py = oy + yy;
+                    if (px < 0 || py < 0 || px >= w || py >= h) continue;
+                    uint8_t& d = cov[(size_t)py * w + px];
+                    d = std::max(d, glyph[(size_t)yy * gw + xx]);
+                }
+        }
+        x += adv * scale;
+        if (i + 1 < cps.size()) x += stbtt_GetCodepointKernAdvance(&info, cps[i], cps[i + 1]) * scale;
+    }
+    std::vector<uint8_t> px = textCoverageToRGBA(cov, w, h, textColorRGB(color), outline);
+    if (px.empty()) return out;
+    return trimAndPad(px, w, h);
 }

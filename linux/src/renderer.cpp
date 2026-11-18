@@ -146,30 +146,31 @@ void Spectrum::update(const AudioAnalysis& analysis, double sampleRate) {
 // Logo motion (same physics as the macOS version)
 // ---------------------------------------------------------------------------------------------
 
-LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const RenderSettings& s) {
+LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const RenderSettings& s,
+                            const MotionVariant& variant) {
     float dt = std::min(std::max(rawDt, 0.0f), 1.0f / 20.0f);
     time_ += dt;
     float bass = std::min(audio.bass, 1.4f);
+    if (!started_) {
+        started_ = true;
+        side_ = variant.side;
+    }
 
     if (audio.beatCount != lastBeat_) {
         bool fresh = lastBeat_ != 0;
         lastBeat_ = audio.beatCount;
         if (fresh) {
-            float st = audio.beatStrength;
-            side_ = -side_;
-            // Snap on the hit: part of every kick moves the logo this frame (direct displacement),
-            // the rest goes into the spring's velocity for the follow-through.
-            squash_.x += s.squash * 0.22f * st;
-            squash_.v += s.squash * 3.5f * st;
-            if (bounceY_ < 0.05f) {
-                bounceY_ += s.bounce * 0.05f * st;
-                bounceV_ += s.bounce * 1.7f * st;
-            }
-            slide_.x += s.slide * 0.09f * st * side_;
-            slide_.v += s.slide * 1.1f * st * side_;
-            wobble_.x += s.wobble * 0.22f * st * side_;
-            wobble_.v += s.wobble * 2.2f * st * side_;
+            // A kick still waiting from the last beat lands now, so none are lost.
+            if (pending_) kick(pendingStrength_, s);
+            pending_ = true;
+            pendingStrength_ = audio.beatStrength * variant.amount;
+            pendingAt_ = time_ + variant.delay;
         }
+    }
+    // Item 0 has no delay, so its kick lands on the same frame as the beat.
+    if (pending_ && time_ >= pendingAt_) {
+        pending_ = false;
+        kick(pendingStrength_, s);
     }
 
     const int steps = 4;
@@ -195,9 +196,25 @@ LogoPose LogoMotion::update(float rawDt, const AudioSnapshot& audio, const Rende
     pose.scaleX = pulse * (1 + sq) * (1 - stretch * 0.5f);
     pose.scaleY = pulse * (1 - sq * 0.85f) * (1 + stretch);
     pose.y = bounceY_ * 0.55f;
-    pose.x = slide_.x * 0.5f + std::sin(time_ * 0.45f) * 0.04f * s.slide;
-    pose.rotation = wobble_.x * 0.35f + std::sin(time_ * 0.3f) * 0.02f * s.wobble;
+    pose.x = slide_.x * 0.5f + std::sin(time_ * 0.45f + variant.phase) * 0.04f * s.slide;
+    pose.rotation = wobble_.x * 0.35f + std::sin(time_ * 0.3f + variant.phase) * 0.02f * s.wobble;
     return pose;
+}
+
+void LogoMotion::kick(float st, const RenderSettings& s) {
+    side_ = -side_;
+    // Snap on the hit: part of every kick moves the logo this frame (direct displacement),
+    // the rest goes into the spring's velocity for the follow-through.
+    squash_.x += s.squash * 0.22f * st;
+    squash_.v += s.squash * 3.5f * st;
+    if (bounceY_ < 0.05f) {
+        bounceY_ += s.bounce * 0.05f * st;
+        bounceV_ += s.bounce * 1.7f * st;
+    }
+    slide_.x += s.slide * 0.09f * st * side_;
+    slide_.v += s.slide * 1.1f * st * side_;
+    wobble_.x += s.wobble * 0.22f * st * side_;
+    wobble_.v += s.wobble * 2.2f * st * side_;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1135,25 +1152,43 @@ bool Renderer::init(std::wstring& error) {
 
     start_ = last_ = std::chrono::steady_clock::now();
     current_ = previous_ = builtInScenes()[0];
-    setLogo(placeholderLogo());
+    setItems({});
     return glGetError() == GL_NO_ERROR || true;
 }
 
-void Renderer::setLogo(const LogoImage& img) {
-    if (img.width <= 0 || img.height <= 0) return;
-    if (!logoTex_) glGenTextures(1, &logoTex_);
-    glBindTexture(GL_TEXTURE_2D, logoTex_);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.rgba.data());
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    const float zero[4] = {0, 0, 0, 0};
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, zero);
-    logoAspect_ = (float)img.width / (float)img.height;
+void Renderer::setItems(const std::vector<LogoImage>& images) {
+    std::vector<const LogoImage*> list;
+    for (const LogoImage& img : images)
+        if (img.width > 0 && img.height > 0 && (int)list.size() < kMaxOverlayItems) list.push_back(&img);
+    LogoImage placeholder;
+    if (list.empty()) {
+        placeholder = placeholderLogo();
+        list.push_back(&placeholder);
+    }
+    int count = 0;
+    for (const LogoImage* img : list) {
+        GLuint& tex = logoTex_[count];
+        if (!tex) glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     img->rgba.data());
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        const float zero[4] = {0, 0, 0, 0};
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, zero);
+        logoAspect_[count] = (float)img->width / (float)img->height;
+        ++count;
+    }
+    for (int i = count; i < kMaxOverlayItems; ++i) {
+        if (logoTex_[i]) glDeleteTextures(1, &logoTex_[i]);
+        logoTex_[i] = 0;
+    }
+    itemCount_ = count;
 }
 
 void Renderer::ensureFeedback(int width, int height) {
@@ -1427,26 +1462,33 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
     glBindTexture(GL_TEXTURE_2D, src.tex);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    // ---- Logo pose ----
-    LogoPose pose = motion_.update(dt, audio, st);
+    // ---- Logo and text item poses: a row in landscape, a column in portrait ----
     Rgb col = hsv(scene.baseHue + t * scene.hueSpeed + 0.5f, 0.8f, 1);
-    LogoCB lu{};
-    float baseH = logoAspect_ >= 1 ? st.logoSize / logoAspect_ : st.logoSize;
-    float baseW = baseH * logoAspect_;
-    lu.hx = baseW * pose.scaleX;
-    lu.hy = baseH * pose.scaleY;
-    lu.cx = pose.x;
-    lu.cy = pose.y - 0.08f * st.bounce;
-    lu.rotation = pose.rotation;
-    lu.aspect = aspect;
-    lu.r = col.r; lu.g = col.g; lu.b = col.b;
+    const int items = std::max(1, itemCount_);
+    LogoCB lus[kMaxOverlayItems]{};
+    float firstRadius = 0;
+    for (int i = 0; i < items; ++i) {
+        ItemSlot slot = itemSlot(i, items, aspect);
+        ItemExtent ext = itemExtent(logoAspect_[i], st.logoSize, slot);
+        LogoPose pose = motion_[i].update(dt, audio, st, motionVariant(i));
+        LogoCB& lu = lus[i];
+        lu.hx = ext.halfW * pose.scaleX;
+        lu.hy = ext.halfH * pose.scaleY;
+        lu.cx = slot.cx + pose.x;
+        lu.cy = slot.cy + pose.y - 0.08f * st.bounce;
+        lu.rotation = pose.rotation;
+        lu.aspect = aspect;
+        lu.r = col.r; lu.g = col.g; lu.b = col.b;
+        if (i == 0) firstRadius = std::max(ext.halfW, ext.halfH) * 0.9f;
+    }
 
     // ---- Pass 2: shapes (solid "over" shapes first, then glowing additive ones) ----
     GeomVertex* verts = vertices_.data();
     GeometryBuilder g{verts, AdditiveCapacity, aspect};
     GeometryBuilder over{verts + AdditiveCapacity, MaxVertices - AdditiveCapacity, aspect};
-    float logoRadius = st.showLogo ? std::max(baseW, baseH) * 0.9f : 0.0f;
-    drawWave(scene, audio, spectrum_, t, dt, V2{lu.cx, lu.cy}, logoRadius, *fx_, g, over);
+    // Styles built around the logo (Bass Ring, Particle Storm, Lightning) follow the first item.
+    float logoRadius = st.showLogo ? firstRadius : 0.0f;
+    drawWave(scene, audio, spectrum_, t, dt, V2{lus[0].cx, lus[0].cy}, logoRadius, *fx_, g, over);
     int additiveCount = g.count, overCount = over.count;
     if (additiveCount > 0 || overCount > 0) {
         glBindVertexArray(geomVao_);
@@ -1470,20 +1512,23 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
 
     drawGpuSignal(scene, audio, t, aspect);
 
-    auto drawLogo = [&](const LogoCB& data, Blend blend) {
+    auto drawLogo = [&](const LogoCB& data, Blend blend, GLuint tex) {
         updateUBO(uboLogo_, data);
         glUseProgram(progLogo_);
         glBindVertexArray(emptyVao_);
-        glBindTexture(GL_TEXTURE_2D, logoTex_);
+        glBindTexture(GL_TEXTURE_2D, tex);
         setBlend(blend);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     };
 
-    if (st.showLogo && st.logoTrails && logoTex_) {
-        LogoCB tu = lu;
-        tu.opacity = 0.18f;
-        tu.tintAmount = 0.6f;
-        drawLogo(tu, BlendPremul);
+    if (st.showLogo && st.logoTrails) {
+        for (int i = 0; i < items; ++i) {
+            if (!logoTex_[i]) continue;
+            LogoCB tu = lus[i];
+            tu.opacity = 0.18f;
+            tu.tintAmount = 0.6f;
+            drawLogo(tu, BlendPremul, logoTex_[i]);
+        }
     }
 
     // ---- Pass 3: composite to the screen. Portrait is a centered 9:16 viewport; bars stay black. ----
@@ -1510,7 +1555,9 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); // border again for the warp
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-    if (st.showLogo && logoTex_) {
+    for (int i = 0; st.showLogo && i < items; ++i) {
+        if (!logoTex_[i]) continue;
+        LogoCB& lu = lus[i];
         if (st.glow > 0.01f) {
             LogoCB gu = lu;
             gu.hx *= 1.18f;
@@ -1518,11 +1565,11 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
             gu.mipBias = 5;
             gu.tintAmount = 1;
             gu.opacity = st.glow * (0.35f + std::min(audio.bass, 1.2f) * 0.9f);
-            drawLogo(gu, BlendAdd);
+            drawLogo(gu, BlendAdd, logoTex_[i]);
         }
         lu.opacity = 1;
         lu.tintAmount = st.logoTint;
-        drawLogo(lu, BlendPremul);
+        drawLogo(lu, BlendPremul, logoTex_[i]);
     }
 
     setBlend(BlendNone);

@@ -13,39 +13,10 @@ static bool copyFile(const std::string& from, const std::string& to) {
     return ok;
 }
 
-static void loadLogoFrom(const std::wstring& path) {
-    LogoImage img;
-    std::wstring err;
-    if (!loadLogoImage(path, img, err)) {
-        g.errorMessage = err;
-        return;
-    }
-    // Keep a private copy so the logo survives the original being moved or deleted.
-    std::wstring dest = g.dataDir + L"/logo" + extensionOf(path);
-    if (dest != path) {
-        if (!g.settings.logoFile.empty() && g.settings.logoFile != dest) std::remove(narrow(g.settings.logoFile).c_str());
-        copyFile(narrow(path), narrow(dest));
-    }
-    g.renderer.setLogo(img);
-    g.settings.logoFile = dest;
-    g.settings.logoName = fileNameOf(path);
-    g.settings.r.showLogo = true;
-    g.errorMessage.clear();
+static bool copyItemFile(const std::wstring& from, const std::wstring& to) {
+    return from == to || copyFile(narrow(from), narrow(to));
 }
 
-static void clearLogo() {
-    if (!g.settings.logoFile.empty()) std::remove(narrow(g.settings.logoFile).c_str());
-    g.settings.logoFile.clear();
-    g.settings.logoName.clear();
-    g.renderer.setLogo(placeholderLogo());
-}
+static void deleteItemFile(const std::wstring& path) { std::remove(narrow(path).c_str()); }
 
-static void chooseLogo() {
-    runDialog(1,
-              {"zenity", "--file-selection", "--title=Choose your logo (PNG with a transparent background works best)",
-               "--file-filter=Images | *.png *.PNG *.jpg *.JPG *.jpeg *.JPEG *.gif *.GIF *.bmp *.BMP *.tga *.TGA",
-               "--file-filter=All files | *"},
-              {"kdialog", "--title", "Choose your logo", "--getopenfilename", homeDir(),
-               "Images (*.png *.jpg *.jpeg *.gif *.bmp *.tga)"});
-}
-
+static std::wstring dataPath(const std::wstring& name) { return g.dataDir + L"/" + name; }

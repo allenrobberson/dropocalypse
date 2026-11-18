@@ -60,13 +60,17 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var bufferIndex = 0
     private let inflight = DispatchSemaphore(value: 3)
 
-    private var logoTexture: MTLTexture?
+    /// Logos and text items, left to right (top to bottom in portrait). Never empty: with no
+    /// items it holds the "YOUR LOGO" placeholder.
+    private var itemTextures: [MTLTexture] = []
+    /// Textures by item key, so editing one text item doesn't reload every image.
+    private var textureCache: [String: MTLTexture] = [:]
+    private var placeholderTexture: MTLTexture?
     private var signalSamples: MTLBuffer?
-    private var logoAspect: Float = 1
 
     private let spectrum = Spectrum()
     private let fx = StyleFX()
-    private var motion = LogoMotion()
+    private var motions = [LogoMotion](repeating: LogoMotion(), count: OverlayLayout.maxItems)
     private var lastTime = CACurrentMediaTime()
     private var startTime = CACurrentMediaTime()
     private var flash: Float = 0
@@ -117,19 +121,47 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
         signalSamples = device.makeBuffer(length: 560 * MemoryLayout<Float>.stride, options: .storageModeShared)
 
-        logoTexture = LogoTexture.placeholder(device: device)
-        logoAspect = logoTexture.map { Float($0.width) / Float($0.height) } ?? 1
+        placeholderTexture = LogoTexture.placeholder(device: device)
+        itemTextures = placeholderTexture.map { [$0] } ?? []
     }
 
-    // MARK: Logo
+    // MARK: Logos and text
 
-    func setLogo(_ image: NSImage?) {
-        if let image, let tex = LogoTexture.make(from: image, device: device, queue: queue) {
-            logoTexture = tex
-        } else {
-            logoTexture = LogoTexture.placeholder(device: device)
+    enum ItemSource {
+        /// `key` identifies the image (its saved file) so its texture is reused.
+        case image(key: String, NSImage)
+        case text(String, font: Int, color: Int)
+
+        var cacheKey: String {
+            switch self {
+            case .image(let key, _): return "image:" + key
+            case .text(let text, let font, let color): return "text:\(font):\(color):" + text
+            }
         }
-        logoAspect = logoTexture.map { Float($0.width) / Float($0.height) } ?? 1
+    }
+
+    /// The items to show, in order (up to OverlayLayout.maxItems). An empty list shows the placeholder.
+    func setItems(_ sources: [ItemSource]) {
+        var textures: [MTLTexture] = []
+        var cache: [String: MTLTexture] = [:]
+        for source in sources.prefix(OverlayLayout.maxItems) {
+            let key = source.cacheKey
+            var tex = textureCache[key] ?? cache[key]
+            if tex == nil {
+                switch source {
+                case .image(_, let image): tex = LogoTexture.make(from: image, device: device, queue: queue)
+                case .text(let text, let font, let color):
+                    tex = LogoTexture.text(text, font: font, color: color, device: device, queue: queue)
+                }
+            }
+            if let tex {
+                textures.append(tex)
+                cache[key] = tex
+            }
+        }
+        textureCache = cache
+        if textures.isEmpty, let placeholder = placeholderTexture { textures = [placeholder] }
+        itemTextures = textures
     }
 
     // MARK: Pipelines
@@ -262,25 +294,32 @@ final class Renderer: NSObject, MTKViewDelegate {
         let src = feedback[feedbackIndex]
         let dst = feedback[1 - feedbackIndex]
 
-        // ---- Logo motion.
+        // ---- Logos and text: a row in landscape, a column in portrait, each with its own motion.
         let amounts = LogoMotion.Amounts(pulse: Float(settings.pulse), squash: Float(settings.squash),
                                          bounce: Float(settings.bounce), slide: Float(settings.slide),
                                          wobble: Float(settings.wobble))
-        let pose = motion.update(dt: dt, audio: audio, amounts: amounts)
         let color = hsv(scene.baseHue + t * scene.hueSpeed + 0.5, 0.8, 1)
-
-        var lu = LogoUniforms()
-        let size01 = Float(settings.logoSize)
-        // Fit inside size01 (fraction of screen height) whichever side is longer.
-        let baseH = logoAspect >= 1 ? size01 / logoAspect : size01
-        let baseW = baseH * logoAspect
-        lu.hx = baseW * pose.scaleX
-        lu.hy = baseH * pose.scaleY
-        lu.cx = pose.x
-        lu.cy = pose.y - 0.08 * Float(settings.bounce)
-        lu.rotation = pose.rotation
-        lu.aspect = aspect
-        lu.r = color.0; lu.g = color.1; lu.b = color.2
+        let textures = itemTextures
+        var items: [LogoUniforms] = []
+        var firstRadius: Float = 0
+        for (i, tex) in textures.enumerated() {
+            let slot = OverlayLayout.slot(index: i, count: textures.count, aspect: aspect)
+            let ext = OverlayLayout.extent(imageAspect: Float(tex.width) / Float(max(tex.height, 1)),
+                                           size: Float(settings.logoSize), slot: slot)
+            let pose = motions[i].update(dt: dt, audio: audio, amounts: amounts,
+                                         variant: OverlayLayout.motionVariant(i))
+            var lu = LogoUniforms()
+            lu.hx = ext.halfW * pose.scaleX
+            lu.hy = ext.halfH * pose.scaleY
+            lu.cx = slot.cx + pose.x
+            lu.cy = slot.cy + pose.y - 0.08 * Float(settings.bounce)
+            lu.rotation = pose.rotation
+            lu.aspect = aspect
+            lu.r = color.0; lu.g = color.1; lu.b = color.2
+            items.append(lu)
+            if i == 0 { firstRadius = max(ext.halfW, ext.halfH) * 0.9 }
+        }
+        let firstCenter = items.first.map { SIMD2($0.cx, $0.cy) } ?? SIMD2<Float>(0, 0)
 
         guard let cb = queue.makeCommandBuffer() else { inflight.signal(); return }
         let sem = inflight
@@ -328,9 +367,10 @@ final class Renderer: NSObject, MTKViewDelegate {
             var builder = GeometryBuilder(buffer: vb, capacity: Self.additiveCapacity, aspect: aspect)
             var overBuilder = GeometryBuilder(buffer: vb, start: Self.additiveCapacity,
                                               capacity: Self.maxVertices - Self.additiveCapacity, aspect: aspect)
-            let logoRadius = settings.showLogo ? max(baseW, baseH) * 0.9 : 0
+            // Styles built around the logo (Bass Ring, Particle Storm, Lightning) follow the first item.
+            let logoRadius = settings.showLogo ? firstRadius : 0
             WaveDrawer.draw(scene: scene, audio: audio, spectrum: spectrum, time: t, dt: dt,
-                            logoCenter: SIMD2(lu.cx, lu.cy), logoRadius: logoRadius, fx: fx,
+                            logoCenter: firstCenter, logoRadius: logoRadius, fx: fx,
                             into: &builder, over: &overBuilder)
             enc.setVertexBuffer(vb, offset: 0, index: 0)
             if overBuilder.count > 0 {
@@ -346,20 +386,22 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
 
         // ---- Optional logo trail into the feedback buffer.
-        if settings.showLogo, settings.logoTrails, let logo = logoTexture {
+        if settings.showLogo, settings.logoTrails, !textures.isEmpty {
             let trp = MTLRenderPassDescriptor()
             trp.colorAttachments[0].texture = dst
             trp.colorAttachments[0].loadAction = .load
             trp.colorAttachments[0].storeAction = .store
             if let enc = cb.makeRenderCommandEncoder(descriptor: trp) {
-                var tu = lu
-                tu.opacity = 0.18
-                tu.tintAmount = 0.6
                 enc.setRenderPipelineState(logoTrailPipeline)
-                enc.setVertexBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                enc.setFragmentBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                enc.setFragmentTexture(logo, index: 0)
-                enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                for (i, logo) in textures.enumerated() {
+                    var tu = items[i]
+                    tu.opacity = 0.18
+                    tu.tintAmount = 0.6
+                    enc.setVertexBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                    enc.setFragmentBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                    enc.setFragmentTexture(logo, index: 0)
+                    enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                }
                 enc.endEncoding()
             }
         }
@@ -385,11 +427,12 @@ final class Renderer: NSObject, MTKViewDelegate {
             enc.setFragmentBytes(&pu, length: MemoryLayout<PresentUniforms>.stride, index: 0)
             enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
 
-            if settings.showLogo, let logo = logoTexture {
+            guard settings.showLogo else { return }
+            for (i, logo) in textures.enumerated() {
                 // Glow: a larger, heavily mip-blurred, tinted copy added underneath.
                 let glow = Float(settings.glow)
                 if glow > 0.01 {
-                    var gu = lu
+                    var gu = items[i]
                     gu.hx *= 1.18
                     gu.hy *= 1.18
                     gu.mipBias = 5
@@ -400,8 +443,9 @@ final class Renderer: NSObject, MTKViewDelegate {
                     enc.setFragmentBytes(&gu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
                     enc.setFragmentTexture(logo, index: 0)
                     enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
-        }
+                }
 
+                var lu = items[i]
                 lu.opacity = 1
                 lu.tintAmount = Float(settings.logoTint)
                 enc.setRenderPipelineState(logoPipeline)

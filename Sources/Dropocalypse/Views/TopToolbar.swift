@@ -60,14 +60,9 @@ struct TopToolbar: View {
                     DisclosureGroup("Recording settings") { recordSettings }
                 }
 
-                section("Logo") {
-                    Text(model.hasCustomLogo ? (model.logoName ?? "Your logo") : "No logo chosen")
-                        .lineLimit(1).truncationMode(.middle)
-                    HStack {
-                        Button("Choose Logo…") { model.chooseLogo() }
-                        Button("Remove") { model.clearLogo() }.disabled(!model.hasCustomLogo)
-                    }
-                    Toggle("Show logo", isOn: $settings.showLogo)
+                section("Logos and text") {
+                    itemsEditor
+                    Toggle("Show logos", isOn: $settings.showLogo)
                 }
 
                 section("Style") {
@@ -80,7 +75,7 @@ struct TopToolbar: View {
                 }
 
                 DisclosureGroup("Motion", isExpanded: $showMotion) { motionControls }
-                DisclosureGroup("Logo look", isExpanded: $showLogoLook) { logoLookControls }
+                DisclosureGroup("Logo look", isExpanded: $showLogoLook) { logoLookControls(withItems: false) }
                 DisclosureGroup(capture.isRunning ? "Audio" : "Audio (off)", isExpanded: $showAudio) { audioControls }
                 DisclosureGroup("Look", isExpanded: $showLook) { lookControls }
                 if UpdateChecker.isEnabled {
@@ -130,7 +125,7 @@ struct TopToolbar: View {
             popoverButton(nil, icon: "chevron.down", id: "record") { recordSettings }
             separator
             popoverButton("Motion", icon: "waveform.path.ecg", id: "motion") { motionControls }
-            popoverButton("Logo", icon: "sparkles", id: "logo") { logoLookControls }
+            popoverButton("Logo", icon: "sparkles", id: "logo") { logoLookControls(withItems: true) }
             popoverButton("Audio", icon: capture.isRunning ? "mic.fill" : "mic.slash", id: "audio") { audioControls }
             popoverButton("Look", icon: "sun.max", id: "look") { lookControls }
 
@@ -185,19 +180,122 @@ struct TopToolbar: View {
         Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 18).padding(.horizontal, 4)
     }
 
+    private var isPortrait: Bool { settings.pictureOrientation != 0 }
+
     private var logoMenu: some View {
         Menu {
-            Button("Choose Logo…  (L)") { model.chooseLogo() }
-            Button("Remove Logo") { model.clearLogo() }.disabled(!model.hasCustomLogo)
+            ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                Menu("\(index + 1). " + (item.isText ? "“\(item.name)”" : item.name)) {
+                    if !item.isText {
+                        Button("Replace…") { model.replaceItem(item.id) }
+                    }
+                    Button(isPortrait ? "Move Up" : "Move Left") { model.moveItem(item.id, by: -1) }
+                        .disabled(index == 0)
+                    Button(isPortrait ? "Move Down" : "Move Right") { model.moveItem(item.id, by: 1) }
+                        .disabled(index == model.items.count - 1)
+                    Button("Remove") { model.removeItem(item.id) }
+                }
+            }
+            if !model.items.isEmpty { Divider() }
+            Button("Add Logo…  (L)") { model.chooseLogo() }.disabled(!model.canAddItem)
+            Button("Add Text") { model.addTextItem() }.disabled(!model.canAddItem)
+            Button("Edit Text and Order…") { model.openLogoPanel() }.disabled(model.items.isEmpty)
+            Button("Remove All") { model.clearLogo() }.disabled(model.items.isEmpty)
             Divider()
-            Toggle("Show Logo  (G)", isOn: $settings.showLogo)
+            Toggle("Show Logos  (G)", isOn: $settings.showLogo)
         } label: {
-            Label(model.hasCustomLogo ? (model.logoName ?? "Logo") : "Add Logo", systemImage: "photo")
+            Label(model.logoMenuTitle, systemImage: model.items.count > 1 ? "photo.on.rectangle" : "photo")
                 .labelStyle(.titleAndIcon)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Choose the logo (or drag an image onto the window)")
+        .help("Up to 4 logos or text items (or drag images onto the window)")
+    }
+
+    /// The list of logos and text items: each text item's words, font and color, plus
+    /// replace, reorder and remove. In the Logo panel and the detached controls window.
+    private var itemsEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if model.items.isEmpty {
+                Text("No logo yet: add an image or some text.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                itemRow(index: index, item: item)
+            }
+            HStack {
+                Button("Add Logo…") { model.chooseLogo() }
+                Button("Add Text") { model.addTextItem() }
+            }
+            .font(.caption)
+            .disabled(!model.canAddItem)
+            Text(model.canAddItem ? "Up to 4. They sit side by side, or top to bottom in Portrait."
+                                  : "That's the most: 4 at once. Remove one to add another.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func itemRow(index: Int, item: OverlayItem) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text("\(index + 1).").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                if item.isText {
+                    TextField("Type your text", text: Binding(get: { item.text },
+                                                              set: { model.setText(item.id, $0) }))
+                        .textFieldStyle(.roundedBorder)
+                        .font(.caption)
+                } else {
+                    Text(item.name)
+                        .font(.caption).lineLimit(1).truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .help(item.name)
+                    Button("Replace…") { model.replaceItem(item.id) }.font(.caption)
+                }
+                Button { model.moveItem(item.id, by: -1) } label: {
+                    Image(systemName: isPortrait ? "chevron.up" : "chevron.left")
+                }
+                .disabled(index == 0)
+                .help(isPortrait ? "Move up" : "Move left")
+                Button { model.moveItem(item.id, by: 1) } label: {
+                    Image(systemName: isPortrait ? "chevron.down" : "chevron.right")
+                }
+                .disabled(index == model.items.count - 1)
+                .help(isPortrait ? "Move down" : "Move right")
+                Button { model.removeItem(item.id) } label: { Image(systemName: "xmark.circle.fill") }
+                    .help("Remove")
+            }
+            .buttonStyle(.borderless)
+            if item.isText {
+                HStack(spacing: 6) {
+                    Picker("Font", selection: Binding(get: { item.font }, set: { model.setFont(item.id, $0) })) {
+                        ForEach(OverlayLayout.textFontNames.indices, id: \.self) { f in
+                            Text(OverlayLayout.textFontNames[f]).tag(f)
+                        }
+                    }
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .frame(width: 90)
+                    ForEach(OverlayLayout.textColors.indices, id: \.self) { c in
+                        colorSwatch(c, selected: item.color == c) { model.setColor(item.id, c) }
+                    }
+                }
+                .padding(.leading, 18)
+            }
+        }
+    }
+
+    private func colorSwatch(_ index: Int, selected: Bool, action: @escaping () -> Void) -> some View {
+        let rgb = OverlayLayout.textColors[index]
+        let color = Color(red: Double((rgb >> 16) & 0xFF) / 255, green: Double((rgb >> 8) & 0xFF) / 255,
+                          blue: Double(rgb & 0xFF) / 255)
+        return Circle()
+            .fill(color)
+            .frame(width: 16, height: 16)
+            .overlay(Circle().stroke(Color.white, lineWidth: selected ? 2 : 0))
+            .contentShape(Circle())
+            .onTapGesture(perform: action)
+            .help(OverlayLayout.textColorNames[index])
     }
 
     private var styleControls: some View {
@@ -469,13 +567,17 @@ struct TopToolbar: View {
         }
     }
 
-    private var logoLookControls: some View {
-        PopoverForm(title: "Logo") {
+    private func logoLookControls(withItems: Bool) -> some View {
+        PopoverForm(title: withItems ? "Logos and text" : "Logo", width: withItems ? 340 : 280) {
+            if withItems {
+                itemsEditor
+                Divider()
+            }
             slider("Size", $settings.logoSize, 0.08...0.8)
             slider("Glow", $settings.glow, 0...1.5)
             slider("Color tint", $settings.logoTint, 0...1)
             Toggle("Logo trails (feeds into the visuals)", isOn: $settings.logoTrails)
-            Toggle("Show logo", isOn: $settings.showLogo)
+            Toggle("Show logos", isOn: $settings.showLogo)
         }
     }
 
@@ -581,7 +683,7 @@ struct TopToolbar: View {
 
     private static let shortcutRows: [[String]] = [
         ["F", "Full screen"], ["T / S", "Show / hide toolbar"], ["Esc", "Hide toolbar"],
-        ["L", "Choose logo"], ["G", "Show / hide logo"],
+        ["L", "Add a logo"], ["G", "Show / hide logo"],
         ["Left / Right", "Previous / next style"], ["A", "Auto-cycle on / off"],
         ["D", "Detach / attach the controls"], ["R", "Start / stop recording"],
     ]
@@ -632,7 +734,14 @@ struct TopToolbar: View {
 
 private struct PopoverForm<Content: View>: View {
     let title: String
+    var width: CGFloat = 280
     @ViewBuilder let content: () -> Content
+
+    init(title: String, width: CGFloat = 280, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.width = width
+        self.content = content
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -640,6 +749,6 @@ private struct PopoverForm<Content: View>: View {
             content()
         }
         .padding(14)
-        .frame(width: 280)
+        .frame(width: width)
     }
 }

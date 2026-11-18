@@ -79,8 +79,10 @@ out.append(inc("dialogs.inc"))
 out.append("// ---------------------------------------------------------------------------------------------\n"
            "// Logo handling\n"
            "// ---------------------------------------------------------------------------------------------\n\n")
-out.append(section("static std::wstring fileNameOf", "static void loadLogoFrom"))
+out.append(section("static std::wstring fileNameOf", "static bool copyItemFile"))
 out.append(inc("logo.inc"))
+out.append(section("static bool isOwnItemFile", "static void chooseLogo"))
+out.append(inc("chooselogo.inc"))
 out.append(inc("recordfolder.inc"))
 out.append(section("static void showRecordNotice", "static void startRecording"))
 out.append(inc("startrecording.inc"))

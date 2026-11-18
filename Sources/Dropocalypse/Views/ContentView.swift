@@ -66,7 +66,7 @@ struct ContentView: View {
                 RoundedRectangle(cornerRadius: 18)
                     .strokeBorder(.white.opacity(0.8), style: StrokeStyle(lineWidth: 3, dash: [10, 8]))
                     .padding(24)
-                    .overlay(Text("Drop to use as your logo").font(.title2.bold()).foregroundStyle(.white))
+                    .overlay(Text("Drop to add as a logo").font(.title2.bold()).foregroundStyle(.white))
                     .allowsHitTesting(false)
             }
         }

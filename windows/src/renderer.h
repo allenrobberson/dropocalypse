@@ -43,6 +43,9 @@ struct LogoImage {
 
 bool loadLogoImage(const std::wstring& path, LogoImage& out, std::wstring& error);
 LogoImage placeholderLogo();
+/// Draws a text item (font and color indexes from core_logic.h) with a dark outline, ready to
+/// use like a logo image. Returns an empty image if no font could be loaded.
+LogoImage renderTextLogo(const std::string& utf8Text, int font, int color);
 
 // ---------------------------------------------------------------------------------------------
 
@@ -72,9 +75,12 @@ struct LogoPose {
     float x = 0, y = 0, scaleX = 1, scaleY = 1, rotation = 0;
 };
 
+/// One per logo or text item. `variant` (core_logic.h) gives each item its own small delay,
+/// direction and drift so several items react to the same beat without moving like clones.
 class LogoMotion {
 public:
-    LogoPose update(float dt, const AudioSnapshot& audio, const RenderSettings& s);
+    LogoPose update(float dt, const AudioSnapshot& audio, const RenderSettings& s,
+                    const MotionVariant& variant = MotionVariant());
 
 private:
     struct Spring {
@@ -82,9 +88,12 @@ private:
         Spring(float k_, float c_) : k(k_), c(c_) {}
         void step(float dt) { float a = -k * x - c * v; v += a * dt; x += v * dt; }
     };
+    void kick(float strength, const RenderSettings& s);
     Spring squash_{320, 15}, slide_{38, 6.5f}, wobble_{130, 9};
     float bounceY_ = 0, bounceV_ = 0, side_ = 1, time_ = 0;
     int lastBeat_ = 0;
+    bool started_ = false, pending_ = false;
+    float pendingStrength_ = 0, pendingAt_ = 0;
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -97,7 +106,9 @@ public:
     ~Renderer();
 
     bool init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring& error);
-    void setLogo(const LogoImage& image);
+    /// The logos and text items to show, left to right (top to bottom in portrait), up to
+    /// kMaxOverlayItems. An empty list shows the "YOUR LOGO" placeholder.
+    void setItems(const std::vector<LogoImage>& images);
 
     /// Renders one frame into `target`. May advance settings.sceneIndex when auto-cycling.
     void render(ID3D11RenderTargetView* target, int width, int height, AudioAnalysis& analysis,
@@ -135,12 +146,13 @@ private:
     Target feedback_[2];
     int feedbackIndex_ = 0, fbWidth_ = 0, fbHeight_ = 0;
 
-    Com<ID3D11Texture2D> logoTex_;
-    Com<ID3D11ShaderResourceView> logoSRV_;
-    float logoAspect_ = 1;
+    Com<ID3D11Texture2D> logoTex_[kMaxOverlayItems];
+    Com<ID3D11ShaderResourceView> logoSRV_[kMaxOverlayItems];
+    float logoAspect_[kMaxOverlayItems] = {1, 1, 1, 1};
+    int itemCount_ = 0;
 
     Spectrum spectrum_;
-    LogoMotion motion_;
+    LogoMotion motion_[kMaxOverlayItems];
     std::unique_ptr<StyleFX> fx_;
     LARGE_INTEGER qpcFreq_{}, qpcStart_{}, qpcLast_{};
     float flash_ = 0;

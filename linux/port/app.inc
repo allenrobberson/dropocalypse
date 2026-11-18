@@ -49,7 +49,9 @@ struct App {
     bool fullscreen = false;
     int prevX = 100, prevY = 100, prevW = 1280, prevH = 720;
 
-    std::string pendingDrop;      // file dropped on a window, loaded on the next frame
+    std::vector<std::string> pendingDrop;   // files dropped on a window, loaded on the next frame
+    std::vector<LogoImage> itemImages;      // one per settings.items entry, as the renderer shows them
+    int pendingReplace = -1;                // the next chosen image replaces this item instead of adding one
     bool quitRequested = false;
 };
 

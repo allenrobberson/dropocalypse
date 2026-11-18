@@ -94,6 +94,64 @@ final class CoreLogicTests: XCTestCase {
         XCTAssertEqual(empty, FrameLayout.Rect(x: 0, y: 0, width: 0, height: 100))
     }
 
+    func testOverlayLayoutRowAndColumn() {
+        let wide: Float = 16.0 / 9.0
+        let one = OverlayLayout.slot(index: 0, count: 1, aspect: wide)
+        XCTAssertEqual(one.cx, 0); XCTAssertEqual(one.cy, 0)
+        for n in 2...4 {
+            for i in 0..<(n - 1) {
+                let s = OverlayLayout.slot(index: i, count: n, aspect: wide)
+                let t = OverlayLayout.slot(index: i + 1, count: n, aspect: wide)
+                XCTAssertLessThan(s.cx, t.cx)
+                XCTAssertEqual(s.cy, 0)
+                XCTAssertLessThanOrEqual(s.cx + s.maxHalfW, t.cx - t.maxHalfW + 1e-4)
+            }
+            let last = OverlayLayout.slot(index: n - 1, count: n, aspect: wide)
+            XCTAssertLessThanOrEqual(last.cx + last.maxHalfW, wide)
+        }
+        let tall: Float = 9.0 / 16.0
+        for n in 2...4 {
+            for i in 0..<(n - 1) {
+                let s = OverlayLayout.slot(index: i, count: n, aspect: tall)
+                let t = OverlayLayout.slot(index: i + 1, count: n, aspect: tall)
+                XCTAssertEqual(s.cx, 0)
+                XCTAssertGreaterThan(s.cy, t.cy)
+                XCTAssertGreaterThanOrEqual(s.cy - s.maxHalfH, t.cy + t.maxHalfH - 1e-4)
+            }
+        }
+        XCTAssertEqual(OverlayLayout.slot(index: 9, count: 9, aspect: wide),
+                       OverlayLayout.slot(index: 3, count: 4, aspect: wide))
+    }
+
+    func testOverlayExtentKeepsShapeInsideSlot() {
+        let one = OverlayLayout.slot(index: 0, count: 1, aspect: 16.0 / 9.0)
+        let e1 = OverlayLayout.extent(imageAspect: 2, size: 0.32, slot: one)
+        XCTAssertEqual(e1.halfW, 0.32, accuracy: 1e-5)
+        XCTAssertEqual(e1.halfH, 0.16, accuracy: 1e-5)
+        let s4 = OverlayLayout.slot(index: 0, count: 4, aspect: 16.0 / 9.0)
+        let e4 = OverlayLayout.extent(imageAspect: 4, size: 0.8, slot: s4)
+        XCTAssertLessThanOrEqual(e4.halfW, s4.maxHalfW + 1e-5)
+        XCTAssertEqual(e4.halfW / e4.halfH, 4, accuracy: 1e-4)
+    }
+
+    func testOverlayMotionVariantsAndText() {
+        XCTAssertEqual(OverlayLayout.motionVariant(0),
+                       OverlayLayout.MotionVariant(delay: 0, side: 1, phase: 0, amount: 1))
+        for i in 1..<OverlayLayout.maxItems {
+            let v = OverlayLayout.motionVariant(i)
+            XCTAssertLessThanOrEqual(v.delay, 0.08)
+            XCTAssertGreaterThan(v.amount, 0.85)
+            XCTAssertLessThan(v.amount, 1.15)
+        }
+        XCTAssertNotEqual(OverlayLayout.motionVariant(1).side, OverlayLayout.motionVariant(0).side)
+        XCTAssertEqual(OverlayLayout.cleanText("  DJ\nNight\t "), "DJ Night")
+        XCTAssertEqual(OverlayLayout.cleanText("   "), "")
+        XCTAssertEqual(OverlayLayout.cleanText(String(repeating: "x", count: 80)).count, 60)
+        XCTAssertEqual(OverlayLayout.textColor(99), 0xFFFFFF)
+        XCTAssertEqual(OverlayLayout.textFontNames.count, 4)
+        XCTAssertEqual(OverlayLayout.textColors.count, OverlayLayout.textColorNames.count)
+    }
+
     func testSignaturePolicy() {
         let signed = observation(teamID: "TEAMID1234")
         XCTAssertEqual(

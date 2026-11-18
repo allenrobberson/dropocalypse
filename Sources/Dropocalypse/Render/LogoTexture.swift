@@ -1,4 +1,5 @@
 import AppKit
+import DropocalypseCore
 import Metal
 
 /// Converts the user's image into a premultiplied RGBA texture with mipmaps
@@ -30,6 +31,59 @@ enum LogoTexture {
         ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
         ctx.draw(source, in: CGRect(x: CGFloat(pad), y: CGFloat(pad), width: w0 * scale, height: h0 * scale))
         return upload(ctx, device: device, queue: queue)
+    }
+
+    /// A text item, drawn with a dark outline so it stays readable over bright visuals.
+    /// `font` and `color` index `OverlayLayout.textFontNames` / `textColors`.
+    static func text(_ raw: String, font: Int, color: Int, device: MTLDevice, queue: MTLCommandQueue) -> MTLTexture? {
+        let text = OverlayLayout.cleanText(raw)
+        guard !text.isEmpty else { return nil }
+        var pointSize: CGFloat = 200
+        func makeFont(_ size: CGFloat) -> NSFont {
+            switch font {
+            case 1: return NSFont.systemFont(ofSize: size, weight: .black)
+            case 2:
+                let base = NSFont.systemFont(ofSize: size, weight: .bold)
+                if let serif = base.fontDescriptor.withDesign(.serif), let f = NSFont(descriptor: serif, size: size) {
+                    return f
+                }
+                return NSFont(name: "Georgia-Bold", size: size) ?? base
+            case 3: return NSFont.monospacedSystemFont(ofSize: size, weight: .bold)
+            default: return NSFont.systemFont(ofSize: size, weight: .bold)
+            }
+        }
+        var nsFont = makeFont(pointSize)
+        var size = (text as NSString).size(withAttributes: [.font: nsFont])
+        if size.width > 2400 {   // shrink very long text so it stays under 2400 px
+            pointSize = max(60, pointSize * 2400 / size.width)
+            nsFont = makeFont(pointSize)
+            size = (text as NSString).size(withAttributes: [.font: nsFont])
+        }
+        let outline = max(4, pointSize / 18)
+        let margin = outline + 4
+        let w = Int(ceil(size.width + margin * 2)), h = Int(ceil(size.height + margin * 2))
+        guard w > 0, h > 0,
+              let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+        let rgb = OverlayLayout.textColor(color)
+        let fill = NSColor(srgbRed: CGFloat((rgb >> 16) & 0xFF) / 255, green: CGFloat((rgb >> 8) & 0xFF) / 255,
+                           blue: CGFloat(rgb & 0xFF) / 255, alpha: 1)
+        let rect = CGRect(x: margin, y: margin, width: size.width + 1, height: size.height + 1)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
+        // Outline first (a wide stroke, half of it outside the letters), then the fill on top.
+        // strokeWidth is a percentage of the point size; positive means stroke only.
+        NSAttributedString(string: text, attributes: [
+            .font: nsFont,
+            .strokeColor: NSColor.black.withAlphaComponent(0.75),
+            .strokeWidth: outline * 2 / pointSize * 100,
+        ]).draw(in: rect)
+        NSAttributedString(string: text, attributes: [.font: nsFont, .foregroundColor: fill]).draw(in: rect)
+        NSGraphicsContext.restoreGraphicsState()
+        guard let image = ctx.makeImage() else { return nil }
+        return make(from: image, device: device, queue: queue)
     }
 
     /// Shown until the user picks their own logo.
