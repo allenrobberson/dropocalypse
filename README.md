@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/media/icon-mark.png" width="120" alt="Dropocalypse icon: rainbow equalizer bars inside a neon teardrop"></p>
+
 # Dropocalypse
 
 <p align="center"><b>The drop hits. Your logo goes off.</b></p>
