@@ -72,7 +72,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
 - 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok. **Portrait** records a 9:16 frame (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
 - ⬇ **One-click updates**: the **Updates** menu (not the Look panel) tells you when a new version is out, checks the download, and installs it for you.
-- 🔏 **Signed and notarized Mac app** that opens without a security warning.
+- 🔏 **Signed and notarized Mac app** that opens without a security warning, and a **[Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)** signed by Microsoft.
 
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
 
@@ -92,6 +92,23 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 ### 1.2.11: lower CPU, same picture
 - ⚡ **Waveforms are drawn on the GPU.** Tunnel, lines, bars, dots and Lissajous look the same and use less CPU. The app also rests while the window is minimized or covered, and while the toolbar is hidden.
 - **Look → Frame rate** defaults to **Display**. Choose **60** or **30** if a laptop is working too hard. The status line shows a frame time (for example **6.2 ms**) while the toolbar is visible.
+
+Older versions are in the [Changelog](../../wiki/Changelog).
+
+## Download
+
+Get every version from the **[latest release](../../releases/latest)**. Each release includes:
+
+| File | For |
+|---|---|
+| `Dropocalypse-…-macOS.dmg` | Mac (drag-to-Applications installer) |
+| `Dropocalypse-…-macOS.zip` | Mac (the app in a zip, same thing) |
+| `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
+| `Dropocalypse-…-Linux-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub |
+| `Dropocalypse-…-Linux-x86_64.tar.gz` | Linux, the same app as a plain folder |
+| `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for Mac, Windows and Linux |
+
+On Windows you can also **[get it from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. From 1.0 on, the app updates itself in one click when a newer version is out. Want an email for each release? Click **Watch → Custom → Releases** at the top of this page.
 
 ### 🍎 Mac
 
@@ -145,9 +162,9 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 
 ### Quick start
 
-1. Open **Dropocalypse**, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), or a mic or line-in. Allow access when macOS asks.
-2. Play some music. The visuals start reacting right away.
-3. Drag your logo (PNG, JPG, PDF or SVG) onto the window, or press **L** to pick a file.
+1. Open **Dropocalypse** and play some music. On Windows and Linux it already listens to what the computer is playing. On a Mac, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), and allow access when macOS asks. A mic or line-in works on all three.
+2. The visuals start reacting right away.
+3. Drag your logo onto the window, or press **L** to pick a file. A PNG with a transparent background looks best.
 4. Press **F** for full screen.
 
 Your logo, style and all settings are saved automatically and come back the next time you open the app.
@@ -180,7 +197,7 @@ From left to right:
 | ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen |
 | ⤢ / **Full screen** | Full screen on / off |
 
-> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Record**, **Updates**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+> On Windows and Linux the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Record**, **Updates**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
 >
 > In full screen on a MacBook with a camera notch, the toolbar sits just below the notch so no button hides behind it, while the visuals still fill the whole screen.
 
@@ -233,6 +250,7 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 |---|---|---|
 | **Listen to** (Mac) | System default input | A drop-down of everything you can listen to. **Mac audio** (macOS 14.2+): *All Mac audio*, or any open app such as **Spotify**, Music, Safari or Chrome. Apps playing right now are listed first and marked ♪. Dropocalypse hears exactly what that app plays, at full quality, with no mic or extra software. If the app hasn't played anything yet, it starts the moment it does. **Microphone or line-in**: built-in mic, USB mic, audio interface or line-in. |
 | **Input** (Windows) | System audio | *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. You can also pick a mic, audio interface or line-in. |
+| **Input** (Linux) | What this computer is playing | Listens to the default output through PulseAudio or PipeWire, so no mic is needed. *Playing on: …* listens to one specific output. You can also pick a mic, audio interface or line-in. |
 | **Refresh list** (Windows: **Refresh devices**) | | Updates the list after you open an app or plug something in |
 | **Restart audio** | | Restarts listening. Use it if the visuals stop reacting after a device change or sleep. |
 | **Sensitivity** | 1.00 | How easily quiet audio drives the visuals (0.2 to 4). Raise it in a quiet room or when the mic is far from the speakers. Lower it if room noise makes things twitch when no music is playing. |
@@ -312,8 +330,9 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 | `T` or `S` | Show / hide the toolbar |
 | `Esc` | Hide the toolbar; press again to exit full screen |
 | `⌃⌘F` | Full screen (Mac menu shortcut; the green window button works too) |
-| `F11` | Full screen (Windows) |
-| `Ctrl+O` | Choose a logo (Windows) |
+| `F11` | Full screen (Windows and Linux) |
+| `Ctrl+O` | Choose a logo (Windows and Linux) |
+| `Ctrl+Q` | Quit (Linux) |
 | `L` | Choose a logo |
 | `G` | Show / hide the logo |
 | `←` `→` | Previous / next style |
@@ -326,9 +345,9 @@ On the Mac, the menu bar has the same actions: **File → Choose Logo… (⌘O)*
 ### Recording a video
 1. Click **Record** in the toolbar (or press **R**). It turns red and becomes **Stop** with a running timer.
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
-3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
+3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder, File Explorer or your file manager.
 
-Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape** (the Look panel), if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** records a vertical 9:16 frame instead: 720×1280, 1080×1920 or 2160×3840. On a landscape screen the same frame is centered with black bars on either side, so the preview matches the file.
+Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows and Linux) unless you pick another. On Linux, recording needs **ffmpeg**. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape** (the Look panel), if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** records a vertical 9:16 frame instead: 720×1280, 1080×1920 or 2160×3840. On a landscape screen the same frame is centered with black bars on either side, so the preview matches the file.
 
 ### Two screens: controls on one, visuals on the other
 1. Click **Detach** in the toolbar (or press **D**). The controls move into their own **Dropocalypse Controls** window, stacked top to bottom, with every panel shown in place.
@@ -338,7 +357,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 
 ### Setting up for a live show
 
-1. **Playing from the same computer?** On a Mac, pick your music or DJ app (or *All Mac audio*) under **Audio → Listen to**. On Windows, pick *System audio*. It's the cleanest signal there is, with no cables or mic.
+1. **Playing from the same computer?** On a Mac, pick your music or DJ app (or *All Mac audio*) under **Audio → Listen to**. On Windows, pick *System audio*; on Linux, the default already listens to what the computer is playing. It's the cleanest signal there is, with no cables or mic.
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
@@ -351,20 +370,22 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | Problem | Fix |
 |---|---|
 | **Mac: "Dropocalypse can't be opened"** on first launch | Download the latest version: since 1.0.1 the Mac app is signed and notarized and opens normally. On an older version, see [Download → Mac](#-mac). |
-| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The Windows app isn't code-signed yet. |
+| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The portable download isn't code-signed yet. The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is signed by Microsoft and skips this warning. |
 | **Windows: nothing happens when I double-click** | Make sure you extracted the zip first; don't run the app from inside it. On work or school PCs, IT policies can block unapproved apps, so ask your IT team. |
 | **Windows: visuals don't react to Spotify / YouTube** | Under **Audio**, choose *System audio (what this PC is playing)*. If you use headphones and speakers, pick the *Playing on: …* entry for the device you're listening on. |
 | **Windows: another app can't play while Dropocalypse is open** | Fixed in 1.2.9. Windows Media Player used to say it encountered a problem while playing the file. Open **Updates** and click **Update now**. System audio only listens, in shared mode, and the status line shows a buffer of about 10 ms. |
 | **Windows: two copies stay open after Update now** | Fixed in 1.2.10. Update now closes the old Dropocalypse before the new one starts. If you still see two, quit both in Task Manager and open the app once. Starting it again while it is already open brings that window forward. |
+| **Linux: the AppImage won't start** | Make it executable (**Properties → Allow executing file as program**, or `chmod +x`). On Ubuntu 22.04 or older, a message about FUSE means you need `libfuse2`, or run it with `--appimage-extract-and-run`. |
+| **Linux: visuals don't react to the music** | Under **Audio**, pick *What this computer is playing* or the *Playing on: …* entry for the output you're listening on, then click **Restart audio**. It needs PulseAudio or PipeWire (with `pipewire-pulse`, which current desktops include). |
+| **Linux: Record says ffmpeg is missing** | Install ffmpeg with your package manager, for example `sudo apt install ffmpeg`, then press **Record** again. |
 | **Nothing reacts when listening to an app** (Mac) | Make sure the app is actually playing, then allow Dropocalypse in **System Settings → Privacy & Security → Screen & System Audio Recording** (under *System Audio Recording Only*) and click **Restart audio**. Needs macOS 14.2 or later. |
 | **Nothing reacts to the music** | Check that microphone access is on. **Mac:** System Settings → Privacy & Security → Microphone → Dropocalypse. **Windows:** Settings → Privacy & security → Microphone → *Let desktop apps access your microphone*. Then use **Audio → Restart audio** and make sure the right input is selected. |
 | **It reacts, but only a little** | Raise **Sensitivity** and lower **Beat threshold**. Check that the input's level isn't turned down in **System Settings → Sound → Input**. |
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
 | **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** (Windows: **Refresh devices**) in the Audio panel |
 | **Visuals stutter for the first few minutes** (Mac, with a microphone) | Fixed in 1.2.2. Click **Updates → Update now**. |
-| **Windows: "Windows protected your PC"** | Click **More info → Run anyway**. The portable download isn't code-signed yet. |
 | **Update now doesn't work**, or the Updates menu says the download wasn't installed | Nothing was changed. The **Updates** menu is in the toolbar (and the detached controls window), not the Look panel. Mac: keep Dropocalypse in **Applications**. The new app must be signed with the same Developer ID and accepted by Gatekeeper. Windows: keep the folder somewhere you can edit, such as Documents or Desktop. Once this copy is code-signed, the download must be signed by the same publisher. Or use **Download page**. |
-| **I can't find my recording** | It's in your **Movies** (Mac) or **Videos** (Windows) folder unless you chose another one under **Record ▾**. Click **Show in Finder / Explorer** in the message after you stop. |
+| **I can't find my recording** | It's in your **Movies** (Mac) or **Videos** (Windows and Linux) folder unless you chose another one under **Record ▾**. Click the **Show** button in the message after you stop. |
 | **Recording has black bars** | The video is 16:9. Go full screen on a 16:9 display, or make the window 16:9, to fill the frame. |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
 | **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
@@ -381,6 +402,8 @@ Most visualizers feel laggy because of how they listen and analyze. This one:
 4. **Renders at the display's refresh rate**, up to 120 Hz on ProMotion. It reads the newest audio values right before each frame and uses only two drawables to avoid an extra frame of queueing.
 
 On Windows the same design uses **WASAPI** in shared mode, and the capture thread is registered with MMCSS ("Pro Audio") so it isn't starved. Microphones and line-ins use `IAudioClient3` to ask for the smallest period on that **input** only. **System audio** is loopback capture of the output the PC is already playing: the mix format, and the engine's normal period (about 10 ms). Dropocalypse does not open a playback stream and does not change that output's period or format, so other programs keep playing. Rendering uses a flip-model **Direct3D 11** swap chain with a frame-latency waitable object and a maximum latency of one frame.
+
+On Linux it listens through **PulseAudio** (or PipeWire's PulseAudio service) in 5 ms fragments, records the output's *monitor* for what the computer is playing, and draws with **OpenGL 3.3** using the same shaders, ported to GLSL.
 
 ## Building from source
 
@@ -461,7 +484,7 @@ linux/
 
 ### Adding a style
 
-Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) and the matching entry in `windows/src/scenes.h` (Windows). Each style is a handful of numbers: zoom, rotation, warp, trail decay, mirror and kaleidoscope settings, wave style and colors. Pull requests with new styles are very welcome.
+Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) and the matching entry in `windows/src/scenes.h`, which the Windows and Linux versions share. Each style is a handful of numbers: zoom, rotation, warp, trail decay, mirror and kaleidoscope settings, wave style and colors. Pull requests with new styles are very welcome.
 
 ## Roadmap
 
@@ -492,7 +515,7 @@ Dropocalypse is free and always will be. If it livens up your shows or streams, 
 ## Privacy and code signing
 
 - **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer, and recordings are only made when you press **Record** and saved only to the folder you choose. The only network use is a daily update check with GitHub (which you can turn off in the **Updates** menu) and downloading an update when you click **Update now**.
-- **[Code signing policy](CODE_SIGNING_POLICY.md):** Windows releases are being set up for free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+- **[Code signing policy](CODE_SIGNING_POLICY.md):** the Mac app is signed and notarized by Apple, and the [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is signed by Microsoft. The portable Windows zip is not code-signed yet; every download is built by GitHub Actions from this public code and listed with its SHA-256 checksum.
 
 ## License
 

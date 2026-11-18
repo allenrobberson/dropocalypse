@@ -11,13 +11,15 @@ Most visualizers feel laggy because of how they listen and analyze. This one:
 
 On Windows the same design uses **WASAPI** in shared mode, and the capture thread is registered with MMCSS ("Pro Audio") so it isn't starved. Microphones and line-ins use `IAudioClient3` to ask for the smallest period on that **input** only. **System audio** is loopback capture of the output the PC is already playing: the mix format, and the engine's normal period (about 10 ms). Dropocalypse does not open a playback stream and does not change that output's period or format, so other programs keep playing. Rendering uses a flip-model **Direct3D 11** swap chain with a frame-latency waitable object and a maximum latency of one frame.
 
+On Linux it listens through **PulseAudio** (or PipeWire's PulseAudio service) in 5 ms fragments, records the output's *monitor* for what the computer is playing, and draws with **OpenGL 3.3** using the same shaders, ported to GLSL.
+
 ## Listening to apps on the Mac
 
 On macOS 14.2+, Dropocalypse creates a Core Audio **process tap** (`CATapDescription`) for the chosen app's processes (helper processes such as a browser's renderers are folded in), or a global tap for all Mac audio that excludes itself. The tap is wrapped in a private aggregate device and read with an IOProc on the HAL's real-time thread, so latency stays at one small hardware buffer. It watches for the app starting or stopping audio and for output-device changes, and rebuilds the tap when needed.
 
 ## The render pipeline
 
-Every frame goes through the same three steps on both platforms (Metal on Mac, Direct3D 11 on Windows):
+Every frame goes through the same three steps on every platform (Metal on Mac, Direct3D 11 on Windows, OpenGL 3.3 on Linux):
 
 1. **Feedback warp:** last frame's image is zoomed, rotated, warped, mirrored or kaleidoscoped, color-shifted and faded into a pair of ping-pong `rgba16Float` textures. This is what makes MilkDrop-style trails and tunnels.
 2. **Shapes:** each style draws waveforms, spectrum bars, particles, ridges, grids or the tesseract as triangles: an additive batch for glowing light, plus an alpha-blended batch for solid shapes such as the Outrun sun.
@@ -31,9 +33,10 @@ The logo's pulse, squash, bounce, slide and wobble are stiff, damped springs. Be
 
 ## Platform notes
 
-| | Mac | Windows |
-|---|---|---|
-| Language | Swift, SwiftUI + AppKit | C++17, Win32 + Dear ImGui |
-| Audio | AVAudioEngine sink node, Core Audio process taps | WASAPI shared mode; loopback capture for system audio |
-| Graphics | Metal (shaders compiled at launch) | Direct3D 11, flip-model swap chain |
-| Settings | UserDefaults | `%APPDATA%\Dropocalypse\settings.ini` |
+| | Mac | Windows | Linux |
+|---|---|---|---|
+| Language | Swift, SwiftUI + AppKit | C++17, Win32 + Dear ImGui | C++17, GLFW + Dear ImGui |
+| Audio | AVAudioEngine sink node, Core Audio process taps | WASAPI shared mode; loopback capture for system audio | PulseAudio / PipeWire; the output's monitor for system audio |
+| Graphics | Metal (shaders compiled at launch) | Direct3D 11, flip-model swap chain | OpenGL 3.3 (GLSL port of the shaders) |
+| Recording | AVAssetWriter | Media Foundation | ffmpeg |
+| Settings | UserDefaults | `%APPDATA%\Dropocalypse\settings.ini` | `~/.config/dropocalypse/settings.ini` |

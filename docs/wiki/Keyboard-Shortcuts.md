@@ -6,8 +6,9 @@
 | `T` or `S` | Show / hide the toolbar |
 | `Esc` | Hide the toolbar; press again to exit full screen |
 | `⌃⌘F` | Full screen (Mac menu shortcut; the green window button works too) |
-| `F11` | Full screen (Windows) |
-| `Ctrl+O` | Choose a logo (Windows) |
+| `F11` | Full screen (Windows and Linux) |
+| `Ctrl+O` | Choose a logo (Windows and Linux) |
+| `Ctrl+Q` | Quit (Linux) |
 | `L` | Choose a logo |
 | `G` | Show / hide the logo |
 | `←` `→` | Previous / next style |

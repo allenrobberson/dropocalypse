@@ -2,7 +2,7 @@
 
 ## Setting up for a live show
 
-1. **Playing from the same computer?** On a Mac, pick your music or DJ app (or *All Mac audio*) under **Audio → Listen to**. On Windows, pick *System audio*. It's the cleanest signal there is, with no cables or mic.
+1. **Playing from the same computer?** On a Mac, pick your music or DJ app (or *All Mac audio*) under **Audio → Listen to**. On Windows, pick *System audio*; on Linux, the default already listens to what the computer is playing. It's the cleanest signal there is, with no cables or mic.
 2. **Use a direct feed if you can.** Run the booth, record or aux output of your mixer or DJ controller into a USB audio interface, then pick that interface under **Audio**. A direct feed reacts more cleanly than a mic hearing a loud room.
 3. **Using a mic instead?** Point it toward the speakers or subwoofer. Raise **Sensitivity** if the room is quiet; lower it if crowd noise is driving the visuals.
 4. **Tune the beat.** Watch the logo during a track with a clear kick. If it misses kicks, lower **Beat threshold**. If it jumps on hi-hats or vocals, raise it.
@@ -35,4 +35,4 @@ Dropocalypse doesn't have Chromecast built in. Google's Cast toolkit is made for
 - [ ] Auto-cycle on, unwanted styles unchecked, timer set (30–60 s)
 - [ ] Brightness adjusted for the projector
 - [ ] Full screen on the right display (**F**)
-- [ ] Computer set not to sleep (Mac: System Settings → Lock Screen / Displays; Windows: Power settings)
+- [ ] Computer set not to sleep (Mac: System Settings → Lock Screen / Displays; Windows: Power settings; Linux: your desktop's Power settings)

@@ -28,15 +28,15 @@ From left to right:
 | ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen. See [Live Shows and TVs](Live-Shows-and-TVs#two-screens-controls-on-one-visuals-on-the-other). |
 | ⤢ / **Full screen** | Full screen on / off |
 
-> On Windows the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
+> On Windows and Linux the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
 
 ## Recording
 
 1. Click **Record** in the toolbar (or press **R**). It turns red and becomes **Stop** with a running timer.
 2. Play your music. Dropocalypse records the visuals (without the toolbar) together with the music it's listening to.
-3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder or Explorer.
+3. Click **Stop** (or press **R** again). A moment later you'll see **Saved Dropocalypse 2026-11-15 at 19.30.00.mp4** with a button to show it in Finder, File Explorer or your file manager.
 
-Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows) unless you pick another. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape**, if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** (in the Look panel) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. On a landscape screen that frame is centered with black bars on either side, so the preview matches the file.
+Open the **▾** next to Record to choose the **video size** (720p or 1080p at 60 fps, or 4K at 30 fps) and **where to save**: your Movies folder (Mac) or Videos folder (Windows and Linux) unless you pick another. On Linux, recording needs **ffmpeg**. Recordings are MP4 files (H.264 video, AAC audio) that play anywhere and upload straight to YouTube, Instagram or TikTok. In **Landscape**, if your window isn't 16:9 the video gets black bars; full screen on a 16:9 display fills the frame. **Portrait** (in the Look panel) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. On a landscape screen that frame is centered with black bars on either side, so the preview matches the file.
 
 ## Style controls
 
@@ -66,5 +66,6 @@ Everything (logo, style, sliders, audio source, auto-cycle checkboxes) is saved 
 
 - **Mac:** app preferences, plus your logo in `~/Library/Application Support/Dropocalypse`
 - **Windows:** `%APPDATA%\Dropocalypse` (a plain `settings.ini` plus your logo)
+- **Linux:** `~/.config/dropocalypse` (a plain `settings.ini` plus your logo)
 
 **Reset to defaults** in the Motion panel resets the Motion, Logo and Look sliders.

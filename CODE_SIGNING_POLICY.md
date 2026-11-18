@@ -1,8 +1,6 @@
 # Code signing policy
 
-> **Status: applying.** Dropocalypse has applied to the SignPath Foundation open-source program. Until the application is approved, Windows downloads are not yet signed. This page will be updated when signed releases begin.
-
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+> **Status: not signed yet.** The portable Windows download is not code-signed yet. The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is signed by Microsoft. The Mac app is signed and notarized by Apple. This page will be updated when signed portable releases begin.
 
 ## What is signed
 
@@ -19,7 +17,7 @@ The in-app updater always checks the SHA-256 published in `SHA256SUMS.txt`. Once
 | **Committers and reviewers** | [Allen Robberson (@allenrobberson)](https://github.com/allenrobberson), see [repository collaborators](https://github.com/allenrobberson/dropocalypse/graphs/contributors) |
 | **Approvers** | [Allen Robberson (@allenrobberson)](https://github.com/allenrobberson) (repository owner) |
 
-Changes from anyone outside the team arrive as pull requests and are reviewed before they are merged. All team members use multi-factor authentication for GitHub and SignPath.
+Changes from anyone outside the team arrive as pull requests and are reviewed before they are merged. All team members use multi-factor authentication for GitHub.
 
 ## Privacy
 

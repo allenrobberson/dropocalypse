@@ -2,11 +2,11 @@
 
 Dropocalypse can listen to music in three ways. Choose the source under **Audio** in the toolbar.
 
-| Source | Mac | Windows | Best for |
-|---|---|---|---|
-| **An app** (Spotify, Music, a browser, DJ software) | ✅ macOS 14.2+ | (use System audio) | Music playing on the same computer |
-| **All computer audio** | ✅ *All Mac audio*, macOS 14.2+ | ✅ *System audio*, the default | Anything playing on the same computer |
-| **Microphone / line-in / audio interface** | ✅ | ✅ | Music from another device, a mixer or a live room |
+| Source | Mac | Windows | Linux | Best for |
+|---|---|---|---|---|
+| **An app** (Spotify, Music, a browser, DJ software) | ✅ macOS 14.2+ | (use System audio) | (use what the computer is playing) | Music playing on the same computer |
+| **All computer audio** | ✅ *All Mac audio*, macOS 14.2+ | ✅ *System audio*, the default | ✅ *What this computer is playing*, the default | Anything playing on the same computer |
+| **Microphone / line-in / audio interface** | ✅ | ✅ | ✅ | Music from another device, a mixer or a live room |
 
 ## 🍎 Mac: listen to Spotify or any app (macOS 14.2+)
 
@@ -24,6 +24,10 @@ If you denied permission by mistake, turn it on in **System Settings → Privacy
 
 Windows listens to **System audio (what this PC is playing)** by default, so Spotify, YouTube and DJ software work with no setup. If you have more than one output (say, headphones and speakers), pick the matching **Playing on: …** entry. This is a shared-mode loopback of that output: Dropocalypse does not take the speakers over, so other apps keep playing.
 
+## 🐧 Linux: listen to what the computer is playing
+
+Linux listens to **what this computer is playing** by default (the monitor of your default output, through PulseAudio or PipeWire), so Spotify, a browser and DJ software work with no setup. If you have more than one output, pick the matching **Playing on: …** entry. Nothing is taken over, so other apps keep playing.
+
 ## 🎤 Microphones, line-in and audio interfaces
 
 Pick the device in the same drop-down (Mac: under **Microphone or line-in**). macOS and Windows ask for **microphone** permission the first time:
@@ -39,6 +43,7 @@ For live shows, a direct feed from your mixer into a USB audio interface reacts 
 |---|---|---|
 | **Listen to** (Mac) | System default input | A drop-down of everything you can listen to. **Mac audio** (macOS 14.2+): *All Mac audio*, or any open app such as **Spotify**, Music, Safari or Chrome. Apps playing right now are listed first and marked ♪. Dropocalypse hears exactly what that app plays, at full quality, with no mic or extra software. If the app hasn't played anything yet, it starts the moment it does. **Microphone or line-in**: built-in mic, USB mic, audio interface or line-in. |
 | **Input** (Windows) | System audio | *System audio (what this PC is playing)* listens directly to the PC's sound output, so no mic is needed, and *Playing on: …* listens to one specific output device. You can also pick a mic, audio interface or line-in. |
+| **Input** (Linux) | What this computer is playing | Listens to the default output through PulseAudio or PipeWire, so no mic is needed. *Playing on: …* listens to one specific output. You can also pick a mic, audio interface or line-in. |
 | **Refresh devices** | | Updates the list after you plug something in |
 | **Restart audio** | | Restarts listening. Use it if the visuals stop reacting after a device change or sleep. |
 | **Sensitivity** | 1.00 | How easily quiet audio drives the visuals (0.2 to 4). Raise it in a quiet room or when the mic is far from the speakers. Lower it if room noise makes things twitch when no music is playing. |
@@ -47,4 +52,4 @@ For live shows, a direct feed from your mixer into a USB audio interface reacts 
 
 The app adjusts its own levels to the loudness of the input (automatic gain), so it works with both a quiet room mic and a hot line-level signal without manual tweaking.
 
-Audio is analyzed live on your computer. It is never recorded, saved or sent anywhere.
+Audio is analyzed live on your computer and never sent anywhere. It is only saved if you press **Record**, and then only to a folder on your own computer.

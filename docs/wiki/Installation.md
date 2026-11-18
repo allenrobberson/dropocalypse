@@ -1,13 +1,15 @@
 # Installation
 
-Get both versions from the **[latest release](https://github.com/allenrobberson/dropocalypse/releases/latest)**. Every release includes:
+Get every version from the **[latest release](https://github.com/allenrobberson/dropocalypse/releases/latest)**. Every release includes:
 
 | File | For |
 |---|---|
 | `Dropocalypse-…-macOS.dmg` | Mac (drag-to-Applications installer) |
 | `Dropocalypse-…-macOS.zip` | Mac (the app in a zip, same thing) |
 | `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
-| `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for both |
+| `Dropocalypse-…-Linux-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub |
+| `Dropocalypse-…-Linux-x86_64.tar.gz` | Linux, the same app as a plain folder |
+| `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for Mac, Windows and Linux |
 
 You can also **[get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. That copy is signed by Microsoft and updated by the Store, so it has no **Update now** and does not check GitHub. Your logo and settings still live in `%APPDATA%\Dropocalypse`.
 
@@ -24,7 +26,7 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
 1. Download the `Windows-portable.zip`, right-click it → **Extract All**, and open the folder.
 2. Double-click **Dropocalypse.exe**. Nothing gets installed, and you can keep the folder anywhere, even on a USB stick.
-3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the free app isn't code-signed.
+3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the portable download isn't code-signed yet. The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) skips this warning.
 4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
@@ -49,7 +51,7 @@ From version **1.0**, Dropocalypse updates itself: when a new version is out, a 
 - **Windows:** keep the Dropocalypse folder somewhere you can edit (Documents, Desktop, a USB stick). The old version is swapped out in place; no admin rights are needed.
 - If anything fails, nothing is changed and the **Updates** menu says why. That includes no internet, a bad download, a locked folder, a Mac download that isn't signed by the same Developer ID or that Gatekeeper rejects, and (once your Windows copy is code-signed) a download signed by a different publisher. Use **Download page** in that menu, or try again later. For an email on every release, click **Watch → Custom → Releases** on the GitHub page. The Microsoft Store edition does not use this updater.
 
-Download the new version and replace the old one: drag the new app into **Applications** on a Mac (choose **Replace**), or swap in the new folder on Windows. Your logo, style and settings are kept.
+To update by hand instead, download the new version and replace the old one: drag the new app into **Applications** on a Mac (choose **Replace**), swap in the new folder on Windows, or replace the AppImage on Linux. Your logo, style and settings are kept.
 
 ## Uninstalling
 
@@ -59,6 +61,6 @@ Download the new version and replace the old one: drag the new app into **Applic
 
 ## Why the security warnings?
 
-The Mac app has been signed and notarized since 1.0.1, so it opens without a security warning. The portable Windows download is not code-signed yet (signing through SignPath is in progress), so Windows may still say "Windows protected your PC" the first time: click **More info → Run anyway**. That means the file has no publisher signature, not that anything harmful was found. The full source code is public, and every download is built by GitHub Actions from that code. Sponsorships help keep the Mac signing membership and Windows signing going: see [Support the Project](Support-the-Project).
+The Mac app has been signed and notarized since 1.0.1, so it opens without a security warning. The portable Windows download is not code-signed yet, so Windows may still say "Windows protected your PC" the first time: click **More info → Run anyway**. That means the file has no publisher signature, not that anything harmful was found. The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is signed by Microsoft and opens without the warning. Linux AppImages are not signed; check the download against `SHA256SUMS.txt` on the release if you like. The full source code is public, and every download is built by GitHub Actions from that code. Sponsorships help pay for the Mac signing membership and a Windows signing certificate: see [Support the Project](Support-the-Project).
 
 Next: [[Quick Start]]

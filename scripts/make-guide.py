@@ -601,7 +601,7 @@ def build():
         P("3. Click <b>Stop</b> (or press <b>R</b> again). A message offers to show the file.", body),
         Spacer(1, 4),
         P("Open the <b>▾</b> next to Record to pick the video size (720p or 1080p at 60 fps, or 4K at 30 fps) and "
-          "the folder. Videos go to Movies (Mac) or Videos (Windows) unless you choose another. They are MP4 "
+          "the folder. Videos go to Movies (Mac) or Videos (Windows and Linux) unless you choose another. They are MP4 "
           "files that play anywhere and upload straight to YouTube, Instagram or TikTok.", small),
         Spacer(1, 4),
         P("<b>Portrait</b> (Look panel, Frame) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. "
@@ -663,7 +663,7 @@ def build():
 
     # ---- Shortcuts
     s += section(8, "Keyboard shortcuts")
-    s.append(table(["Action", "Mac", "Windows"], [
+    s.append(table(["Action", "Mac", "Windows and Linux"], [
         ["Full screen on / off", f"F or Ctrl+{CMD}F (or the green window button)", "F or F11"],
         ["Show / hide the toolbar", "T or S", "T or S"],
         ["Hide the toolbar", "Esc (press again to exit full screen)", "Esc (press again to exit full screen)"],
@@ -682,7 +682,7 @@ def build():
     s += section(9, "Setting up for a live show")
     s += steps([
         "<b>Playing from the same computer?</b> On a Mac, pick your music or DJ app (or All Mac audio) under "
-        "<b>Audio</b>. On Windows, choose <b>System audio</b>. It's the cleanest signal, with no cables or mic.",
+        "<b>Audio</b>. On Windows, choose <b>System audio</b>; on Linux the default already listens to what the computer plays. It's the cleanest signal, with no cables or mic.",
         "<b>Use a direct feed if you can.</b> Run the booth, record or aux output of your mixer or DJ controller "
         "into a USB audio interface and pick it under Audio. A direct feed reacts more cleanly than a mic in a "
         "loud room.",
@@ -801,7 +801,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     doc = SimpleDocTemplate(OUT, pagesize=letter, leftMargin=inch, rightMargin=inch, topMargin=0.9 * inch,
                             bottomMargin=inch, title="Dropocalypse User Guide", author="Dropocalypse contributors",
-                            subject="How to install and use Dropocalypse on Mac and Windows")
+                            subject="How to install and use Dropocalypse on Mac, Windows and Linux")
     doc.build(build(), onFirstPage=cover_page, onLaterPages=later_pages)
     with open(VERSION_FILE, "w", encoding="utf-8") as f:
         f.write(VERSION + "\n")

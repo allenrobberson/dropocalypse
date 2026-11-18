@@ -5,9 +5,9 @@ Dropocalypse is built around putting **your** logo on screen: a band, DJ name, v
 ## Adding your logo
 
 - **Drag an image** from Finder, File Explorer or a web browser onto the window, or
-- press **L** (Windows: also **Ctrl+O**) or use the **Logo menu** in the toolbar.
+- press **L** (Windows and Linux: also **Ctrl+O**) or use the **Logo menu** in the toolbar.
 
-On a Mac, PNG, JPG, PDF and SVG work; on Windows, PNG, JPG, BMP, GIF and TIFF. A **PNG with a transparent background**, around 1000 px on its long side, looks best. Empty transparent edges are trimmed automatically, so the logo bounces around its visible shape. Your logo is remembered between launches.
+On a Mac, PNG, JPG, PDF and SVG work; on Windows, PNG, JPG, BMP, GIF and TIFF; on Linux, PNG, JPG, BMP, GIF and TGA. A **PNG with a transparent background**, around 1000 px on its long side, looks best. Empty transparent edges are trimmed automatically, so the logo bounces around its visible shape. Your logo is remembered between launches.
 
 ## Logo menu
 
@@ -17,7 +17,7 @@ On a Mac, PNG, JPG, PDF and SVG work; on Windows, PNG, JPG, BMP, GIF and TIFF. A
 | **Remove Logo** | Removes your logo and goes back to the "YOUR LOGO" placeholder |
 | **Show Logo (G)** | Hides or shows the logo without removing it, so you get visuals only |
 
-You can also **drag an image** from Finder, or straight from a web browser, onto the window at any time.
+You can also **drag an image** from Finder, File Explorer, your file manager or straight from a web browser onto the window at any time.
 
 ## Motion panel
 

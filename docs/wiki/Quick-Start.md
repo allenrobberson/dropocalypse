@@ -1,8 +1,8 @@
 # Quick Start
 
-1. Open **Dropocalypse**, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), or a mic or line-in. Allow access when macOS asks.
-2. Play some music. The visuals start reacting right away.
-3. Drag your logo (PNG, JPG, PDF or SVG) onto the window, or press **L** to pick a file.
+1. Open **Dropocalypse** and play some music. On Windows and Linux it already listens to what the computer is playing. On a Mac, click **Audio** in the toolbar and pick the app you're playing music from (for example **Spotify**), and allow access when macOS asks. A mic or line-in works on all three.
+2. The visuals start reacting right away.
+3. Drag your logo onto the window, or press **L** to pick a file. A PNG with a transparent background looks best.
 4. Press **F** for full screen.
 
 Your logo, style and all settings are saved automatically and come back the next time you open the app.

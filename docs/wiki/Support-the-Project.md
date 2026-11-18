@@ -14,7 +14,7 @@ Sponsorships go to the developer and keep the project going. They cover the year
 - 📣 **Share a clip** of your logo in action on Reddit, Instagram or TikTok, and post it in [Discussions](https://github.com/allenrobberson/dropocalypse/discussions).
 - 🐞 **Report bugs** in [Issues](https://github.com/allenrobberson/dropocalypse/issues), with your OS, version and audio source.
 - 💡 **Suggest styles** in Discussions, or build one yourself: see [[Adding a Style]].
-- 🧪 **Test on your hardware.** Reports from Windows PCs, Intel Macs and audio interfaces are especially helpful.
+- 🧪 **Test on your hardware.** Reports from Windows PCs, Linux desktops, Intel Macs and audio interfaces are especially helpful.
 
 ## License
 

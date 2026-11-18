@@ -4,7 +4,7 @@ Every style is a set of numbers plus an optional drawing routine, so simple styl
 
 ## 1. A parameter-only style
 
-Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Sources/Dropocalypse/Render/Scenes.swift` (Mac), and the matching entry in `windows/src/scenes.h` (Windows). The most useful parameters:
+Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Sources/Dropocalypse/Render/Scenes.swift` (Mac), and the matching entry in `windows/src/scenes.h`, which the Windows and Linux versions share. The most useful parameters:
 
 | Parameter | Effect |
 |---|---|
@@ -27,11 +27,11 @@ Remember to increase the array size in `windows/src/scenes.h` (`std::array<Visua
 For something new (like Pulsar Ridges or Tesseract):
 
 1. Add a case to `enum WaveStyle` in `Scenes.swift` and to `enum class WaveStyle` in `windows/src/scenes.h`.
-2. Write the drawing function in `Render/StyleFX.swift` and port it to the `StyleFX` class in `windows/src/renderer.cpp`. You get an `FXFrame` with the time, frame delta, smoothed bass, spectrum bands, waveform, screen aspect, logo position and the scene's palette, and a `GeometryBuilder` for lines, quads, rectangles, dots, soft dots and polylines.
+2. Write the drawing function in `Render/StyleFX.swift` and port it to the `StyleFX` class in `windows/src/renderer.cpp`, and copy that change into the shared section at the top of `linux/src/renderer.cpp`. You get an `FXFrame` with the time, frame delta, smoothed bass, spectrum bands, waveform, screen aspect, logo position and the scene's palette, and a `GeometryBuilder` for lines, quads, rectangles, dots, soft dots and polylines.
 3. Call it from the `switch` in `WaveDrawer.swift` and in `renderer.cpp`.
 4. Add the style to the README style table, `scripts/make-guide.py` (the PDF guide) and the [[Styles]] wiki page.
 
-Coordinates are normalized: `y` runs from -1 (bottom) to 1 (top) and `x` from `-aspect` to `aspect`. Keep anything real-time (no allocation per frame in hot paths) and test both platforms. CI builds both on every push and checks the Metal and HLSL shaders compile.
+Coordinates are normalized: `y` runs from -1 (bottom) to 1 (top) and `x` from `-aspect` to `aspect`. Keep anything real-time (no allocation per frame in hot paths) and test on every platform you can. CI builds Mac, Windows and Linux on every push, checks that the Metal, HLSL and GLSL shaders compile, and renders a Linux test frame.
 
 ## 3. Send it in
 

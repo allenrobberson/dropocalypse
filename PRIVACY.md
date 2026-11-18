@@ -1,12 +1,12 @@
 # Privacy Policy
 
-_Last updated: November 16, 2026_
+_Last updated: November 17, 2026_
 
-Dropocalypse is a free, open-source music visualizer for Mac and Windows. It is made to keep what you do private.
+Dropocalypse is a free, open-source music visualizer for Mac, Windows and Linux. It is made to keep what you do private.
 
 ## Your audio
 
-Dropocalypse listens to the audio source you choose (an app, all computer audio, a microphone or a line-in) only to animate the visuals. **Audio is analyzed live on your computer, in memory, and is never recorded, saved or sent anywhere.**
+Dropocalypse listens to the audio source you choose (an app, all computer audio, a microphone or a line-in) only to animate the visuals. **Audio is analyzed live on your computer, in memory, and is never sent anywhere.** It is only saved if you click **Record** (see below).
 
 ## Your logo and settings
 
@@ -14,12 +14,13 @@ Your logo image and settings are stored only on your computer:
 
 - **Mac:** in the app's preferences and in `~/Library/Application Support/Dropocalypse`
 - **Windows:** in `%APPDATA%\Dropocalypse`
+- **Linux:** in `~/.config/dropocalypse`
 
 They are never uploaded.
 
 ## Recordings
 
-When you click **Record**, the visuals and the audio Dropocalypse is listening to are saved as a video file in the folder you choose (Movies on Mac or Videos on Windows by default). Recordings stay on your computer; Dropocalypse never uploads them.
+When you click **Record**, the visuals and the audio Dropocalypse is listening to are saved as a video file in the folder you choose (Movies on Mac, or Videos on Windows and Linux, by default). Recordings stay on your computer; Dropocalypse never uploads them.
 
 ## Network use: update checks
 
@@ -31,6 +32,8 @@ Dropocalypse connects to the internet for one purpose: keeping the app up to dat
 GitHub's handling of these requests is covered by the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement).
 
 **How to turn it off:** open the **Updates** menu in the toolbar and turn off **Check for updates automatically**. On Windows you can also choose **Don't check for updates** on the first-launch notice. With it off, Dropocalypse makes no network connections at all unless you click **Check now** or **Update now**.
+
+The **Microsoft Store edition** is updated by the Microsoft Store, so it never checks GitHub and makes no network connections of its own.
 
 ## No tracking
 

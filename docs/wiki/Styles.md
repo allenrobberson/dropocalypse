@@ -1,5 +1,7 @@
 # Styles
 
+See every style moving in the [animated gallery on the GitHub page](https://github.com/allenrobberson/dropocalypse#readme).
+
 | # | Style | What it looks like |
 |---|---|---|
 | 1 | **Classic Tunnel** | The waveform bursts out of the center and streams outward into an endless, slowly twisting tunnel. The classic Winamp look. |
