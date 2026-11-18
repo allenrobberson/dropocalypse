@@ -24,6 +24,9 @@ Yes. On a Mac (macOS 14.2+) pick **Spotify** under **Audio → Listen to**. On W
 **Why does my Mac say it can't open the app?**
 Since 1.0.1 the Mac app is signed and notarized by Apple and opens normally. If you have an older copy, download the latest version; see [[Installation]].
 
+**Why does Windows say "Windows protected your PC"?**
+The portable Windows download isn't code-signed yet, so Windows doesn't recognize the publisher. Click **More info → Run anyway**, or skip the warning entirely by getting the [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8), which is already signed by Microsoft. It's the same app, updated by the Store.
+
 **Do I need admin rights?**
 No. The Windows version is portable (unzip and run, nothing is installed), the Linux AppImage is a single file you run, and on a Mac you drag the app to Applications. On Windows you can also [get it from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8).
 

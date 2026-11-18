@@ -119,14 +119,18 @@ On Windows you can also **[get it from the Microsoft Store](https://apps.microso
 
 Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 
-### 🪟 Windows (portable: no install, no admin rights)
+### 🪟 Windows
+
+> 💡 **Want to skip the security warning?** **[Get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. The Store edition is already signed by Microsoft, so Windows opens it without a "Windows protected your PC" warning, and the Store keeps it up to date. The portable zip below isn't code-signed yet.
+
+**Portable zip** (no install, no admin rights):
 
 1. Download the `Windows-portable.zip`, right-click it → **Extract All**, and open the folder.
 2. Double-click **Dropocalypse.exe**. Nothing gets installed, and you can keep the folder anywhere, even on a USB stick.
-3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the portable download isn't code-signed yet.
+3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the portable download isn't code-signed yet. The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) doesn't show this warning.
 4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
 
-Prefer the Store? **[Get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. That copy is signed by Microsoft and updated by the Store, so it has no **Update now**. Logo and settings still live in `%APPDATA%\Dropocalypse`. The portable zip above is the edition that updates itself from GitHub.
+The [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is updated by the Store, so it has no **Update now**; the portable zip updates itself from GitHub. Both keep your logos and settings in `%APPDATA%\Dropocalypse`.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
 

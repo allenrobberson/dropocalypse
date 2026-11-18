@@ -427,9 +427,11 @@ def build():
     ])
     s.append(sub("First launch"))
     s.append(P(f"If Windows shows <b>“Windows protected your PC”</b>, click <b>More info {ARROW} Run anyway</b>. "
-               "This appears because the portable download isn't code-signed yet.", body))
+               "This appears because the portable download isn't code-signed yet. To skip the warning, get the "
+               "Microsoft Store edition instead: it's already signed by Microsoft.", body))
     s.append(sub("Microsoft Store edition"))
-    s.append(P("Dropocalypse is also published through the <b>Microsoft Store</b>. That copy is updated by the Store, "
+    s.append(P("Dropocalypse is also published through the <b>Microsoft Store</b>. That copy is <b>already signed by "
+               "Microsoft</b>, so Windows opens it without a security warning. It is updated by the Store, "
                "so it has no <b>Updates</b> menu and does not check GitHub. Your logo and settings are still saved in "
                "%APPDATA%\\Dropocalypse. The zip from the Releases page is the portable edition, which updates itself "
                "from GitHub. Find it by searching the Store for <b>Dropocalypse</b>.", body))
@@ -729,7 +731,7 @@ def build():
          "For older copies, see section 1."],
         ["<b>Windows: “Windows protected your PC”</b>",
          f"Click <b>More info {ARROW} Run anyway</b>. The portable download isn't code-signed yet. "
-         "The Microsoft Store edition is signed by the Store."],
+         "Or get the Microsoft Store edition: it's already signed by Microsoft, so it skips this warning."],
         ["<b>Update now doesn't install</b>",
          "Nothing was changed. Open the <b>Updates</b> menu in the toolbar (not Look). On a Mac the new app must be "
          "signed with the same Developer ID and accepted by Gatekeeper, and Dropocalypse must be in a folder you can "
