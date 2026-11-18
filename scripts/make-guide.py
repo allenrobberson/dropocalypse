@@ -432,7 +432,7 @@ def build():
     s.append(P("Dropocalypse is also published through the <b>Microsoft Store</b>. That copy is updated by the Store, "
                "so it has no <b>Updates</b> menu and does not check GitHub. Your logo and settings are still saved in "
                "%APPDATA%\\Dropocalypse. The zip from the Releases page is the portable edition, which updates itself "
-               "from GitHub. Until the Store listing is available, use the zip.", body))
+               "from GitHub. Find it by searching the Store for <b>Dropocalypse</b>.", body))
     s.append(sub("Listening to music on Windows"))
     s.append(P("By default the Windows version listens to <b>what your PC is playing</b> (Spotify, YouTube, DJ "
                "software, games), so no microphone is needed. It listens in shared mode and does not take over "

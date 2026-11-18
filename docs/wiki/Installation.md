@@ -9,7 +9,7 @@ Get both versions from the **[latest release](https://github.com/allenrobberson/
 | `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
 | `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for both |
 
-A **Microsoft Store** edition is also published through the Store. That copy is updated by the Store, so it has no **Update now** and does not check GitHub. Your logo and settings still live in `%APPDATA%\Dropocalypse`. Until it shows up in the Store, use the portable zip.
+You can also **[get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. That copy is signed by Microsoft and updated by the Store, so it has no **Update now** and does not check GitHub. Your logo and settings still live in `%APPDATA%\Dropocalypse`.
 
 ## 🍎 Mac
 

@@ -11,7 +11,7 @@
   &nbsp;
   <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux"></a>
   &nbsp;
-  <a href="https://apps.microsoft.com/detail/9n1tj9d5r5c8"><img src="https://img.shields.io/badge/Microsoft_Store-when_live-5E5E5E?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Store, when the listing is live"></a>
+  <a href="https://apps.microsoft.com/detail/9N1TJ9D5R5C8"><img src="https://img.shields.io/badge/Microsoft_Store-Get_it-0078D6?style=for-the-badge&logo=microsoft&logoColor=white" alt="Get it from the Microsoft Store"></a>
 </p>
 
 <p align="center">
@@ -21,20 +21,43 @@
 
 <table>
   <tr>
-    <td align="center" width="25%"><a href="docs/media/styles/kaleidoscope.jpg"><img src="docs/media/styles/kaleidoscope.jpg" width="220" alt="Full Kaleidoscope"></a><br><b>Full Kaleidoscope</b></td>
-    <td align="center" width="25%"><a href="docs/media/styles/spectrum-skyline.jpg"><img src="docs/media/styles/spectrum-skyline.jpg" width="220" alt="Spectrum Skyline"></a><br><b>Spectrum Skyline</b></td>
-    <td align="center" width="25%"><a href="docs/media/styles/starburst.jpg"><img src="docs/media/styles/starburst.jpg" width="220" alt="Starburst"></a><br><b>Starburst</b></td>
-    <td align="center" width="25%"><a href="docs/media/styles/liquid-plasma.jpg"><img src="docs/media/styles/liquid-plasma.jpg" width="220" alt="Liquid Plasma"></a><br><b>Liquid Plasma</b></td>
+    <td align="center" width="20%"><a href="docs/media/styles/classic-tunnel.gif"><img src="docs/media/styles/classic-tunnel.gif" width="170" alt="Classic Tunnel"></a><br><sub><b>Classic Tunnel</b></sub></td>
+    <td align="center" width="20%"><a href="docs/media/styles/spectrum-skyline.gif"><img src="docs/media/styles/spectrum-skyline.gif" width="170" alt="Spectrum Skyline"></a><br><sub><b>Spectrum Skyline</b></sub></td>
+    <td align="center" width="20%"><a href="docs/media/styles/starburst.gif"><img src="docs/media/styles/starburst.gif" width="170" alt="Starburst"></a><br><sub><b>Starburst</b></sub></td>
+    <td align="center" width="20%"><a href="docs/media/styles/oscilloscope-drift.gif"><img src="docs/media/styles/oscilloscope-drift.gif" width="170" alt="Oscilloscope Drift"></a><br><sub><b>Oscilloscope Drift</b></sub></td>
+    <td align="center" width="20%"><a href="docs/media/styles/kaleido-bloom.gif"><img src="docs/media/styles/kaleido-bloom.gif" width="170" alt="Kaleido Bloom"></a><br><sub><b>Kaleido Bloom</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/media/styles/vortex.jpg"><img src="docs/media/styles/vortex.jpg" width="220" alt="Vortex"></a><br><b>Vortex</b></td>
-    <td align="center"><a href="docs/media/styles/oscilloscope.jpg"><img src="docs/media/styles/oscilloscope.jpg" width="220" alt="Oscilloscope Drift"></a><br><b>Oscilloscope Drift</b></td>
-    <td align="center"><a href="docs/media/styles/neon-equalizer.jpg"><img src="docs/media/styles/neon-equalizer.jpg" width="220" alt="Neon Equalizer"></a><br><b>Neon Equalizer</b></td>
-    <td align="center"><a href="docs/media/styles/portrait-frame.jpg"><img src="docs/media/styles/portrait-frame.jpg" width="220" alt="Portrait frame, Full Kaleidoscope in a 9:16 pillarbox"></a><br><b>Portrait frame</b></td>
+    <td align="center"><a href="docs/media/styles/liquid-plasma.gif"><img src="docs/media/styles/liquid-plasma.gif" width="170" alt="Liquid Plasma"></a><br><sub><b>Liquid Plasma</b></sub></td>
+    <td align="center"><a href="docs/media/styles/vortex.gif"><img src="docs/media/styles/vortex.gif" width="170" alt="Vortex"></a><br><sub><b>Vortex</b></sub></td>
+    <td align="center"><a href="docs/media/styles/lissajous-neon.gif"><img src="docs/media/styles/lissajous-neon.gif" width="170" alt="Lissajous Neon"></a><br><sub><b>Lissajous Neon</b></sub></td>
+    <td align="center"><a href="docs/media/styles/mirror-hall.gif"><img src="docs/media/styles/mirror-hall.gif" width="170" alt="Mirror Hall"></a><br><sub><b>Mirror Hall</b></sub></td>
+    <td align="center"><a href="docs/media/styles/black-hole.gif"><img src="docs/media/styles/black-hole.gif" width="170" alt="Black Hole"></a><br><sub><b>Black Hole</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/bass-ring.gif"><img src="docs/media/styles/bass-ring.gif" width="170" alt="Bass Ring"></a><br><sub><b>Bass Ring</b></sub></td>
+    <td align="center"><a href="docs/media/styles/neon-equalizer.gif"><img src="docs/media/styles/neon-equalizer.gif" width="170" alt="Neon Equalizer"></a><br><sub><b>Neon Equalizer</b></sub></td>
+    <td align="center"><a href="docs/media/styles/pulsar-ridges.gif"><img src="docs/media/styles/pulsar-ridges.gif" width="170" alt="Pulsar Ridges"></a><br><sub><b>Pulsar Ridges</b></sub></td>
+    <td align="center"><a href="docs/media/styles/outrun-grid.gif"><img src="docs/media/styles/outrun-grid.gif" width="170" alt="Outrun Grid"></a><br><sub><b>Outrun Grid</b></sub></td>
+    <td align="center"><a href="docs/media/styles/hyperspace.gif"><img src="docs/media/styles/hyperspace.gif" width="170" alt="Hyperspace"></a><br><sub><b>Hyperspace</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/particle-storm.gif"><img src="docs/media/styles/particle-storm.gif" width="170" alt="Particle Storm"></a><br><sub><b>Particle Storm</b></sub></td>
+    <td align="center"><a href="docs/media/styles/lightning-storm.gif"><img src="docs/media/styles/lightning-storm.gif" width="170" alt="Lightning Storm"></a><br><sub><b>Lightning Storm</b></sub></td>
+    <td align="center"><a href="docs/media/styles/digital-rain.gif"><img src="docs/media/styles/digital-rain.gif" width="170" alt="Digital Rain"></a><br><sub><b>Digital Rain</b></sub></td>
+    <td align="center"><a href="docs/media/styles/lava-lamp.gif"><img src="docs/media/styles/lava-lamp.gif" width="170" alt="Lava Lamp"></a><br><sub><b>Lava Lamp</b></sub></td>
+    <td align="center"><a href="docs/media/styles/inferno.gif"><img src="docs/media/styles/inferno.gif" width="170" alt="Inferno"></a><br><sub><b>Inferno</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/mirror-equalizer.gif"><img src="docs/media/styles/mirror-equalizer.gif" width="170" alt="Mirror Equalizer"></a><br><sub><b>Mirror Equalizer</b></sub></td>
+    <td align="center"><a href="docs/media/styles/led-meter.gif"><img src="docs/media/styles/led-meter.gif" width="170" alt="LED Meter"></a><br><sub><b>LED Meter</b></sub></td>
+    <td align="center"><a href="docs/media/styles/rainbow-peaks.gif"><img src="docs/media/styles/rainbow-peaks.gif" width="170" alt="Rainbow Peaks"></a><br><sub><b>Rainbow Peaks</b></sub></td>
+    <td align="center"><a href="docs/media/styles/tesseract.gif"><img src="docs/media/styles/tesseract.gif" width="170" alt="Tesseract"></a><br><sub><b>Tesseract</b></sub></td>
+    <td align="center"><a href="docs/media/styles/full-kaleidoscope.gif"><img src="docs/media/styles/full-kaleidoscope.gif" width="170" alt="Full Kaleidoscope"></a><br><sub><b>Full Kaleidoscope</b></sub></td>
   </tr>
 </table>
 
-<p align="center"><sub>Eight of the 25 styles, drawn with the app's own shaders. The logo is the app icon.</sub></p>
+<p align="center"><sub>All 25 styles, recorded in the Mac app with real music playing. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 
@@ -86,7 +109,7 @@ Requires macOS 13 Ventura or later on an Apple Silicon or Intel Mac.
 3. **First launch:** if Windows says *"Windows protected your PC"*, click **More info → Run anyway**. This happens because the portable download isn't code-signed yet.
 4. By default it listens to **what your PC is playing** (Spotify, YouTube, DJ software), so you don't need a microphone. To use a mic or line-in, pick it under **Audio** in the toolbar. For a mic, turn on **Settings → Privacy & security → Microphone → Let desktop apps access your microphone**.
 
-A **Microsoft Store** edition is published through the Store. That copy is updated by the Store and has no **Update now**. Logo and settings still live in `%APPDATA%\Dropocalypse`. Until it appears in the Store, use the portable zip above.
+Prefer the Store? **[Get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. That copy is signed by Microsoft and updated by the Store, so it has no **Update now**. Logo and settings still live in `%APPDATA%\Dropocalypse`. The portable zip above is the edition that updates itself from GitHub.
 
 Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDATA%\Dropocalypse`. To remove the app, delete that folder and the app folder.
 
