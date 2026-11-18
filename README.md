@@ -2,7 +2,7 @@
 
 <p align="center"><b>The drop hits. Your logo goes off.</b></p>
 
-<p align="center">A free music visualizer for <b>Mac, Windows and Linux</b>. Play a song and your logo bounces, squashes and glows on the beat.</p>
+<p align="center">Make your logo dance to the beat. <b>Free music visualizer</b> for DJs, streamers &amp; venues. Record clips for <b>TikTok, Reels &amp; YouTube</b>. Mac, Windows &amp; Linux.</p>
 
 <p align="center">
   <a href="https://github.com/allenrobberson/dropocalypse/releases/latest"><img src="https://img.shields.io/badge/Download-macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
