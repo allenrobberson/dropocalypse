@@ -389,7 +389,23 @@ static void testOverlaySettings() {
     CHECK(cleaned.size() == 1 && cleaned[0].font == 0 && cleaned[0].color == 0);
 }
 
+static void testWhatsNew() {
+    CHECK(!shouldShowWhatsNew("", "1.4.0", false));          // brand-new install: welcome notice instead
+    CHECK(shouldShowWhatsNew("", "1.4.0", true));            // updated from a version without the window
+    CHECK(shouldShowWhatsNew("1.3.2", "1.4.0", true));
+    CHECK(!shouldShowWhatsNew("1.4.0", "1.4.0", true));      // already seen
+    CHECK(!shouldShowWhatsNew("1.5.0", "1.4.0", true));      // went back to an older version
+    CHECK(!shouldShowWhatsNew("1.3.2", "0.0.0-dev", true));  // development build
+    const std::vector<std::string> v{"1.5.0", "1.4.1", "1.4.0", "1.3.2", "1.3.1", "1.3.0", "1.2.12"};
+    CHECK((whatsNewEntries(v, "", "1.4.1") == std::vector<int>{1}));
+    CHECK((whatsNewEntries(v, "1.3.2", "1.4.1") == std::vector<int>{1, 2}));
+    CHECK((whatsNewEntries(v, "1.2.12", "1.4.1", 3) == std::vector<int>{1, 2, 3}));
+    CHECK(whatsNewEntries(v, "", "1.4.2").empty());           // no notes written for this version
+    CHECK(whatsNewEntries(v, "1.4.1", "1.4.1").empty());
+}
+
 int main() {
+    testWhatsNew();
     testVersions();
     testChecksums();
     testSceneCycle();

@@ -31,6 +31,7 @@ struct DropocalypseApp: App {
         .defaultSize(width: 1280, height: 720)
         .commands {
             CommandGroup(after: .appInfo) {
+                Button("What's New in Dropocalypse…") { model.whatsNew.show() }
                 if UpdateChecker.isEnabled {
                     Button("Check for Updates…") { model.updates.check(userInitiated: true) }
                 }

@@ -26,7 +26,7 @@ PERFECT FOR
 • Anyone who misses the classic Winamp visuals
 
 FEATURES
-• 25 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract and Full Kaleidoscope
+• 26 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract, Full Kaleidoscope and Main Stage
 • Your logo reacts to the music: pulse, squash, bounce, slide, wobble, glow and trails, each adjustable
 • Listen to any app on your Mac (macOS 14.2 or later), all Mac audio, a microphone or a line-in
 • Low-latency audio analysis so the visuals land on the beat

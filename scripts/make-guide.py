@@ -287,7 +287,7 @@ def later_pages(canvas, doc):
 # Signature color of each style (its base hue in the app), used for the swatches in section 7.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
-              0.97, 0.25, 0.7, 0.55, 0.52]
+              0.97, 0.25, 0.7, 0.55, 0.52, 0.08]
 
 
 IMAGES = os.path.join(ROOT, "docs", "guide-images")
@@ -352,7 +352,7 @@ def build():
     # ---- Contents
     s.append(P("Contents", h1))
     items = ["Install on Mac", "Install on Windows", "Install on Linux", "Quick start", "The toolbar",
-             "Logo, Motion, Audio and Look settings", "The 25 visual styles", "Keyboard shortcuts",
+             "Logo, Motion, Audio and Look settings", "The 26 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
     for i, name in enumerate(items, 1):
@@ -622,7 +622,7 @@ def build():
                           widths=[3.0 * inch, 3.5 * inch]))
 
     # ---- Styles
-    s += section(7, "The 25 visual styles")
+    s += section(7, "The 26 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(Spacer(1, 6))
@@ -664,6 +664,8 @@ def build():
         ["24", "<b>Tesseract</b>", "A neon 4D hypercube turning itself inside out, spinning harder on every beat"],
         ["25", "<b>Full Kaleidoscope</b>",
          "A full-frame mandala: 4-way mirroring that sometimes reads as 8-way, in neon cyan, magenta, blue, gold and green. Bass zooms and turns it."],
+        ["26", "<b>Main Stage</b>",
+         "The view from an arena floor: beam fans meet overhead like a cathedral ceiling, lasers fire on the beat and a crowd bounces with phones up"],
     ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "

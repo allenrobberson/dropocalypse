@@ -867,6 +867,254 @@ public:
         }
     }
 
+    // ---- 26. Main Stage: the view from an arena floor. Haze, a stage of nested LED frames behind
+    // the logo, truss towers with blinders and moving-head beams, a laser fan from the stage and a
+    // crowd with phones up. The look changes every 8 beats, like a lighting desk running cues.
+    struct StageLook { Rgb haze, beam, fixture, laserA, laserB, led; float laserSustain, beamLevel; };
+    static StageLook stageLook(int i) {
+        switch (i % 4) {
+        case 0: return {{1.0f, 0.52f, 0.22f}, {1.0f, 0.82f, 0.58f}, {1.0f, 0.92f, 0.78f},
+                        {1.0f, 0.95f, 0.85f}, {1.0f, 0.75f, 0.35f}, {1.0f, 0.62f, 0.3f}, 0.15f, 1.0f};   // amber
+        case 1: return {{0.08f, 0.75f, 0.55f}, {0.6f, 1.0f, 0.82f}, {0.35f, 1.0f, 0.6f},
+                        {0.25f, 1.0f, 0.45f}, {0.75f, 1.0f, 0.85f}, {0.55f, 1.0f, 0.75f}, 0.25f, 0.9f};  // teal
+        case 2: return {{0.42f, 0.32f, 0.92f}, {0.85f, 0.8f, 1.0f}, {0.7f, 0.75f, 1.0f},
+                        {0.78f, 0.55f, 1.0f}, {0.95f, 0.92f, 1.0f}, {0.8f, 0.7f, 1.0f}, 0.75f, 0.55f}; // lasers
+        default: return {{0.08f, 0.16f, 0.95f}, {0.45f, 0.6f, 1.0f}, {0.3f, 0.45f, 1.0f},
+                         {0.35f, 0.85f, 1.0f}, {0.6f, 0.65f, 1.0f}, {0.35f, 0.5f, 1.0f}, 0.3f, 0.6f};   // deep blue
+        }
+    }
+    static Rgb mixRgb(Rgb a, Rgb b, float k) { return {a.r + (b.r - a.r) * k, a.g + (b.g - a.g) * k, a.b + (b.b - a.b) * k}; }
+
+    void mainStage(const FXFrame& f, GeometryBuilder& g, GeometryBuilder& over) {
+        const float dt = std::min(f.dt, 0.1f);
+        const float bass = f.bass();
+        const float mid = std::min(f.audio.mid, 1.4f), treb = std::min(f.audio.treble, 1.4f);
+        const float a = f.aspect;
+
+        // Cues and envelopes.
+        if (beatFired_) {
+            ++stageBeats_;
+            stageBlinder_ = std::max(stageBlinder_, 0.45f + beatStrength_ * 0.75f);
+            stageLaser_ = std::max(stageLaser_, 0.55f + beatStrength_ * 0.7f);
+            stageLaserFlip_ = !stageLaserFlip_;
+            if (stageBeats_ % 8 == 0) { stagePrevLook_ = stageCurLook_; stageCurLook_ = (stageCurLook_ + 1) % 4; stageLookMix_ = 0; }
+            stageSinceBeat_ = 0;
+            stageHit_ = 0.5f + 0.5f * beatStrength_;
+            if (beatStrength_ > 0.85f && stageWhiteCool_ <= 0) { stageWhite_ = 1; stageWhiteCool_ = 6; }
+        }
+        stageSinceBeat_ += dt;
+        stageBlinder_ = std::max(0.0f, stageBlinder_ - dt * 3.2f);
+        stageLaser_ = std::max(0.0f, stageLaser_ - dt * 2.2f);
+        stageWhite_ = std::max(0.0f, stageWhite_ - dt * 1.6f);
+        stageWhiteCool_ -= dt;
+        stageLookMix_ = std::min(1.0f, stageLookMix_ + dt * 2.5f);
+        stageEnergy_ += (std::min(1.0f, bass * 0.6f + mid * 0.4f) - stageEnergy_) * std::min(1.0f, dt * 1.5f);
+        stageSweep_ += dt * (0.35f + mid * 0.9f);
+        stageChase_ += dt * (1.2f + bass * 3.0f);
+
+        StageLook A = stageLook(stagePrevLook_), B = stageLook(stageCurLook_);
+        float k = stageLookMix_ * stageLookMix_ * (3 - 2 * stageLookMix_);
+        Rgb haze = mixRgb(A.haze, B.haze, k), beamC = mixRgb(A.beam, B.beam, k), fixC = mixRgb(A.fixture, B.fixture, k);
+        Rgb lasA = mixRgb(A.laserA, B.laserA, k), lasB = mixRgb(A.laserB, B.laserB, k), ledC = mixRgb(A.led, B.led, k);
+        float laserSustain = A.laserSustain + (B.laserSustain - A.laserSustain) * k;
+        float beamLevel = A.beamLevel + (B.beamLevel - A.beamLevel) * k;
+        Rgb white{1, 1, 1};
+        haze = mixRgb(haze, white, stageWhite_ * 0.8f);
+
+        const V2 vp{0, 0.04f};             // vanishing point, behind the logo
+        const float floorY = -0.3f;         // stage deck in front
+        const float crowdTop = -0.48f;      // nothing additive reaches below this
+        const float W = std::min(a * 0.88f, 1.45f);
+        auto depthY = [&](float y, float s) { return vp.y + (y - vp.y) * s; };
+
+        // 1. Haze, drawn with normal blending so the crowd can sit in front of it.
+        float hz = 0.16f + 0.2f * stageEnergy_ + 0.18f * stageBlinder_ + 0.45f * stageWhite_;
+        over.softDot(vp, 1.05f * std::max(0.75f, std::min(a, 1.3f)), rgba(haze, std::min(0.85f, hz)), 28);
+        over.softDot({0, floorY + 0.05f}, 0.75f * std::max(0.6f, std::min(a, 1.2f)), rgba(mixRgb(haze, white, 0.35f), std::min(0.7f, hz * 0.9f)), 24);
+        for (int side = -1; side <= 1; side += 2)
+            over.softDot({side * W * 0.75f, vp.y + 0.45f}, 0.55f, rgba(haze, hz * 0.45f), 20);
+        // Light spilling over the crowd from the stage, so their heads read as silhouettes.
+        {
+            float wash = std::min(0.8f, 0.25f + 0.3f * stageEnergy_ + 0.35f * stageBlinder_ + 0.5f * stageWhite_);
+            RGBA lit = rgba(mixRgb(haze, white, 0.25f), wash), none = rgba(haze, 0);
+            float xl = -a - 0.1f, xr = a + 0.1f;
+            over.quad({xl, crowdTop + 0.04f}, none, {xr, crowdTop + 0.04f}, none, {xr, -0.6f}, lit, {xl, -0.6f}, lit);
+            over.quad({xl, -0.6f}, lit, {xr, -0.6f}, lit, {xr, -0.75f}, none, {xl, -0.75f}, none);
+        }
+
+        // 2. Stage: nested house-shaped LED frames running back to the vanishing point.
+        const int frames = 5;
+        float chase = std::fmod(stageChase_, (float)frames + 2);
+        for (int i = frames - 1; i >= 0; --i) {
+            float s = std::pow(0.7f, (float)i);
+            float w = W * 0.78f * s;
+            float yb = depthY(floorY, s), yt = vp.y + 0.62f * s, ya = vp.y + 0.98f * s;
+            float d = chase - (float)i;
+            float pulse = std::exp(-d * d * 1.5f);
+            float lv = (0.3f + 0.5f * pulse + 0.35f * stageBlinder_ + 0.5f * stageWhite_) * (0.55f + 0.45f * s);
+            V2 pts[5] = {{-w, yb}, {-w, yt}, {0, ya}, {w, yt}, {w, yb}};
+            for (int e = 0; e < 4; ++e) {
+                g.line(pts[e], pts[e + 1], 0.035f * s, rgba(ledC, 0.09f * lv));
+                g.line(pts[e], pts[e + 1], 0.005f * s + 0.0015f, rgba(mixRgb(ledC, white, 0.5f), std::min(1.0f, 0.5f * lv)));
+            }
+            // A row of small fixtures along each frame's top edge.
+            for (int j = 1; j <= 3; ++j) {
+                float u = j / 4.0f;
+                for (int side = -1; side <= 1; side += 2) {
+                    V2 p{side * w * (1 - u * 0.0f) * (1 - u), yt + (ya - yt) * u};
+                    g.softDot(p, 0.035f * s, rgba(fixC, 0.25f * lv + 0.4f * stageBlinder_), 10);
+                }
+            }
+        }
+
+        // 3. The nave: pairs of truss columns running back to the stage. Each column is topped with
+        // a cluster of moving heads that sprays a fan of beams upward; the fans from facing columns
+        // meet overhead in pointed arches, so the room reads like a cathedral's vaulted ceiling.
+        // Every kick blooms the fans open, front pair first, rippling back toward the stage.
+        const int cols = 5;
+        const float colDepth[cols] = {1.0f, 0.74f, 0.55f, 0.41f, 0.3f};
+        float since = stageSinceBeat_;
+        for (int ci = cols - 1; ci >= 0; --ci) {
+            float s = colDepth[ci];
+            float yTop = vp.y + 0.62f * s;
+            float yBot = std::max(crowdTop, depthY(-1.0f, s));
+            float delay = ci * 0.055f;
+            float bloom = since >= delay ? std::exp(-(since - delay) * 4.5f) * stageHit_ : 0.0f;
+            float lvCol = (0.6f + 0.4f * s);
+            for (int side = -1; side <= 1; side += 2) {
+                float x = side * W * s;
+                // Column (dim steel with braces).
+                float tw = 0.045f * s;
+                RGBA steel{0.42f, 0.45f, 0.55f, 0.22f + 0.2f * stageWhite_ + 0.15f * bloom};
+                g.line({x - tw * 0.5f, yBot}, {x - tw * 0.5f, yTop}, 0.004f * s, steel);
+                g.line({x + tw * 0.5f, yBot}, {x + tw * 0.5f, yTop}, 0.004f * s, steel);
+                float step = 0.06f * s;
+                int zig = 0;
+                for (float y = yBot; y + step < yTop; y += step, ++zig) {
+                    float xa = x + (zig & 1 ? 0.5f : -0.5f) * tw, xb = x + (zig & 1 ? -0.5f : 0.5f) * tw;
+                    g.line({xa, y}, {xb, y + step}, 0.0022f * s, RGBA{steel.r, steel.g, steel.b, steel.a * 0.7f});
+                }
+                // Blinder panels down the column.
+                for (int b = 0; b < 2; ++b) {
+                    float y = yBot + (yTop - yBot) * (0.35f + 0.3f * b);
+                    float lv = 0.2f + 0.8f * stageBlinder_ + 0.8f * stageWhite_;
+                    float hw = 0.012f * s, hh = 0.02f * s;
+                    g.rect(x - hw, y - hh, x + hw, y + hh, rgba(mixRgb(fixC, white, 0.4f), std::min(1.0f, lv)));
+                    g.softDot({x, y}, 0.08f * s * (1 + stageBlinder_), rgba(fixC, 0.2f * lv), 14);
+                }
+                // Two fans per column: a tall one from the top (the vault) and a smaller one partway
+                // down (the lower arches).
+                for (int h = 0; h < 2; ++h) {
+                    V2 o{x, h == 0 ? yTop : yBot + (yTop - yBot) * 0.42f};
+                    int n = h == 0 ? 15 : 9;
+                    float open = 0.75f + 0.2f * stageEnergy_ + 0.4f * bloom;      // half-width of the fan (radians)
+                    float tilt = 0.12f * std::sin(stageSweep_ * 0.9f + ci * 0.6f);  // gentle sway, mirrored
+                    float len = (h == 0 ? 0.85f : 0.5f) * s * (0.9f + 0.25f * bloom);
+                    float lv = beamLevel * lvCol * (0.22f + 0.4f * stageEnergy_ + 0.75f * bloom + 0.3f * stageWhite_);
+                    if (h == 1) lv *= 0.7f;
+                    for (int j = 0; j < n; ++j) {
+                        float u = (float)j / (n - 1) * 2 - 1;                       // -1 outward .. 1 inward
+                        float ang = kPi * 0.5f - side * (u * open + tilt);
+                        V2 dir{std::cos(ang), std::sin(ang)};
+                        float L = len * (1.0f - 0.18f * std::fabs(u));
+                        // Beams leaning toward the middle run on until they cross the centre line, where
+                        // they meet the opposite column's fan and close the arch.
+                        if (dir.x * side < -0.05f) L = std::min(1.9f * s, std::fabs(o.x) / std::fabs(dir.x) * 1.12f);
+                        if (dir.y < -0.05f) L = std::min(L, (o.y - crowdTop) / -dir.y);
+                        V2 e = o + dir * L;
+                        V2 nrm{-dir.y, dir.x};
+                        float we = 0.035f * s + 0.03f * s * bloom;
+                        float edge = 1.0f - 0.35f * std::fabs(u);
+                        RGBA c0 = rgba(beamC, std::min(0.85f, 0.34f * lv * edge)), c1 = rgba(beamC, 0);
+                        g.triangle(o, c0, e + nrm * we, c1, e - nrm * we, c1);
+                        g.line(o, o + dir * (L * 0.6f), 0.0025f * s + 0.001f, rgba(mixRgb(beamC, white, 0.55f), 0.32f * lv * edge));
+                    }
+                    g.softDot(o, 0.05f * s * (1 + bloom), rgba(mixRgb(fixC, white, 0.5f), std::min(1.0f, 0.5f * lv + 0.3f)), 10);
+                }
+            }
+        }
+
+        // 5. Lasers: a fan from the stage deck that fires on every beat and fills in with the hi-hats.
+        float laser = std::min(1.3f, stageLaser_ + laserSustain * (0.25f + 0.6f * stageEnergy_));
+        if (laser > 0.02f) {
+            V2 o{0, floorY + 0.02f};
+            int n = 10 + (int)(std::min(1.0f, treb) * 26);
+            float fanW = stageLaserFlip_ ? 0.78f : 0.52f;
+            float rot = 0.22f * std::sin(stageSweep_ * 1.3f);
+            for (int i = 0; i < n; ++i) {
+                float u = n > 1 ? (float)i / (n - 1) : 0.5f;
+                float ang = kPi * 0.5f + (u - 0.5f) * 2 * fanW + rot;
+                V2 dir{std::cos(ang), std::sin(ang)};
+                Rgb c = (i % 3 == 1) ? lasB : lasA;
+                float flick = 0.75f + 0.25f * std::sin(f.t * 37 + i * 2.1f);
+                float lv = laser * flick;
+                V2 e = o + dir * 3.0f;
+                g.line(o, e, 0.014f, rgba(c, 0.07f * lv));
+                g.line(o, e, 0.0026f, rgba(mixRgb(c, white, 0.35f), std::min(1.0f, 0.85f * lv)));
+            }
+            // Side lasers from the towers, scanning just over the crowd's heads.
+            float scan = laser * std::min(1.0f, laserSustain * 1.6f);
+            if (scan > 0.05f) {
+                for (int side = -1; side <= 1; side += 2) {
+                    V2 so{side * W * 0.72f, vp.y + 0.72f * 0.72f};
+                    for (int i = 0; i < 9; ++i) {
+                        float u = i / 8.0f;
+                        float tx = -side * (a * 0.9f) * (u * 2 - 1) * 0.9f + 0.6f * std::sin(stageSweep_ * 1.7f + side);
+                        V2 e{tx, crowdTop + 0.03f + 0.05f * std::sin(stageSweep_ * 2.3f + i)};
+                        Rgb c = (i % 2) ? lasB : lasA;
+                        g.line(so, e, 0.012f, rgba(c, 0.06f * scan));
+                        g.line(so, e, 0.0024f, rgba(mixRgb(c, white, 0.3f), std::min(1.0f, 0.8f * scan)));
+                    }
+                    g.softDot(so, 0.06f, rgba(mixRgb(lasA, white, 0.6f), 0.6f * std::min(1.0f, scan)), 12);
+                }
+            }
+            g.softDot(o, 0.12f + 0.06f * laser, rgba(mixRgb(lasA, white, 0.6f), 0.55f * std::min(1.0f, laser)), 16);
+        }
+
+        // 6. The crowd: silhouettes bouncing to the bass, some arms up, phones glowing.
+        if (stageCrowd_.empty()) {
+            Rng r;
+            r.s = 0xC0FFEEu;
+            for (int row = 0; row < 3; ++row) {            // 0 = far, 2 = right in front of you
+                float head = 0.03f + row * row * 0.017f;
+                for (float x = -3.2f; x < 3.2f; x += head * 3.1f * r.range(0.75f, 1.3f)) {
+                    CrowdPerson p;
+                    p.x = x; p.row = row;
+                    p.head = head * r.range(0.85f, 1.15f);
+                    p.phase = r.range(0, 6.28f);
+                    p.arm = r.next() < (row == 2 ? 0.22f : 0.3f) ? (r.next() < 0.5f ? -1 : 1) : 0;
+                    p.phone = p.arm != 0 && r.next() < 0.6f;
+                    p.hOff = r.range(-0.02f, 0.02f) * (1 + row);
+                    stageCrowd_.push_back(p);
+                }
+            }
+        }
+        stageBounce_ += dt * (2.2f + bass * 2.0f);
+        RGBA ink{0.006f, 0.006f, 0.012f, 1};
+        for (const CrowdPerson& p : stageCrowd_) {
+            if (std::fabs(p.x) > a + 0.2f) continue;
+            const float rowY[3] = {-0.6f, -0.66f, -0.75f};
+            float baseY = rowY[p.row] + p.hOff;
+            float hop = std::max(0.0f, std::sin(stageBounce_ * 2.0f + p.phase)) * (0.006f + 0.02f * bass) * (1 + p.row * 0.4f);
+            V2 head{p.x, baseY + hop};
+            float sh = p.head * 1.9f;
+            over.quad({p.x - sh, -1.05f}, {p.x + sh, -1.05f}, {p.x + sh * 0.9f, head.y - p.head * 1.1f},
+                      {p.x - sh * 0.9f, head.y - p.head * 1.1f}, ink);
+            over.dot(head, p.head, ink);
+            if (p.arm != 0) {
+                V2 shoulder{p.x + p.arm * sh * 0.75f, head.y - p.head * 1.2f};
+                V2 hand{p.x + p.arm * sh * 0.95f + 0.01f * std::sin(stageBounce_ + p.phase), head.y + p.head * 3.2f + hop};
+                over.line(shoulder, hand, p.head * 0.55f, ink);
+                if (p.phone) {
+                    float pw = p.head * 0.55f, ph = p.head * 0.95f;
+                    over.rect(hand.x - pw, hand.y, hand.x + pw, hand.y + ph * 2, ink);
+                    Rgb sc = mixRgb(haze, white, 0.55f);
+                    g.rect(hand.x - pw * 0.8f, hand.y + ph * 0.15f, hand.x + pw * 0.8f, hand.y + ph * 1.85f, rgba(sc, 0.75f));
+                }
+            }
+        }
+    }
+
 private:
     struct Rng {
         uint32_t s = 0x12345678u;
@@ -960,6 +1208,13 @@ private:
     std::vector<float> ledPeaks_, ledHold_, capY_, capV_;
     float tessAngles_[4] = {0.3f, 0.8f, 0.2f, 0.5f};
     float tessKick_ = 0;
+    struct CrowdPerson { float x; int row; float head, phase; int arm; bool phone; float hOff; };
+    int stageBeats_ = 0, stageCurLook_ = 0, stagePrevLook_ = 0;
+    float stageLookMix_ = 1, stageBlinder_ = 0, stageLaser_ = 0, stageWhite_ = 0, stageWhiteCool_ = 0;
+    float stageSinceBeat_ = 10, stageHit_ = 0;
+    float stageEnergy_ = 0, stageSweep_ = 0, stageChase_ = 0, stageBounce_ = 0;
+    bool stageLaserFlip_ = false;
+    std::vector<CrowdPerson> stageCrowd_;
 };
 
 
@@ -1006,6 +1261,7 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::RainbowPeaks: fx.rainbowPeaks(frame, g); break;
     case WaveStyle::Tesseract: fx.tesseract(frame, g); break;
     case WaveStyle::FullKaleidoscope: fx.fullKaleidoscope(frame, g); break;
+    case WaveStyle::MainStage: fx.mainStage(frame, g, over); break;
     default: break;
     }
 }

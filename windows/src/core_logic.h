@@ -34,6 +34,31 @@ inline bool versionIsNewer(const std::string& a, const std::string& b) {
     return false;
 }
 
+/// What's New window: open it once after an update. `lastSeen` is the version whose notes were
+/// last shown ("" when the settings predate the window). An empty `lastSeen` on an existing
+/// install means "just updated from an older version"; on a brand-new install it means "first
+/// run", which gets the welcome notice instead. Development builds never show it.
+inline bool shouldShowWhatsNew(const std::string& lastSeen, const std::string& current, bool existingInstall) {
+    if (current.find("dev") != std::string::npos || current == "0.0.0") return false;
+    if (lastSeen.empty()) return existingInstall;
+    return versionIsNewer(current, lastSeen);
+}
+
+/// Which notes to show (indices into `versions`, newest first as listed): every version after
+/// `lastSeen` up to `current`, at most `maxEntries`. With no `lastSeen`, only `current`'s notes.
+inline std::vector<int> whatsNewEntries(const std::vector<std::string>& versions, const std::string& lastSeen,
+                                        const std::string& current, int maxEntries = 4) {
+    std::vector<int> out;
+    for (int i = 0; i < (int)versions.size() && (int)out.size() < maxEntries; ++i) {
+        const std::string& v = versions[i];
+        if (versionIsNewer(v, current)) continue;                       // notes for a later release
+        bool wanted = lastSeen.empty() ? !versionIsNewer(current, v)    // == current
+                                       : versionIsNewer(v, lastSeen);
+        if (wanted) out.push_back(i);
+    }
+    return out;
+}
+
 /// "<hash>  <file>" or "<hash> *<file>" from a sha256sum listing. Empty if `file` is absent.
 inline std::string checksumFor(const std::string& file, const std::string& listing) {
     size_t i = 0;

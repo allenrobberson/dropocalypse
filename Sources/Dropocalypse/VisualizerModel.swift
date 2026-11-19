@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 
 /// App-level state shared by the window, the settings panel and the renderer.
 final class VisualizerModel: NSObject, ObservableObject {
+    /// First, so it sees the settings as they were before this launch touches them.
+    let whatsNew = WhatsNew()
     let settings = AppSettings()
     let capture = AudioCapture()
     let updates = UpdateChecker()

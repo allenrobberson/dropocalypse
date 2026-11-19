@@ -5,12 +5,14 @@ struct ContentView: View {
     @ObservedObject var model: VisualizerModel
     @ObservedObject var settings: AppSettings
     @ObservedObject var capture: AudioCapture
+    @ObservedObject var whatsNew: WhatsNew
     @State private var dropTargeted = false
 
     init(model: VisualizerModel) {
         self.model = model
         self.settings = model.settings
         self.capture = model.capture
+        self.whatsNew = model.whatsNew
     }
 
     var body: some View {
@@ -72,6 +74,9 @@ struct ContentView: View {
         }
         .background(Color.black)
         .ignoresSafeArea()
+        .sheet(isPresented: $whatsNew.isPresented, onDismiss: { whatsNew.markSeen() }) {
+            WhatsNewView(whatsNew: whatsNew)
+        }
         .frame(minWidth: 640, minHeight: 400)
         .onContinuousHover { phase in
             if case .active(let point) = phase { model.pointerMoved(toY: point.y) }

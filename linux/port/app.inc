@@ -31,6 +31,9 @@ struct App {
     float toolbarAnim = 1.0f;
     double lastActivity = 0, lastMouseMove = 0;
     bool anyPopupOpen = false;
+    bool settingsExisted = false;       // settings.ini was there at launch (not a first run)
+    bool whatsNewOpen = false;          // the What's New window is showing
+    std::vector<int> whatsNewShown;     // which kWhatsNew entries it lists
     bool pointerOverToolbar = false;
 
     // Detached controls window: its own GLFW window (sharing the OpenGL objects) and Dear ImGui

@@ -27,6 +27,7 @@ enum WaveStyle: Int, CaseIterable {
     case rainbowPeaks    // thin rainbow bars with bouncing glowing caps
     case tesseract       // a 4D hypercube rotating through the fourth dimension
     case fullKaleidoscope // full-frame 4-way / 8-way mandala
+    case mainStage       // arena floor: cathedral beam vaults, lasers, crowd
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -184,5 +185,9 @@ extension VisualScene {
                     warpAmount: 0.004, warpScale: 3.4, warpSpeed: 0.55, decay: 0.91,
                     mirror: 2, hueShift: 0.0015, generative: 1,
                     wave: .fullKaleidoscope, baseHue: 0.52, hueSpeed: 0.015, saturation: 1, vignette: 0.48),
+
+        VisualScene(name: "Main Stage",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.84, hueShift: 0,
+                    wave: .mainStage, baseHue: 0.08, hueSpeed: 0, vignette: 0.4),
     ]
 }

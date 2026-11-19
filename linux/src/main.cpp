@@ -7,6 +7,7 @@
 
 #include "audio.h"
 #include "core_logic.h"
+#include "whats_new_notes.h"
 #include "recorder.h"
 #include "renderer.h"
 
@@ -138,6 +139,7 @@ struct AppSettings {
     std::string latestUrl;            // its release page
     long long updateSnoozeUntil = 0;  // "Ignore for 24 hours": hide the toolbar button until then
     bool privacyNoticeSeen = false;   // first-run notice about the update check has been answered
+    std::string whatsNewLastSeen;     // version whose What's New notes were last shown
     bool controlsDetached = false;    // toolbar lives in its own window (for a second screen)
     int recordQuality = 1;            // 0 = 720p, 1 = 1080p, 2 = 4K
     std::wstring recordFolder;        // empty = the Videos folder
@@ -171,6 +173,7 @@ static std::string serialize(const AppSettings& s) {
     out += "latestUrl=" + s.latestUrl + "\n";
     out += "updateSnoozeUntil=" + std::to_string(s.updateSnoozeUntil) + "\n";
     out += std::string("privacyNoticeSeen=") + (s.privacyNoticeSeen ? "1" : "0") + "\n";
+    out += "whatsNewLastSeen=" + s.whatsNewLastSeen + "\n";
     out += std::string("controlsDetached=") + (s.controlsDetached ? "1" : "0") + "\n";
     out += "recordQuality=" + std::to_string(s.recordQuality) + "\n";
     out += "frameCap=" + std::to_string(s.frameCap) + "\n";
@@ -180,9 +183,10 @@ static std::string serialize(const AppSettings& s) {
     return out;
 }
 
-static void loadSettings(const std::wstring& path, AppSettings& s) {
+/// Returns false when there was no settings file yet (a brand-new install).
+static bool loadSettings(const std::wstring& path, AppSettings& s) {
     FILE* f = std::fopen(narrow(path).c_str(), "rb");
-    if (!f) return;
+    if (!f) return false;
     std::map<std::string, std::string> kv;
     char line[2048];
     while (std::fgets(line, sizeof(line), f)) {
@@ -227,6 +231,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("latestUrl")) s.latestUrl = kv["latestUrl"];
     if (kv.count("updateSnoozeUntil")) s.updateSnoozeUntil = std::atoll(kv["updateSnoozeUntil"].c_str());
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
+    if (kv.count("whatsNewLastSeen")) s.whatsNewLastSeen = kv["whatsNewLastSeen"];
     flag("controlsDetached", s.controlsDetached);
     if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
     if (kv.count("frameCap")) {
@@ -241,6 +246,7 @@ static void loadSettings(const std::wstring& path, AppSettings& s) {
         v = it->second;
         return true;
     });
+    return true;
 }
 
 static void writeFile(const std::wstring& path, const std::string& text) {
@@ -294,6 +300,9 @@ struct App {
     float toolbarAnim = 1.0f;
     double lastActivity = 0, lastMouseMove = 0;
     bool anyPopupOpen = false;
+    bool settingsExisted = false;       // settings.ini was there at launch (not a first run)
+    bool whatsNewOpen = false;          // the What's New window is showing
+    std::vector<int> whatsNewShown;     // which kWhatsNew entries it lists
     bool pointerOverToolbar = false;
 
     // Detached controls window: its own GLFW window (sharing the OpenGL objects) and Dear ImGui
@@ -679,6 +688,83 @@ static void drawPrivacyNotice() {
         if (ImGui::Button("Don't check for updates")) {
             g.settings.privacyNoticeSeen = true;
             g.settings.checkForUpdates = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+/// What's New: opens once, the first time the app starts after an update (and from the Updates
+/// menu). The notes come from docs/whats-new.md via whats_new_notes.h.
+static std::vector<std::string> whatsNewVersions() {
+    std::vector<std::string> v;
+    for (int i = 0; i < kWhatsNewCount; ++i) v.push_back(kWhatsNew[i].version);
+    return v;
+}
+
+static void initWhatsNew() {
+    const std::string cur = APP_VERSION_STR;
+    if (shouldShowWhatsNew(g.settings.whatsNewLastSeen, cur, g.settingsExisted)) {
+        g.whatsNewShown = whatsNewEntries(whatsNewVersions(), g.settings.whatsNewLastSeen, cur);
+        g.whatsNewOpen = true;
+    } else if (g.settings.whatsNewLastSeen.empty() && !isDevVersion(APP_VERSION_STR)) {
+        g.settings.whatsNewLastSeen = cur;   // first install: the next update shows its notes
+    }
+}
+
+/// From the Updates menu: the latest few versions up to this one.
+static void showWhatsNew() {
+    g.whatsNewShown = whatsNewEntries(whatsNewVersions(), "0", APP_VERSION_STR, 3);
+    g.whatsNewOpen = true;
+}
+
+static void drawWhatsNew() {
+    if (!g.whatsNewOpen) return;
+    if (!g.settings.privacyNoticeSeen && !kStoreEdition) return;   // the welcome notice comes first
+    const char* id = "What's new in Dropocalypse###whatsnew";
+    if (!ImGui::IsPopupOpen(id)) ImGui::OpenPopup(id);
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(std::min(520 * g.dpi, io.DisplaySize.x - 40), 0));
+    if (ImGui::BeginPopupModal(id, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+        const ImVec4 accent(1.0f, 0.45f, 0.75f, 1);
+        ImGui::TextDisabled("Version %s", APP_VERSION_STR);
+        ImGui::Separator();
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, std::min(380 * g.dpi, io.DisplaySize.y * 0.6f)));
+        ImGui::BeginChild("notes", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY);
+        if (g.whatsNewShown.empty())
+            ImGui::TextWrapped("Dropocalypse has been updated to version %s. The full list of changes is in the changelog.",
+                               APP_VERSION_STR);
+        for (int idx : g.whatsNewShown) {
+            const WhatsNewEntry& e = kWhatsNew[idx];
+            if (g.whatsNewShown.size() > 1) {
+                ImGui::Spacing();
+                ImGui::TextColored(accent, "Version %s", e.version);
+            }
+            for (int k = 0; k < e.count; ++k) {
+                const WhatsNewItem& it = e.items[k];
+                ImGui::Spacing();
+                ImGui::Bullet();
+                ImGui::SameLine();
+                if (it.title[0]) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, accent);
+                    ImGui::TextWrapped("%s", it.title);
+                    ImGui::PopStyleColor();
+                    ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
+                    ImGui::TextWrapped("%s", it.body);
+                    ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
+                } else {
+                    ImGui::TextWrapped("%s", it.body);
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::Separator();
+        if (ImGui::Button("Full changelog")) openWithDesktop("https://github.com/allenrobberson/dropocalypse/wiki/Changelog");
+        ImGui::SameLine();
+        if (ImGui::Button("Got it") || ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+            g.whatsNewOpen = false;
+            if (!isDevVersion(APP_VERSION_STR)) g.settings.whatsNewLastSeen = APP_VERSION_STR;
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -1464,6 +1550,7 @@ static void updatesPanelBody() {
     if (kStoreEdition) {
         ImGui::TextUnformatted("Updates come automatically from the Microsoft Store.");
         ImGui::TextDisabled("Version %s", APP_VERSION_STR);
+        if (ImGui::Button("What's new")) showWhatsNew();
         return;
     }
     if (updateAvailable() && !g.settings.latestVersion.empty()) {
@@ -1476,6 +1563,8 @@ static void updatesPanelBody() {
     if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
         startUpdateCheck(false);
     if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
+    ImGui::SameLine();
+    if (ImGui::Button("What's new")) showWhatsNew();
     ImGui::SameLine();
     ImGui::TextDisabled("Version %s", APP_VERSION_STR);
     {
@@ -2119,7 +2208,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     g.settingsPath = g.dataDir + L"/settings.ini";
-    loadSettings(g.settingsPath, g.settings);
+    g.settingsExisted = loadSettings(g.settingsPath, g.settings);
     g.lastSaved = serialize(g.settings);
 
     glfwSetErrorCallback([](int code, const char* desc) { std::fprintf(stderr, "GLFW error %d: %s\n", code, desc); });
@@ -2170,10 +2259,11 @@ int main(int argc, char** argv) {
     if (g.settings.checkForUpdates && g.settings.privacyNoticeSeen && !isDevVersion(APP_VERSION_STR) &&
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
         startUpdateCheck(false);
+    initWhatsNew();
     noteActivity(true);
     if (g.settings.controlsDetached) openControlsWindow();
 
-    if (selfTest) { g.settings.privacyNoticeSeen = true; g.settings.checkForUpdates = false; }
+    if (selfTest) { g.settings.privacyNoticeSeen = true; g.settings.checkForUpdates = false; g.whatsNewOpen = false; }
 
     double lastFrame = nowSeconds();
     double lastSaveCheck = lastFrame;
@@ -2254,6 +2344,7 @@ int main(int argc, char** argv) {
 
         if (!g.settings.controlsDetached) drawToolbar(dt);
         drawPrivacyNotice();
+        drawWhatsNew();
         drawNotices();
 
         ImGui::Render();

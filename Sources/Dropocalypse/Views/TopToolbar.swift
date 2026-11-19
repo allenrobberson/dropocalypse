@@ -483,6 +483,7 @@ struct TopToolbar: View {
                 HStack {
                     Button(updates.checking ? "Checking…" : "Check now") { updates.check(userInitiated: true) }
                         .disabled(updates.checking)
+                    Button("What's new") { model.openPopover = nil; model.whatsNew.show() }
                     Spacer()
                     Text("Version \(updates.currentVersion)").foregroundStyle(.secondary)
                 }
@@ -663,6 +664,8 @@ struct TopToolbar: View {
                 Divider()
                 Text("Version \(updates.currentVersion) · Updates come from the App Store.")
                     .font(.caption).foregroundStyle(.secondary)
+                Button("What's new in this version") { model.openPopover = nil; model.whatsNew.show() }
+                    .font(.caption)
             }
         }
     }

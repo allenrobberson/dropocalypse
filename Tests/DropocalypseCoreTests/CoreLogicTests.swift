@@ -2,6 +2,21 @@ import DropocalypseCore
 import XCTest
 
 final class CoreLogicTests: XCTestCase {
+    func testWhatsNew() {
+        XCTAssertFalse(WhatsNewLogic.shouldShow(lastSeen: nil, current: "1.4.0", existingInstall: false))
+        XCTAssertTrue(WhatsNewLogic.shouldShow(lastSeen: nil, current: "1.4.0", existingInstall: true))
+        XCTAssertTrue(WhatsNewLogic.shouldShow(lastSeen: "1.3.2", current: "1.4.0", existingInstall: true))
+        XCTAssertFalse(WhatsNewLogic.shouldShow(lastSeen: "1.4.0", current: "1.4.0", existingInstall: true))
+        XCTAssertFalse(WhatsNewLogic.shouldShow(lastSeen: "1.5.0", current: "1.4.0", existingInstall: true))
+        XCTAssertFalse(WhatsNewLogic.shouldShow(lastSeen: "1.3.2", current: "0.0.0-dev", existingInstall: true))
+        let v = ["1.5.0", "1.4.1", "1.4.0", "1.3.2", "1.3.1", "1.3.0", "1.2.12"]
+        XCTAssertEqual(WhatsNewLogic.entries(versions: v, lastSeen: nil, current: "1.4.1"), [1])
+        XCTAssertEqual(WhatsNewLogic.entries(versions: v, lastSeen: "1.3.2", current: "1.4.1"), [1, 2])
+        XCTAssertEqual(WhatsNewLogic.entries(versions: v, lastSeen: "1.2.12", current: "1.4.1", maxEntries: 3), [1, 2, 3])
+        XCTAssertEqual(WhatsNewLogic.entries(versions: v, lastSeen: nil, current: "1.4.2"), [])
+        XCTAssertEqual(WhatsNewLogic.entries(versions: v, lastSeen: "1.4.1", current: "1.4.1"), [])
+    }
+
     func testVersionComparison() {
         XCTAssertTrue(VersionCompare.isNewer("0.10.0", than: "0.9.2"))
         XCTAssertTrue(VersionCompare.isNewer("1.2.2", than: "1.2.1"))

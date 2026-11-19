@@ -49,6 +49,7 @@ See every style moving in the [animated gallery on the GitHub page](https://gith
 | # | Style | What it looks like |
 |---|---|---|
 | 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
+| 26 | **Main Stage** | Stand on an arena floor. Truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick. Lasers spray from the stage on the beat and scan the crowd, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue. |
 
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 

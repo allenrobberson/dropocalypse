@@ -5,6 +5,7 @@
 
 #include "audio.h"
 #include "core_logic.h"
+#include "whats_new_notes.h"
 #include "recorder.h"
 #include "renderer.h"
 

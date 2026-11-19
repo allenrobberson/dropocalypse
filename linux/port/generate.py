@@ -57,8 +57,8 @@ out.append(section("struct AppSettings {", "static std::wstring appDataDir()"))
 out.append(inc("appdata.inc"))
 settings = section("static std::string serialize", "static void writeFile")
 settings = replace(settings, '''    FILE* f = nullptr;
-    if (_wfopen_s(&f, path.c_str(), L"rb") != 0 || !f) return;''', '''    FILE* f = std::fopen(narrow(path).c_str(), "rb");
-    if (!f) return;''')
+    if (_wfopen_s(&f, path.c_str(), L"rb") != 0 || !f) return false;''', '''    FILE* f = std::fopen(narrow(path).c_str(), "rb");
+    if (!f) return false;''')
 out.append(settings)
 out.append(inc("writefile.inc"))
 out.append(section("static void resetMotion", "struct App {"))
@@ -74,6 +74,8 @@ notices = replace(notices, '''        if (ImGui::SmallButton("Read the privacy p
             ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md",
                           nullptr, nullptr, SW_SHOWNORMAL);''', '''        if (ImGui::SmallButton("Read the privacy policy"))
             openWithDesktop("https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md");''')
+notices = replace(notices, '''if (ImGui::Button("Full changelog")) ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/wiki/Changelog", nullptr, nullptr, SW_SHOWNORMAL);''',
+                  '''if (ImGui::Button("Full changelog")) openWithDesktop("https://github.com/allenrobberson/dropocalypse/wiki/Changelog");''')
 out.append(notices)
 out.append(inc("dialogs.inc"))
 out.append("// ---------------------------------------------------------------------------------------------\n"

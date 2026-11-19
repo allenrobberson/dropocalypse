@@ -1,4 +1,4 @@
-// Dropocalypse for Windows - the 25 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 26 built-in styles (same values as the macOS Scenes.swift).
 #pragma once
 
 #include <array>
@@ -11,7 +11,8 @@ enum class WaveStyle {
     // Equalizer family
     MirrorEqualizer, LedMeter, RainbowPeaks,
     Tesseract,
-    FullKaleidoscope
+    FullKaleidoscope,
+    MainStage
 };
 
 struct VisualScene {
@@ -28,9 +29,9 @@ struct VisualScene {
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
 };
 
-inline const std::array<VisualScene, 25>& builtInScenes() {
-    static const std::array<VisualScene, 25> scenes = [] {
-        std::array<VisualScene, 25> s{};
+inline const std::array<VisualScene, 26>& builtInScenes() {
+    static const std::array<VisualScene, 26> scenes = [] {
+        std::array<VisualScene, 26> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -155,6 +156,10 @@ inline const std::array<VisualScene, 25>& builtInScenes() {
         c->mirror = 2; c->hueShift = 0.0015f; c->generative = 1;
         c->wave = WaveStyle::FullKaleidoscope; c->baseHue = 0.52f; c->hueSpeed = 0.015f;
         c->saturation = 1; c->vignette = 0.48f;
+
+        c = &s[25]; c->name = "Main Stage";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.84f; c->hueShift = 0;
+        c->wave = WaveStyle::MainStage; c->baseHue = 0.08f; c->hueSpeed = 0; c->vignette = 0.4f;
         return s;
     }();
     return scenes;

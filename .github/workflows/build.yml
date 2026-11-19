@@ -34,6 +34,11 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: What's New notes are up to date (and cover the version being released)
+        run: |
+          python3 scripts/make-whats-new.py --check
+          if [ -n "$RELEASE_VERSION" ]; then python3 scripts/make-whats-new.py --has "${RELEASE_VERSION#v}"; fi
+
       - name: Test
         run: swift test
 
@@ -360,7 +365,7 @@ jobs:
           body: |
             ## 📖 User guide
             New here? Download **Dropocalypse-User-Guide.pdf** below. It's a printable, step-by-step guide to installing and
-            using Dropocalypse on Mac, Windows and Linux, covering every control, all 25 styles, keyboard shortcuts and troubleshooting.
+            using Dropocalypse on Mac, Windows and Linux, covering every control, all 26 styles, keyboard shortcuts and troubleshooting.
             (It's also included inside the Mac .dmg, the Windows .zip and the Linux .tar.gz.)
 
             ## Download

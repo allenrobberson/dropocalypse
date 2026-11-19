@@ -27,7 +27,7 @@ PERFECT FOR
 • Anyone who misses the classic Winamp visuals
 
 FEATURES
-• 25 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract and Full Kaleidoscope
+• 26 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract, Full Kaleidoscope and Main Stage
 • Your logo reacts to the music: pulse, squash, bounce, slide, wobble, glow and trails, each adjustable
 • Listens to whatever your PC is playing (no microphone needed), one output device, a microphone or a line-in
 • Two screens: detach the controls onto your laptop and send the visuals full screen to a TV or projector
@@ -47,7 +47,7 @@ Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion i
 Waveform styles are drawn on the GPU, so the app uses less CPU with the same picture. Look → Frame rate stays on Display; 60 or 30 use even less. The status line shows a frame time while the toolbar is visible.
 
 ## Product features (up to 20, short)
-- 25 music-reactive visual styles
+- 26 music-reactive visual styles
 - Your logo dances to the bass
 - Listens to any audio playing on your PC
 - Two-screen mode for live shows

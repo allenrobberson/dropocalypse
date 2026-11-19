@@ -57,15 +57,18 @@
     <td align="center"><a href="docs/media/styles/tesseract.gif"><img src="docs/media/styles/tesseract.gif" width="170" alt="Tesseract"></a><br><sub><b>Tesseract</b></sub></td>
     <td align="center"><a href="docs/media/styles/full-kaleidoscope.gif"><img src="docs/media/styles/full-kaleidoscope.gif" width="170" alt="Full Kaleidoscope"></a><br><sub><b>Full Kaleidoscope</b></sub></td>
   </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/main-stage.gif"><img src="docs/media/styles/main-stage.gif" width="170" alt="Main Stage"></a><br><sub><b>Main Stage</b></sub></td>
+  </tr>
 </table>
 
-<p align="center"><sub>All 25 styles, recorded in the Mac app with real music playing. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
+<p align="center"><sub>All 26 styles. The first 25 were recorded in the Mac app with real music playing; Main Stage is rendered from the same drawing code. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **25 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, and **Full Kaleidoscope** (a full-frame neon mandala). Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **26 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, **Full Kaleidoscope** (a full-frame neon mandala) and **Main Stage** (the view from an arena floor, with cathedral-style beam vaults, lasers and a crowd). Pick one or let them auto-cycle with smooth crossfades.
 - 🖼 **Your logos and text**: up to 4 at once, side by side (or stacked in Portrait). Drag images onto the window, or add text in your choice of font and color. Transparent PNGs look best. Everything is remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
@@ -166,7 +169,7 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 25 styles](#the-25-styles)
+- [The 26 styles](#the-26-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -235,7 +238,7 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Opens the style list. Click a name to jump straight to any of the [25 styles](#the-25-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [26 styles](#the-26-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
@@ -287,7 +290,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Frame** | Landscape | **Landscape** fills the window. **Portrait** centers a 9:16 frame (pillarboxed on a wide screen) so what you see is what a Reel or TikTok recording captures. It can't be changed while a recording is in progress. |
 | **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
 
-### The 25 styles
+### The 26 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -336,6 +339,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | # | Style | What it looks like |
 |---|---|---|
 | 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
+| 26 | **Main Stage** | Stand on an arena floor. Truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick. Lasers spray from the stage on the beat and scan the crowd, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue. |
 
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
@@ -476,7 +480,7 @@ Sources/Dropocalypse/
   UpdateChecker.swift         update check, download, verify and one-click install
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 25 built-in styles (add your own here!)
+  Render/Scenes.swift         the 26 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
@@ -485,7 +489,7 @@ Sources/Dropocalypse/
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
-  src/scenes.h                the 25 styles (Windows copy)
+  src/scenes.h                the 26 styles (Windows copy)
   src/shaders.h               HLSL port of the Metal shaders
   src/logo.cpp                logo loading (PNG, JPG, …)
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)

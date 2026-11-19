@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     g.settingsPath = g.dataDir + L"/settings.ini";
-    loadSettings(g.settingsPath, g.settings);
+    g.settingsExisted = loadSettings(g.settingsPath, g.settings);
     g.lastSaved = serialize(g.settings);
 
     glfwSetErrorCallback([](int code, const char* desc) { std::fprintf(stderr, "GLFW error %d: %s\n", code, desc); });
@@ -332,10 +332,11 @@ int main(int argc, char** argv) {
     if (g.settings.checkForUpdates && g.settings.privacyNoticeSeen && !isDevVersion(APP_VERSION_STR) &&
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
         startUpdateCheck(false);
+    initWhatsNew();
     noteActivity(true);
     if (g.settings.controlsDetached) openControlsWindow();
 
-    if (selfTest) { g.settings.privacyNoticeSeen = true; g.settings.checkForUpdates = false; }
+    if (selfTest) { g.settings.privacyNoticeSeen = true; g.settings.checkForUpdates = false; g.whatsNewOpen = false; }
 
     double lastFrame = nowSeconds();
     double lastSaveCheck = lastFrame;
@@ -416,6 +417,7 @@ int main(int argc, char** argv) {
 
         if (!g.settings.controlsDetached) drawToolbar(dt);
         drawPrivacyNotice();
+        drawWhatsNew();
         drawNotices();
 
         ImGui::Render();
