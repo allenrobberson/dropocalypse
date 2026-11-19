@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.3.2
+- ✨ **Neon glow icon.** Richer colours and a soft glow on every platform. The smallest sizes (32 px and below) skip the glow so they stay crisp.
+- 🛠️ **Safer Mac updates.** If the new version can't be copied into place, the updater now always keeps your current version instead of risking a half-installed app.
+- 🔁 **Auto-cycle fix (Mac).** Style cycling handles an out-of-range position safely, so it can't get stuck or crash.
+
 ## 1.3.1
 - 💧 **New app icon.** The drop with its rainbow bars, now on a transparent background with a crisp outline, on the Mac Dock, the Windows taskbar and Start menu, and Linux app launchers. Small sizes use fewer, bolder bars so the icon stays sharp.
 

@@ -88,6 +88,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.3.2: a glowing icon and Mac fixes
+- ✨ **Neon icon**: richer colours and a soft glow on the Dock, taskbar, Start menu and app launcher.
+- 🛠️ **Safer Mac updates**: if an update can't be copied into place, your current version is always kept.
+- 🔁 **Auto-cycle fix (Mac)**: cycling styles can no longer get stuck on an out-of-range style.
+
 ### 1.3.1: a new icon
 - 💧 **A cleaner app icon**: the drop and its rainbow bars, with no background square, on the Dock, taskbar, Start menu and app launcher.
 
