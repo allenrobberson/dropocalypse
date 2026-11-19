@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the Dropocalypse icon (original artwork): rainbow equalizer bars inside a neon teardrop,
+"""Draws the Dropocalypse icon (original artwork): rainbow equalizer bars inside a glowing neon teardrop,
 on a transparent background, and writes every platform's icon files:
 
   Resources/AppIcon-1024.png, Resources/AppIcon.icns     Mac
@@ -8,7 +8,7 @@ on a transparent background, and writes every platform's icon files:
   linux/dropocalypse.png, linux/src/icon_png.h           Linux (desktop file, window icon)
   docs/media/icon-mark.png                               README / website
 
-Run it after changing the artwork: python3 scripts/make-icon.py
+Run it after changing the artwork: python3 scripts/make-icon.py   (needs Pillow and numpy)
 """
 import colorsys, io, math, os
 from PIL import Image, ImageChops, ImageDraw
@@ -62,6 +62,54 @@ def draw_mark(stroke=0.008, n=9):
     return mark.crop(mark.getchannel("A").getbbox())
 
 
+def _blur(x, sigma):
+    """Gaussian-like blur of a float array (H x W or H x W x C): three box blurs, numpy only."""
+    import numpy as np
+    w = max(1, int(round(math.sqrt(4 * sigma * sigma + 1)))) | 1   # odd width
+    r = w // 2
+    for axis in (0, 1):
+        for _ in range(3):
+            pad = [(0, 0)] * x.ndim
+            pad[axis] = (r + 1, r)
+            c = np.cumsum(np.pad(x, pad), axis=axis)
+            hi = np.take(c, range(w, c.shape[axis]), axis=axis)
+            lo = np.take(c, range(0, c.shape[axis] - w), axis=axis)
+            x = (hi - lo) / w
+    return x
+
+
+def neon(mark, glow=True, sat=1.35, strength=1.35):
+    """Neon look: richer colours, a bright core and (optionally) a soft glow on a transparent
+    background. Returns the result cropped to its visible extent, glow included."""
+    import numpy as np
+    L = max(mark.size)
+    pad = int(L * 0.16) if glow else 2
+    canvas = Image.new("RGBA", (mark.width + 2 * pad, mark.height + 2 * pad), (0, 0, 0, 0))
+    canvas.paste(mark, (pad, pad), mark)
+    a = np.asarray(canvas).astype(np.float32) / 255
+    rgb, al = a[..., :3], a[..., 3]
+    # richer colours: widen the gap from each pixel's brightest channel
+    mx = rgb.max(2, keepdims=True)
+    rgb = np.clip(mx - (mx - rgb) * sat, 0, 1)
+    rgb = rgb / np.maximum(rgb.max(2, keepdims=True), 1e-5) * np.sqrt(np.maximum(mx, 1e-5))
+    core = rgb * 0.94 + 0.06                       # the lit "tube", a touch brighter than the colour
+    if glow:
+        pre = rgb * al[..., None]
+        g_al = np.zeros_like(al); g_pre = np.zeros_like(pre)
+        for sigma, s in ((0.0079, 0.9), (0.0211, 0.6), (0.0461, 0.35)):   # tight, medium, wide
+            g_al += s * strength * _blur(al, sigma * L)
+            g_pre += s * strength * _blur(pre, sigma * L)
+        g_rgb = g_pre / np.maximum(g_al[..., None], 1e-5)
+        g_al = 1 - np.exp(-1.6 * g_al)
+    else:
+        g_rgb, g_al = np.zeros_like(rgb), np.zeros_like(al)
+    out_al = al + g_al * (1 - al)
+    out_rgb = (core * al[..., None] + g_rgb * (g_al * (1 - al))[..., None]) / np.maximum(out_al[..., None], 1e-5)
+    img = Image.fromarray((np.dstack([out_rgb.clip(0, 1), out_al.clip(0, 1)]) * 255).round().astype(np.uint8), "RGBA")
+    img.putalpha(img.getchannel("A").point(lambda v: 0 if v < 3 else v))   # drop the faintest haze
+    return img.crop(img.getchannel("A").getbbox())
+
+
 def place(mark, size, fill, width=None):
     """The mark centred on a transparent size x size (or width x size) canvas, its longer side
     taking `fill` of the shorter canvas side."""
@@ -69,14 +117,16 @@ def place(mark, size, fill, width=None):
     scale = fill * min(width, size) / max(mark.width, mark.height)
     m = mark.resize((max(1, round(mark.width * scale)), max(1, round(mark.height * scale))), Image.LANCZOS)
     out = Image.new("RGBA", (width, size), (0, 0, 0, 0))
-    out.paste(m, ((width - m.width) // 2, (size - m.height) // 2), m)
+    out.alpha_composite(m, ((width - m.width) // 2, (size - m.height) // 2))   # keeps soft glow alpha intact
     return out
 
 
 def main():
-    big = draw_mark()
-    medium = draw_mark(stroke=0.016)        # 33-48 px: thicker outline
-    tiny = draw_mark(stroke=0.03, n=5)      # 32 px and below: 5 bars, bold outline
+    # Neon look: richer colours with a soft glow. The glow is left off the tiny sizes, where it
+    # would only blur the shape.
+    big = neon(draw_mark())
+    medium = neon(draw_mark(stroke=0.016))                # 33-48 px: thicker outline
+    tiny = neon(draw_mark(stroke=0.03, n=5), glow=False)  # 32 px and below: 5 bars, bold outline
 
     def icon(size, fill):
         return place(tiny if size <= 32 else medium if size <= 48 else big, size, fill)
