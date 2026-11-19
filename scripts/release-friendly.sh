@@ -14,13 +14,13 @@ STORE="https://apps.microsoft.com/detail/9N1TJ9D5R5C8"
 
 label_for() {
   case "$1" in
-    *-macOS.dmg)               echo "🍎 Mac: click here to download (open it, drag Dropocalypse to Applications)" ;;
-    *-Windows-portable.zip)    echo "🪟 Windows: click here to download (no install: unzip and run)" ;;
-    *-Linux-x86_64.AppImage)   echo "🐧 Linux: click here to download (AppImage)" ;;
-    *User-Guide.pdf)           echo "📖 User Guide (PDF, printable)" ;;
-    *-macOS.zip)               echo "Mac app as a .zip (used by the in-app updater; most people want the Mac download above)" ;;
+    *-macOS.dmg)               echo "Mac: click here to download" ;;
+    *-Windows-portable.zip)    echo "Windows: click here to download (no install needed)" ;;
+    *-Linux-x86_64.AppImage)   echo "Linux: click here to download (AppImage)" ;;
+    *User-Guide.pdf)           echo "User Guide (PDF, printable)" ;;
+    *-macOS.zip)               echo "Mac .zip (for the in-app updater; most people want the Mac download)" ;;
     *.pkg)                     echo "Mac App Store package (for Apple; you can ignore this)" ;;
-    *-Store.msix)              echo "Microsoft Store package (you can ignore this; get it from the Microsoft Store instead)" ;;
+    *-Store.msix)              echo "Microsoft Store package (ignore; use the Microsoft Store instead)" ;;
     *-Linux-x86_64.tar.gz)     echo "Linux as a plain folder (.tar.gz, for advanced users)" ;;
     SHA256SUMS.txt)            echo "Checksums (used by the in-app updater; you can ignore this)" ;;
     *)                         echo "" ;;
@@ -32,8 +32,11 @@ gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | "\(.id)\t\(.name)"' |
 while IFS=$'\t' read -r id name; do
   label="$(label_for "$name")"
   [ -z "$label" ] && continue
-  gh api -X PATCH "repos/$REPO/releases/assets/$id" -f name="$name" -f label="$label" >/dev/null
-  echo "labelled $name"
+  if gh api -X PATCH "repos/$REPO/releases/assets/$id" -f name="$name" -f label="$label" >/dev/null; then
+    echo "labelled $name"
+  else
+    echo "::warning::could not label $name"
+  fi
 done
 
 # 2. Download box at the top of the notes (added once)
