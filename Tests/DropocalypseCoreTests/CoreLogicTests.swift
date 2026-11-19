@@ -47,6 +47,9 @@ final class CoreLogicTests: XCTestCase {
         XCTAssertEqual(SceneCycle.nextIndex(after: 2, names: names, skipped: Set(names)), 3)
         XCTAssertEqual(SceneCycle.nextIndex(after: 0, names: ["Only"], skipped: []), 0)
         XCTAssertEqual(SceneCycle.nextIndex(after: 5, names: [], skipped: []), 0)
+        // Out-of-range indexes wrap into the list before advancing.
+        XCTAssertEqual(SceneCycle.nextIndex(after: -1, names: names, skipped: []), 0)
+        XCTAssertEqual(SceneCycle.nextIndex(after: 7, names: names, skipped: []), 0)
     }
 
     func testRecordingSizeFollowsOrientation() {

@@ -6,6 +6,7 @@ public enum SceneCycle {
     public static func nextIndex(after index: Int, names: [String], skipped: Set<String>) -> Int {
         let n = names.count
         guard n > 0 else { return 0 }
+        let index = ((index % n) + n) % n
         for k in 1...n {
             let candidate = (index + k) % n
             if !skipped.contains(names[candidate]) { return candidate }

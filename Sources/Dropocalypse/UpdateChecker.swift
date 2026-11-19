@@ -264,10 +264,12 @@ final class UpdateChecker: ObservableObject {
         while kill -0 "$PID" 2>/dev/null; do sleep 0.2; done
         BACKUP="$OLD.update-backup"
         rm -rf "$BACKUP"
-        if mv "$OLD" "$BACKUP" && ditto "$NEW" "$OLD"; then
-          rm -rf "$BACKUP"
-        else
-          rm -rf "$OLD"; mv "$BACKUP" "$OLD"
+        if mv "$OLD" "$BACKUP"; then
+          if ditto "$NEW" "$OLD"; then
+            rm -rf "$BACKUP"
+          else
+            rm -rf "$OLD"; mv "$BACKUP" "$OLD"
+          fi
         fi
         # Cleared only after codesign and spctl accepted the download. See UpdateChecker.
         xattr -dr com.apple.quarantine "$OLD" 2>/dev/null
