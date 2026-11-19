@@ -29,6 +29,7 @@ PERFECT FOR
 FEATURES
 • 26 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract, Full Kaleidoscope and Main Stage
 • Your logo reacts to the music: pulse, squash, bounce, slide, wobble, glow and trails, each adjustable
+• Up to 4 logos at once, plus text such as a DJ name, an event or a hashtag
 • Listens to whatever your PC is playing (no microphone needed), one output device, a microphone or a line-in
 • Two screens: detach the controls onto your laptop and send the visuals full screen to a TV or projector
 • Record the visuals and the music to an MP4 video (720p, 1080p or 4K, landscape or 9:16 portrait)
@@ -44,7 +45,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-Waveform styles are drawn on the GPU, so the app uses less CPU with the same picture. Look → Frame rate stays on Display; 60 or 30 use even less. The status line shows a frame time while the toolbar is visible.
+New in 1.4.0: Main Stage, a new style that puts you on an arena floor. Stage lights meet overhead like a cathedral ceiling and bloom on every kick, lasers spray from the stage and sweep the crowd, and a crowd with phones up bounces to the bass. Plus a What's New window that shows what changed after each update, and a brighter neon app icon.
 
 ## Product features (up to 20, short)
 - 26 music-reactive visual styles
