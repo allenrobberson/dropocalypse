@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.4.0
+- 🏟️ **New style: Main Stage** (style 26). The view from an arena floor: truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick from the front pair back. Lasers spray from the stage on the beat (more beams when the hi-hats are busy) and scan over the crowd during the laser cue, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue.
+- 🆕 **What's New window.** The first time Dropocalypse starts after an update, it shows what changed in plain words. Open it again any time from the **Updates** menu (on Mac, also from the Dropocalypse menu).
+
 ## 1.3.2
 - ✨ **Neon glow icon.** Richer colours and a soft glow on every platform. The smallest sizes (32 px and below) skip the glow so they stay crisp.
 - 🛠️ **Safer Mac updates.** If the new version can't be copied into place, the updater now always keeps your current version instead of risking a half-installed app.

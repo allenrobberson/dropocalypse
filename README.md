@@ -91,6 +91,10 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.4.0: Main Stage, and a What's New window
+- 🏟️ **Main Stage**: stand on an arena floor. Stage lights meet overhead like a cathedral ceiling and bloom on every kick, lasers spray from the stage and sweep the crowd, and a crowd with phones up bounces to the bass.
+- 🆕 **What's New window**: after each update the app shows you what changed. Open it again from the **Updates** menu.
+
 ### 1.3.2: a glowing icon and Mac fixes
 - ✨ **Neon icon**: richer colours and a soft glow on the Dock, taskbar, Start menu and app launcher.
 - 🛠️ **Safer Mac updates**: if an update can't be copied into place, your current version is always kept.
