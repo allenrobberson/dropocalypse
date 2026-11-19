@@ -9,7 +9,11 @@ import Foundation
 /// with the release, and installed only if its Developer ID signature matches this copy's team
 /// and macOS Gatekeeper accepts it. Then it replaces this copy and reopens. Nothing happens
 /// without that click, and no information about the user is sent.
-final class UpdateChecker: ObservableObject {
+///
+/// `@unchecked Sendable`: every mutable property is only read or written on the main thread
+/// (via `DispatchQueue.main` or `MainActor.run`). Background work in `performInstall` touches
+/// only `let` constants. That makes it safe for `@Sendable` closures to hop back to main.
+final class UpdateChecker: ObservableObject, @unchecked Sendable {
     struct Release: Equatable {
         let version: String
         let url: URL
