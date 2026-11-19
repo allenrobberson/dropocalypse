@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.3.1
+- 💧 **New app icon.** The drop with its rainbow bars, now on a transparent background with a crisp outline, on the Mac Dock, the Windows taskbar and Start menu, and Linux app launchers. Small sizes use fewer, bolder bars so the icon stays sharp.
+
 ## 1.3.0
 - 🖼🖼 **Up to 4 logos at once.** Add a headliner, support acts or sponsors. In landscape they sit side by side; in **Portrait** they stack top to bottom. Each one reacts to the same beat with its own small offset in timing and direction, so they don't move like clones.
 - 🔤 **Text items.** Add a DJ name, a night or a hashtag as text: pick **Bold**, **Heavy**, **Serif** or **Mono** and one of six colors. Text gets a dark outline so it reads over bright visuals, and it glows, tints and trails like a logo.

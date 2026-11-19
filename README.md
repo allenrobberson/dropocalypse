@@ -88,12 +88,12 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.3.1: a new icon
+- 💧 **A cleaner app icon**: the drop and its rainbow bars, with no background square, on the Dock, taskbar, Start menu and app launcher.
+
 ### 1.3.0: several logos, and text
 - 🖼🖼 **Up to 4 logos at once**, side by side in landscape and stacked in **Portrait**. They all hit on the same beat, each with its own small twist, so they don't move like clones.
 - 🔤 **Text items**: type a DJ name, a night or a hashtag, pick a font and a color, and it dances like a logo, with an outline so it reads over bright visuals. See [Logos and text](#logos-and-text).
-
-### 1.2.12: now on Linux
-- 🐧 **Dropocalypse for Linux**: an AppImage (one file, nothing to install) for Ubuntu, Debian, Fedora, Mint, Arch and more, with the same styles, logo motion, two screens, recording and one-click updates. See [Linux](#-linux-appimage-one-file-nothing-to-install).
 
 Older versions are in the [Changelog](../../wiki/Changelog).
 
