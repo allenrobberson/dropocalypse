@@ -3,6 +3,11 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.5.0", [
+            "**A brand-new toolbar.** Every button is now a raised key and every slider a mixer fader, the same on Mac, Windows and Linux.",
+            "**Letters on small screens.** When the window is narrow, each menu shows one letter: **L** Logo, **M** Motion, **A** Audio, **V** Look, **S** Screen, **U** Updates and **?** Keys. Hold the mouse over a letter to see its name. **Detach** always shows the whole word.",
+            "**A few things moved.** Your logos and their size, glow and trails are now in one **Logo** menu. Full screen is in the **Screen** menu (the **F** key still works). Right-click the **Auto** key to choose how long each style stays up.",
+        ]),
         ("1.4.0", [
             "**New style: Main Stage.** Stand on an arena floor. Fans of stage lights meet overhead like a cathedral ceiling and bloom open on every kick, lasers spray from the stage and sweep over the crowd, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats.",
             "**What's New window.** After each update, Dropocalypse shows you what changed, like this. You can open it again any time from the **Updates** menu.",

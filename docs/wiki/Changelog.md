@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.5.0
+- 🎛️ **New 3D toolbar and menus.** Raised keys, mixer-style faders with a value display, on/off switches and segmented keys, on Mac, Windows and Linux, in the drop-downs and the detached controls window. Every key has the same height and label line, pressed or not.
+- 🔤 **Letters on small screens.** When the full names don't fit, the menus show **L M A V** and **S U ?**, with the name on hover and as the title of the open menu. **Detach** always shows its full name.
+- 🧭 **New layout.** Left: ‹ style ›, the **Auto** key (green while on; right-click for its timer), Logo, Motion, Audio, Look and Record. Right: Detach, Screen, Updates and Keys. The two logo buttons are now one **Logo** menu, and full screen moved into the **Screen** menu (**F** still works).
+
 ## 1.4.0
 - 🏟️ **New style: Main Stage** (style 26). The view from an arena floor: truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick from the front pair back. Lasers spray from the stage on the beat (more beams when the hi-hats are busy) and scan over the crowd during the laser cue, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue.
 - 🆕 **What's New window.** The first time Dropocalypse starts after an update, it shows what changed in plain words. Open it again any time from the **Updates** menu (on Mac, also from the Dropocalypse menu).
