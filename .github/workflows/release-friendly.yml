@@ -3,12 +3,18 @@ name: Friendly release page
 # Adds plain-English download labels and a "click here" box to an existing release.
 # The Build workflow does this automatically for new releases; run this one by hand
 # for a release that was published before it existed.
+# With "refresh_guide" it also swaps in docs/Dropocalypse-User-Guide.pdf from main (and updates its
+# line in SHA256SUMS.txt), for when the guide is improved after a release.
 on:
   workflow_dispatch:
     inputs:
       version:
         description: "Release version to tidy up (e.g. 1.3.1)"
         required: true
+      refresh_guide:
+        description: "Also replace the User Guide PDF with the one in the repository"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -18,6 +24,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Replace the user guide with the one in the repository
+        if: ${{ inputs.refresh_guide }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION#v}"
+          mkdir -p /tmp/guide && cd /tmp/guide
+          cp "$GITHUB_WORKSPACE/docs/Dropocalypse-User-Guide.pdf" .
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p SHA256SUMS.txt -O old-sums.txt
+          grep -v ' Dropocalypse-User-Guide.pdf$' old-sums.txt > SHA256SUMS.txt || true
+          sha256sum Dropocalypse-User-Guide.pdf >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" Dropocalypse-User-Guide.pdf SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
       - run: bash scripts/release-friendly.sh "${{ inputs.version }}"
         env:
           GH_TOKEN: ${{ github.token }}
