@@ -91,28 +91,16 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.5.1: Mac polish
+- 🎨 **3D style list (Mac)**: clicking the style name opens the list in the same 3D style as the other menus.
+- 🧹 **Tidier controls window (Mac)**: when the controls are detached, each section no longer repeats its own title.
+
 ### 1.5.0: a new 3D toolbar
 - 🎛️ **Raised keys and mixer faders** on Mac, Windows and Linux, in every menu and in the detached controls window.
 - 🔤 **Letters on small screens**: when the full names don't fit, the menus show **L M A V** and **S U ?** (hold the mouse over one for its name). **Detach** always shows the whole word.
 - 🧭 **New layout**: style and **Auto** on the left, then Logo, Motion, Audio, Look and Record; Detach, Screen, Updates and Keys on the right.
 
-### 1.4.0: Main Stage, and a What's New window
-- 🏟️ **Main Stage**: stand on an arena floor. Stage lights meet overhead like a cathedral ceiling and bloom on every kick, lasers spray from the stage and sweep the crowd, and a crowd with phones up bounces to the bass.
-- 🆕 **What's New window**: after each update the app shows you what changed. Open it again from the **Updates** menu.
-
-### 1.3.2: a glowing icon and Mac fixes
-- ✨ **Neon icon**: richer colours and a soft glow on the Dock, taskbar, Start menu and app launcher.
-- 🛠️ **Safer Mac updates**: if an update can't be copied into place, your current version is always kept.
-- 🔁 **Auto-cycle fix (Mac)**: cycling styles can no longer get stuck on an out-of-range style.
-
-### 1.3.1: a new icon
-- 💧 **A cleaner app icon**: the drop and its rainbow bars, with no background square, on the Dock, taskbar, Start menu and app launcher.
-
-### 1.3.0: several logos, and text
-- 🖼🖼 **Up to 4 logos at once**, side by side in landscape and stacked in **Portrait**. They all hit on the same beat, each with its own small twist, so they don't move like clones.
-- 🔤 **Text items**: type a DJ name, a night or a hashtag, pick a font and a color, and it dances like a logo, with an outline so it reads over bright visuals. See [Logos and text](#logos-and-text).
-
-Older versions are in the [Changelog](../../wiki/Changelog).
+**[See every update in the Changelog →](../../wiki/Changelog)**
 
 ## Download
 
