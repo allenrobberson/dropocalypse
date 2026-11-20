@@ -6,5 +6,8 @@
       "Bash(swift test:*)",
       "Bash(swift build:*)"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_CODE_MODE": "1"
   }
 }
