@@ -5,33 +5,38 @@ struct WhatsNewItem { const char* title; const char* body; };
 struct WhatsNewEntry { const char* version; const WhatsNewItem* items; int count; };
 
 inline const WhatsNewItem kWhatsNewItems0[] = {
+    {"Style list in 3D (Mac).", "Clicking the style name now opens the list in the same 3D style as the other menus."},
+    {"Tidier controls window (Mac).", "When the controls are detached, each section no longer repeats its own title."},
+};
+inline const WhatsNewItem kWhatsNewItems1[] = {
     {"A brand-new toolbar.", "Every button is now a raised key and every slider a mixer fader, the same on Mac, Windows and Linux."},
     {"Letters on small screens.", "When the window is narrow, each menu shows one letter: L Logo, M Motion, A Audio, V Look, S Screen, U Updates and ? Keys. Hold the mouse over a letter to see its name. Detach always shows the whole word."},
     {"A few things moved.", "Your logos and their size, glow and trails are now in one Logo menu. Full screen is in the Screen menu (the F key still works). Right-click the Auto key to choose how long each style stays up."},
 };
-inline const WhatsNewItem kWhatsNewItems1[] = {
+inline const WhatsNewItem kWhatsNewItems2[] = {
     {"New style: Main Stage.", "Stand on an arena floor. Fans of stage lights meet overhead like a cathedral ceiling and bloom open on every kick, lasers spray from the stage and sweep over the crowd, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats."},
     {"What's New window.", "After each update, Dropocalypse shows you what changed, like this. You can open it again any time from the Updates menu."},
 };
-inline const WhatsNewItem kWhatsNewItems2[] = {
+inline const WhatsNewItem kWhatsNewItems3[] = {
     {"Neon glow icon.", "Richer colours and a soft glow on every platform."},
     {"Safer Mac updates.", "If the new version can't be copied into place, your current version is always kept."},
     {"Auto-cycle fix (Mac).", "Style cycling can no longer get stuck."},
 };
-inline const WhatsNewItem kWhatsNewItems3[] = {
+inline const WhatsNewItem kWhatsNewItems4[] = {
     {"New app icon.", "The drop with its rainbow bars, now crisp on the Dock, the taskbar and Linux launchers."},
 };
-inline const WhatsNewItem kWhatsNewItems4[] = {
+inline const WhatsNewItem kWhatsNewItems5[] = {
     {"Up to 4 logos at once.", "Add a headliner, support acts or sponsors. Each one reacts to the beat in its own way."},
     {"Text items.", "Add a DJ name, a night or a hashtag as glowing text, in four styles and six colours."},
 };
 
 // Newest first.
 inline const WhatsNewEntry kWhatsNew[] = {
-    {"1.5.0", kWhatsNewItems0, 3},
-    {"1.4.0", kWhatsNewItems1, 2},
-    {"1.3.2", kWhatsNewItems2, 3},
-    {"1.3.1", kWhatsNewItems3, 1},
-    {"1.3.0", kWhatsNewItems4, 2},
+    {"1.5.1", kWhatsNewItems0, 2},
+    {"1.5.0", kWhatsNewItems1, 3},
+    {"1.4.0", kWhatsNewItems2, 2},
+    {"1.3.2", kWhatsNewItems3, 3},
+    {"1.3.1", kWhatsNewItems4, 1},
+    {"1.3.0", kWhatsNewItems5, 2},
 };
-inline constexpr int kWhatsNewCount = 5;
+inline constexpr int kWhatsNewCount = 6;

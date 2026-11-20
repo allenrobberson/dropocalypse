@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.5.1
+- 🎨 **Mac: the style list uses the 3D menu look**, like every other menu.
+- 🧹 **Mac: the detached controls window** no longer repeats each menu's title under its section bar.
+
 ## 1.5.0
 - 🎛️ **New 3D toolbar and menus.** Raised keys, mixer-style faders with a value display, on/off switches and segmented keys, on Mac, Windows and Linux, in the drop-downs and the detached controls window. Every key has the same height and label line, pressed or not.
 - 🔤 **Letters on small screens.** When the full names don't fit, the menus show **L M A V** and **S U ?**, with the name on hover and as the title of the open menu. **Detach** always shows its full name.
