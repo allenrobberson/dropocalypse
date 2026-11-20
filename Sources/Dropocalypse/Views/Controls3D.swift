@@ -296,6 +296,15 @@ struct Well<Content: View>: View {
     }
 }
 
+/// True inside the detached controls window, where each menu sits under its own section bar.
+private struct DetachedControlsKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    var inDetachedControls: Bool {
+        get { self[DetachedControlsKey.self] }
+        set { self[DetachedControlsKey.self] = newValue }
+    }
+}
+
 /// A drop-down menu's contents: pink accent, the menu's full name, an optional line under it, then
 /// the controls, on a dark panel. Buttons inside are raised keys and toggles are switches.
 struct MenuPanel<Content: View>: View {
@@ -303,6 +312,7 @@ struct MenuPanel<Content: View>: View {
     var subtitle: String? = nil
     var width: CGFloat = 300
     @ViewBuilder let content: () -> Content
+    @Environment(\.inDetachedControls) private var inDetachedControls
 
     init(title: String, subtitle: String? = nil, width: CGFloat = 300, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -312,6 +322,16 @@ struct MenuPanel<Content: View>: View {
     }
 
     var body: some View {
+        if inDetachedControls {
+            // Under a section bar that already names it: just the controls, full width.
+            VStack(alignment: .leading, spacing: 10) { content() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            panel
+        }
+    }
+
+    private var panel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 2).fill(Palette3D.pink).frame(width: 4, height: 17)

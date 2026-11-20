@@ -105,6 +105,7 @@ struct TopToolbar: View {
             .buttonStyle(RaisedKeyStyle(height: 28))
             .toggleStyle(Switch3DStyle())
             .disclosureGroupStyle(Raised3DDisclosureStyle())
+            .environment(\.inDetachedControls, true)
         }
         .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
         .background(Palette3D.bar)
@@ -389,7 +390,7 @@ struct TopToolbar: View {
         .buttonStyle(RaisedKeyStyle(look: isOpen.wrappedValue ? .on : .name, height: 36, fill: width == nil))
         .help("Pick a style, and check which ones auto-cycle rotates through")
         .popover(isPresented: isOpen, arrowEdge: .bottom) {
-            styleList.environment(\.colorScheme, .dark)
+            styleList.environment(\.colorScheme, .dark).environment(\.inDetachedControls, false)
         }
     }
 
@@ -397,11 +398,8 @@ struct TopToolbar: View {
         let scenes = VisualScene.builtIn
         let current = ((settings.sceneIndex % scenes.count) + scenes.count) % scenes.count
         let checked = scenes.filter { settings.isInCycle($0.name) }.count
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("Styles").font(.headline)
-            Text("Click a name to show it. Checked styles are the ones auto-cycle rotates through.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        return MenuPanel(title: "Styles", subtitle: "Click a name to show it. Checked styles are the ones auto-cycle rotates through.",
+                         width: 320) {
             HStack {
                 Toggle("Auto-cycle", isOn: $settings.autoCycle)
                 Spacer()
@@ -409,7 +407,6 @@ struct TopToolbar: View {
                 Button("None") { settings.setAllInCycle(false) }
             }
             .font(.caption)
-            Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(Array(scenes.enumerated()), id: \.offset) { index, scene in
@@ -418,6 +415,7 @@ struct TopToolbar: View {
                                 get: { settings.isInCycle(scene.name) },
                                 set: { settings.setInCycle(scene.name, $0) }))
                                 .toggleStyle(.checkbox)
+                                .tint(Palette3D.pink)
                                 .labelsHidden()
                                 .help("Include \(scene.name) in auto-cycle")
                             Button {
@@ -428,7 +426,9 @@ struct TopToolbar: View {
                                         .frame(width: 24, alignment: .trailing)
                                     Text(scene.name).fontWeight(index == current ? .bold : .regular)
                                     Spacer()
-                                    if index == current { Image(systemName: "play.fill").font(.caption2) }
+                                    if index == current {
+                                        Image(systemName: "play.fill").font(.caption2).foregroundStyle(Palette3D.pink)
+                                    }
                                 }
                                 .contentShape(Rectangle())
                             }
@@ -436,18 +436,19 @@ struct TopToolbar: View {
                         }
                         .padding(.vertical, 3)
                         .padding(.horizontal, 6)
-                        .background(index == current ? Color.white.opacity(0.1) : Color.clear,
+                        .background(index == current ? Palette3D.pink.opacity(0.22) : Color.clear,
                                     in: RoundedRectangle(cornerRadius: 6))
                     }
                 }
+                .padding(6)
             }
             .frame(height: 420)
+            .background(RoundedRectangle(cornerRadius: 9).fill(Palette3D.well))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.black, lineWidth: 1))
             Text(checked == 0 ? "Nothing checked, so auto-cycle uses every style."
                               : "Auto-cycle: \(checked) of \(scenes.count) styles")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        .padding(14)
-        .frame(width: 300)
     }
 
     // MARK: Updates
