@@ -15,6 +15,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "ui3d.h"
 
 #include <dirent.h>
 #include <fcntl.h>

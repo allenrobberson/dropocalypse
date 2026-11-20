@@ -31,20 +31,10 @@ static void rebuildFonts() {
     io.FontGlobalScale = g.dpi / g.raster;   // sharp text on scaled (HiDPI) screens
 
     ImGuiStyle style;
-    ImGui::StyleColorsDark(&style);
-    style.WindowRounding = 0;
-    style.PopupRounding = 8;
-    style.FrameRounding = 6;
-    style.GrabRounding = 6;
-    style.WindowBorderSize = 0;
-    style.PopupBorderSize = 1;
-    style.ItemSpacing = ImVec2(8, 8);
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.10f, 0.96f);
-    style.Colors[ImGuiCol_Button] = ImVec4(1, 1, 1, 0.06f);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(1, 1, 1, 0.16f);
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(1, 1, 1, 0.26f);
+    ui3d::applyTheme(style);
     style.ScaleAllSizes(g.dpi);
     ImGui::GetStyle() = style;
+    ui3d::setScale(g.dpi);
 
     ImGui_ImplOpenGL3_DestroyDeviceObjects();   // recreated (with the new fonts) on the next frame
 }

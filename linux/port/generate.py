@@ -70,12 +70,12 @@ out.append(section("static std::string jsonString", "static void openDownloadPag
 out.append(inc("opendownload.inc"))
 out.append(inc("install.inc"))
 notices = section("static void drawPrivacyNotice", "// Logo handling")
-notices = replace(notices, '''        if (ImGui::SmallButton("Read the privacy policy"))
+notices = replace(notices, '''        if (ui3d::smallButton("Read the privacy policy"))
             ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md",
-                          nullptr, nullptr, SW_SHOWNORMAL);''', '''        if (ImGui::SmallButton("Read the privacy policy"))
+                          nullptr, nullptr, SW_SHOWNORMAL);''', '''        if (ui3d::smallButton("Read the privacy policy"))
             openWithDesktop("https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md");''')
-notices = replace(notices, '''if (ImGui::Button("Full changelog")) ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/wiki/Changelog", nullptr, nullptr, SW_SHOWNORMAL);''',
-                  '''if (ImGui::Button("Full changelog")) openWithDesktop("https://github.com/allenrobberson/dropocalypse/wiki/Changelog");''')
+notices = replace(notices, '''if (ui3d::button("Full changelog")) ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/wiki/Changelog", nullptr, nullptr, SW_SHOWNORMAL);''',
+                  '''if (ui3d::button("Full changelog")) openWithDesktop("https://github.com/allenrobberson/dropocalypse/wiki/Changelog");''')
 out.append(notices)
 out.append(inc("dialogs.inc"))
 out.append("// ---------------------------------------------------------------------------------------------\n"

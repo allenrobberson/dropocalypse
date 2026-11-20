@@ -28,6 +28,7 @@
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
+#include "ui3d.h"
 
 #include <algorithm>
 #include <atomic>
@@ -754,18 +755,18 @@ static void drawPrivacyNotice() {
                            "and downloads an update only when you click Update now. Nothing about you is sent. "
                            "You can change this any time in the Updates menu.");
         ImGui::Spacing();
-        if (ImGui::SmallButton("Read the privacy policy"))
+        if (ui3d::smallButton("Read the privacy policy"))
             ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/blob/main/PRIVACY.md",
                           nullptr, nullptr, SW_SHOWNORMAL);
         ImGui::Separator();
-        if (ImGui::Button("OK, check for updates")) {
+        if (ui3d::button("OK, check for updates")) {
             g.settings.privacyNoticeSeen = true;
             g.settings.checkForUpdates = true;
             ImGui::CloseCurrentPopup();
             if (!isDevVersion(APP_VERSION_STR)) startUpdateCheck(false);
         }
         ImGui::SameLine();
-        if (ImGui::Button("Don't check for updates")) {
+        if (ui3d::button("Don't check for updates")) {
             g.settings.privacyNoticeSeen = true;
             g.settings.checkForUpdates = false;
             ImGui::CloseCurrentPopup();
@@ -840,9 +841,9 @@ static void drawWhatsNew() {
         }
         ImGui::EndChild();
         ImGui::Separator();
-        if (ImGui::Button("Full changelog")) ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/wiki/Changelog", nullptr, nullptr, SW_SHOWNORMAL);
+        if (ui3d::button("Full changelog")) ShellExecuteW(nullptr, L"open", L"https://github.com/allenrobberson/dropocalypse/wiki/Changelog", nullptr, nullptr, SW_SHOWNORMAL);
         ImGui::SameLine();
-        if (ImGui::Button("Got it") || ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+        if (ui3d::button("Got it") || ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
             g.whatsNewOpen = false;
             if (!isDevVersion(APP_VERSION_STR)) g.settings.whatsNewLastSeen = APP_VERSION_STR;
             ImGui::CloseCurrentPopup();
@@ -873,12 +874,12 @@ static void drawUpdatePopupBody() {
         ImGui::TextWrapped("Update now downloads it, installs it and reopens Dropocalypse. Your logo and settings are kept.");
     }
     ImGui::Spacing();
-    if (ImGui::Button(phase == InstallPhase::Failed ? "Try again" : "Update now")) startInstall();
+    if (ui3d::button(phase == InstallPhase::Failed ? "Try again" : "Update now")) startInstall();
     ImGui::SameLine();
-    if (ImGui::Button("Download page")) { openDownloadPage(); ImGui::CloseCurrentPopup(); }
+    if (ui3d::button("Download page")) { openDownloadPage(); ImGui::CloseCurrentPopup(); }
     if (phase != InstallPhase::Failed) {
         ImGui::SameLine();
-        if (ImGui::Button("Ignore for 24 hours")) {
+        if (ui3d::button("Ignore for 24 hours")) {
             g.settings.updateSnoozeUntil = (long long)std::time(nullptr) + 24 * 3600;
             ImGui::CloseCurrentPopup();
         }
@@ -892,7 +893,7 @@ static double nowSeconds() {
 }
 
 static constexpr double kHideDelay = 2.5;
-static float toolbarHeight() { return 40.0f * g.dpi; }
+static float toolbarHeight() { return 50.0f * g.dpi; }
 
 static void noteActivity(bool reveal) {
     g.lastActivity = nowSeconds();
@@ -1178,12 +1179,12 @@ static std::string recordTimeLabel() {
 static void recordSettingsBody() {
     ImGui::TextUnformatted("Video size");
     ImGui::BeginDisabled(g.recorder.isRecording());
-    for (int i = 0; i < 3; ++i) {
-        const auto& q = Recorder::kQualities[i];
-        const RecordingPixels px = recordingPixels(i, g.settings.r.portrait);
-        char label[64];
-        std::snprintf(label, sizeof(label), "%s  (%d x %d, %d fps)", q.label, px.width, px.height, q.fps);
-        if (ImGui::RadioButton(label, g.settings.recordQuality == i)) g.settings.recordQuality = i;
+    {
+        const char* labels[3] = {Recorder::kQualities[0].label, Recorder::kQualities[1].label, Recorder::kQualities[2].label};
+        int q = std::clamp(g.settings.recordQuality, 0, 2);
+        if (ui3d::segmented("quality", labels, 3, &q)) g.settings.recordQuality = q;
+        const RecordingPixels px = recordingPixels(q, g.settings.r.portrait);
+        ImGui::TextDisabled("%d x %d, %d frames a second", px.width, px.height, Recorder::kQualities[q].fps);
     }
     ImGui::EndDisabled();
     ImGui::Spacing();
@@ -1191,35 +1192,34 @@ static void recordSettingsBody() {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("%s", narrow(recordFolder()).c_str());
     ImGui::PopTextWrapPos();
-    if (ImGui::Button("Change folder...")) chooseRecordFolder();
+    if (ui3d::button("Change folder...")) chooseRecordFolder();
     ImGui::SameLine();
-    if (ImGui::Button("Open folder")) openRecordFolder();
+    if (ui3d::button("Open folder")) openRecordFolder();
     if (!g.settings.recordFolder.empty()) {
         ImGui::SameLine();
-        if (ImGui::Button("Use Videos")) g.settings.recordFolder.clear();
+        if (ui3d::button("Use Videos")) g.settings.recordFolder.clear();
     }
     std::wstring last;
     {
         std::lock_guard<std::mutex> lock(g.recordMutex);
         last = g.lastRecording;
     }
-    if (!last.empty() && ImGui::Button("Show last recording")) showInExplorer(last);
+    if (!last.empty() && ui3d::button("Show last recording")) showInExplorer(last);
     ImGui::TextDisabled("Records the visuals and the music, without the toolbar. Landscape follows the window. Portrait records the centered 9:16 frame (set under Look).");
 }
 
-/// Red record button, or a stop button with the running time while recording.
+/// Record key (red dot), or a red stop key with the running time while recording.
 static void recordButton(const ImVec2& size = ImVec2(0, 0)) {
-    bool rec = g.recorder.isRecording();
-    // Grey like the other buttons until recording, then red.
-    const ImGuiStyle& st = ImGui::GetStyle();
-    ImGui::PushStyleColor(ImGuiCol_Button, rec ? ImVec4(0.85f, 0.12f, 0.18f, 1) : st.Colors[ImGuiCol_Button]);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, rec ? ImVec4(0.95f, 0.2f, 0.25f, 1) : st.Colors[ImGuiCol_ButtonHovered]);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, rec ? ImVec4(1.0f, 0.3f, 0.3f, 1) : st.Colors[ImGuiCol_ButtonActive]);
-    std::string label = rec ? "Stop  " + recordTimeLabel() + "###recbtn" : "Record###recbtn";
-    if (ImGui::Button(label.c_str(), size)) toggleRecording();
-    ImGui::PopStyleColor(3);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(rec ? "Stop recording and save the video (R)" : "Record the visuals and music to a video (R)");
+    const bool rec = g.recorder.isRecording();
+    const std::string label = rec ? "Stop  " + recordTimeLabel() : std::string("Record");
+    ui3d::KeyOpts o;
+    o.glyph = rec ? ui3d::Glyph::Stop : ui3d::Glyph::Dot;
+    o.look = rec ? ui3d::Look::Recording : ui3d::Look::Normal;
+    o.tooltip = rec ? "Stop recording and save the video (R)" : "Record the visuals and music to a video (R)";
+    ImVec2 sz = size;
+    if (sz.x <= 0) sz.x = sz.x < 0 ? ImGui::GetContentRegionAvail().x : ui3d::keyWidth(label.c_str(), true);
+    if (sz.y <= 0) sz.y = ui3d::buttonHeight();
+    if (ui3d::key("##recbtn", label.c_str(), sz, o)) toggleRecording();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1393,29 +1393,17 @@ static void rebuildFonts() {
     }
 
     ImGuiStyle style;
-    ImGui::StyleColorsDark(&style);
-    style.WindowRounding = 0;
-    style.PopupRounding = 8;
-    style.FrameRounding = 6;
-    style.GrabRounding = 6;
-    style.WindowBorderSize = 0;
-    style.PopupBorderSize = 1;
-    style.ItemSpacing = ImVec2(8, 8);
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.10f, 0.96f);
-    style.Colors[ImGuiCol_Button] = ImVec4(1, 1, 1, 0.06f);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(1, 1, 1, 0.16f);
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(1, 1, 1, 0.26f);
+    ui3d::applyTheme(style);
     style.ScaleAllSizes(g.dpi);
     ImGui::GetStyle() = style;
+    ui3d::setScale(g.dpi);
 
     ImGui_ImplDX11_InvalidateDeviceObjects();
 }
 
+/// A labelled mixer-style fader (see ui3d.h).
 static bool slider(const char* label, float* v, float lo, float hi, const char* fmt = "%.2f") {
-    ImGui::TextUnformatted(label);
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    std::string id = std::string("##") + label;
-    return ImGui::SliderFloat(id.c_str(), v, lo, hi, fmt);
+    return ui3d::fader(label, v, lo, hi, fmt);
 }
 
 static void beginPanel(const char* title) {
@@ -1460,8 +1448,8 @@ static void itemsEditor(float width) {
         ImGui::SameLine();
         const float indent = ImGui::GetCursorPosX() - x0;
         // Right side: earlier, later, remove.
-        const float removeW = ImGui::CalcTextSize("Remove").x + st.FramePadding.x * 2;
-        const float right = fh * 2 + removeW + st.ItemSpacing.x * 3;
+        const float removeW = ui3d::keyWidth("Remove");
+        const float right = ui3d::buttonHeight() * 2 + removeW + st.ItemSpacing.x * 3;
         const float field = std::max(60 * g.dpi, x0 + width - ImGui::GetCursorPosX() - right);
         if (it.isText) {
             char buf[256];
@@ -1472,32 +1460,32 @@ static void itemsEditor(float width) {
                 refreshTextItem(i);
             }
         } else {
-            const float replaceW = ImGui::CalcTextSize("Replace...").x + st.FramePadding.x * 2;
+            const float replaceW = ui3d::keyWidth("Replace...");
             const float nameW = std::max(20 * g.dpi, field - replaceW - st.ItemSpacing.x);
             const float y = ImGui::GetCursorPosY();
             ImGui::TextUnformatted(ellipsize(it.name.empty() ? std::string("Logo") : it.name, nameW).c_str());
             if (ImGui::IsItemHovered() && !it.name.empty()) ImGui::SetTooltip("%s", it.name.c_str());
             ImGui::SameLine(x0 + indent + nameW + st.ItemSpacing.x);
             ImGui::SetCursorPosY(y);
-            if (ImGui::Button("Replace...")) replaceAt = i;
+            if (ui3d::button("Replace...")) replaceAt = i;
         }
         ImGui::SameLine(x0 + width - right + st.ItemSpacing.x);
         ImGui::BeginDisabled(i == 0);
-        if (ImGui::ArrowButton("##earlier", portrait ? ImGuiDir_Up : ImGuiDir_Left)) { moveFrom = i; moveBy = -1; }
+        if (ui3d::arrowKey("##earlier", portrait ? ImGuiDir_Up : ImGuiDir_Left)) { moveFrom = i; moveBy = -1; }
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(portrait ? "Move up" : "Move left");
         ImGui::SameLine();
         ImGui::BeginDisabled(i == n - 1);
-        if (ImGui::ArrowButton("##later", portrait ? ImGuiDir_Down : ImGuiDir_Right)) { moveFrom = i; moveBy = 1; }
+        if (ui3d::arrowKey("##later", portrait ? ImGuiDir_Down : ImGuiDir_Right)) { moveFrom = i; moveBy = 1; }
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(portrait ? "Move down" : "Move right");
         ImGui::SameLine();
-        if (ImGui::Button("Remove")) removeAt = i;
+        if (ui3d::button("Remove")) removeAt = i;
 
         if (it.isText) {
             ImGui::SetCursorPosX(x0 + indent);
             ImGui::SetNextItemWidth(std::max(90 * g.dpi, ImGui::CalcTextSize("Heavy").x + fh * 2));
-            if (ImGui::BeginCombo("##font", textFontName(it.font))) {
+            if (ui3d::beginCombo("##font", textFontName(it.font))) {
                 for (int f = 0; f < kTextFontCount; ++f)
                     if (ImGui::Selectable(textFontName(f), f == it.font) && f != it.font) {
                         it.font = f;
@@ -1537,9 +1525,9 @@ static void itemsEditor(float width) {
     const bool full = (int)items.size() >= kMaxOverlayItems;
     const float half = (width - st.ItemSpacing.x) * 0.5f;
     ImGui::BeginDisabled(full);
-    if (ImGui::Button("Add image... (L)", ImVec2(half, 0))) chooseLogo();
+    if (ui3d::button("Add image... (L)", ImVec2(half, 0))) chooseLogo();
     ImGui::SameLine();
-    if (ImGui::Button("Add text", ImVec2(half, 0))) addTextItem();
+    if (ui3d::button("Add text", ImVec2(half, 0))) addTextItem();
     ImGui::EndDisabled();
     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width);
     ImGui::TextDisabled(full ? "That's the most: 4 at once. Remove one to add another."
@@ -1549,20 +1537,24 @@ static void itemsEditor(float width) {
 
 // ---- Panel contents, shared by the toolbar's drop-downs and the detached controls window.
 static void motionPanelBody(RenderSettings& r) {
+    ui3d::beginWell();
     slider("Pulse", &r.pulse, 0, 1.5f);
     slider("Squash & stretch", &r.squash, 0, 1.5f);
     slider("Bounce", &r.bounce, 0, 1.5f);
     slider("Slide", &r.slide, 0, 1.5f);
     slider("Wobble", &r.wobble, 0, 1.5f);
-    if (ImGui::Button("Reset to defaults")) resetMotion(r);
+    ui3d::endWell();
+    if (ui3d::button("Reset to defaults")) resetMotion(r);
 }
 
 static void logoPanelBody(RenderSettings& r) {
+    ui3d::beginWell();
     slider("Size", &r.logoSize, 0.08f, 0.8f);
     slider("Glow", &r.glow, 0, 1.5f);
     slider("Color tint", &r.logoTint, 0, 1);
-    ImGui::Checkbox("Logo trails (feeds into the visuals)", &r.logoTrails);
-    ImGui::Checkbox("Show logos (G)", &r.showLogo);
+    ui3d::endWell();
+    ui3d::toggle("Logo trails (feeds into the visuals)", &r.logoTrails);
+    ui3d::toggle("Show logos (G)", &r.showLogo);
 }
 
 static void audioPanelBody() {
@@ -1570,7 +1562,7 @@ static void audioPanelBody() {
     for (const auto& s : g.sources)
         if (s.key() == g.settings.audioSource) curName = narrow(s.name);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::BeginCombo("##source", curName.c_str())) {
+    if (ui3d::beginCombo("##source", curName.c_str())) {
         for (const auto& s : g.sources) {
             std::string k = s.key();
             if (ImGui::Selectable(narrow(s.name).c_str(), k == g.settings.audioSource)) {
@@ -1580,42 +1572,48 @@ static void audioPanelBody() {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::Button("Refresh devices")) g.sources = AudioCapture::listSources();
+    if (ui3d::button("Refresh devices")) g.sources = AudioCapture::listSources();
     ImGui::SameLine();
-    if (ImGui::Button("Restart audio")) startAudio();
+    if (ui3d::button("Restart audio")) startAudio();
+    ui3d::beginWell();
     slider("Sensitivity", &g.settings.sensitivity, 0.2f, 4.0f);
     slider("Beat threshold", &g.settings.beatThreshold, 1.1f, 2.2f, "%.2fx");
+    ui3d::endWell();
     ImGui::TextDisabled("%s", narrow(g.audio.status()).c_str());
 }
 
 static void lookPanelBody(RenderSettings& r) {
+    ui3d::beginWell();
     slider("Beat flash", &r.beatFlash, 0, 1);
     slider("Brightness", &r.brightness, 0.4f, 1.6f);
+    ui3d::endWell();
     ImGui::TextUnformatted("Frame");
     ImGui::BeginDisabled(g.recorder.isRecording());
-    if (ImGui::RadioButton("Landscape", !r.portrait)) r.portrait = false;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Portrait (9:16)", r.portrait)) r.portrait = true;
+    {
+        const char* frames[2] = {"Landscape", "Portrait (9:16)"};
+        int f = r.portrait ? 1 : 0;
+        if (ui3d::segmented("frame", frames, 2, &f)) r.portrait = f == 1;
+    }
     ImGui::EndDisabled();
     ImGui::TextWrapped(r.portrait
                            ? "Portrait centers a vertical frame. Recordings are 720x1280, 1080x1920, or 2160x3840."
                            : "Landscape fills the window.");
-    slider("Auto-cycle every", &r.cycleSeconds, 5, 360, "%.0f s");
     ImGui::TextUnformatted("Frame rate");
-    if (ImGui::RadioButton("Display", g.settings.frameCap == 0)) g.settings.frameCap = 0;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("60", g.settings.frameCap == 60)) g.settings.frameCap = 60;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("30", g.settings.frameCap == 30)) g.settings.frameCap = 30;
+    {
+        const char* rates[3] = {"Display", "60", "30"};
+        int f = g.settings.frameCap == 60 ? 1 : g.settings.frameCap == 30 ? 2 : 0;
+        if (ui3d::segmented("rate", rates, 3, &f)) g.settings.frameCap = f == 1 ? 60 : f == 2 ? 30 : 0;
+    }
     ImGui::TextDisabled("Display matches the monitor. 60 and 30 use less CPU.");
 }
+
 
 /// The Updates menu: version, check now, automatic checks, and installing a new version.
 static void updatesPanelBody() {
     if (kStoreEdition) {
         ImGui::TextUnformatted("Updates come automatically from the Microsoft Store.");
         ImGui::TextDisabled("Version %s", APP_VERSION_STR);
-        if (ImGui::Button("What's new")) showWhatsNew();
+        if (ui3d::button("What's new")) showWhatsNew();
         return;
     }
     if (updateAvailable() && !g.settings.latestVersion.empty()) {
@@ -1625,11 +1623,11 @@ static void updatesPanelBody() {
     } else {
         ImGui::TextUnformatted("You have the latest version.");
     }
-    if (ImGui::Checkbox("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
+    if (ui3d::toggle("Check for updates automatically", &g.settings.checkForUpdates) && g.settings.checkForUpdates)
         startUpdateCheck(false);
-    if (ImGui::Button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
+    if (ui3d::button(gUpdate.checking ? "Checking..." : "Check now") && !gUpdate.checking) startUpdateCheck(true);
     ImGui::SameLine();
-    if (ImGui::Button("What's new")) showWhatsNew();
+    if (ui3d::button("What's new")) showWhatsNew();
     ImGui::SameLine();
     ImGui::TextDisabled("Version %s", APP_VERSION_STR);
     {
@@ -1643,9 +1641,9 @@ static void styleListBody(RenderSettings& r, int cur) {
     int n = (int)scenes.size();
     // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
     ImGui::TextDisabled("Checked = included in auto-cycle");
-    if (ImGui::SmallButton("All")) r.cycleSkip = 0;
+    if (ui3d::smallButton("All")) r.cycleSkip = 0;
     ImGui::SameLine();
-    if (ImGui::SmallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
+    if (ui3d::smallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
     ImGui::Separator();
     int checked = 0;
     for (int i = 0; i < n; ++i) {
@@ -1665,6 +1663,15 @@ static void styleListBody(RenderSettings& r, int cur) {
     else ImGui::TextDisabled("Auto-cycle: %d of %d styles", checked, n);
 }
 
+/// Auto-cycle settings: how long each style stays, and which styles take part.
+static void autoCycleBody(RenderSettings& r, int cur) {
+    ui3d::toggle("Auto-cycle (A)", &r.autoCycle);
+    ui3d::beginWell();
+    slider("Change style every", &r.cycleSeconds, 5, 360, "%.0f s");
+    ui3d::endWell();
+    styleListBody(r, cur);
+}
+
 static void keysPanelBody() {
     const char* rows[][2] = {{"F / F11", "Full screen"},    {"T / S", "Show / hide toolbar"},
                              {"Esc", "Hide toolbar / exit full screen"}, {"L", "Add a logo"},
@@ -1677,192 +1684,219 @@ static void keysPanelBody() {
         ImGui::TextDisabled("%s", row[1]);
     }
     ImGui::Spacing();
-    ImGui::TextDisabled("Move the mouse to the top edge to bring the toolbar back.");
+    ImGui::TextDisabled("Move the mouse to the top edge to bring the toolbar back. On a small screen the menus "
+                        "show single letters: hold the mouse over one to see its name.");
 }
 
-/// The toolbar. `docked` = drawn over the visuals (auto-hides); otherwise it's the top row of the
-/// separate controls window and always visible.
-static void drawToolbar(float dt, bool docked = true) {
+/// The toolbar over the visuals (it slides away when idle). Left: the style with its arrows,
+/// auto-cycle, the menus and record. Right: Detach, Screen, Updates and Keys. The menus show
+/// their full names when there's room and single letters (with the name on hover) when there isn't.
+static void drawToolbar(float dt) {
     ImGuiIO& io = ImGui::GetIO();
+    ui3d::setScale(g.dpi);
     RenderSettings& r = g.settings.r;
-    if (docked) {
-        float target = g.toolbarVisible ? 1.0f : 0.0f;
-        g.toolbarAnim += (target - g.toolbarAnim) * std::min(1.0f, dt * 14.0f);
-        if (g.toolbarAnim < 0.01f && !g.toolbarVisible) return;
-    }
-    const float anim = docked ? g.toolbarAnim : 1.0f;
+    float target = g.toolbarVisible ? 1.0f : 0.0f;
+    g.toolbarAnim += (target - g.toolbarAnim) * std::min(1.0f, dt * 14.0f);
+    if (g.toolbarAnim < 0.01f && !g.toolbarVisible) return;
 
     const float h = toolbarHeight();
-    ImGui::SetNextWindowPos(ImVec2(0, -h * (1.0f - anim)));
+    ImGui::SetNextWindowPos(ImVec2(0, -h * (1.0f - g.toolbarAnim)));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, h));
-    ImGui::SetNextWindowBgAlpha(docked ? 0.78f : 1.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10 * g.dpi, 0));
+    ImGui::SetNextWindowBgAlpha(0.88f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("##toolbar", nullptr,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing);
     ImGui::PopStyleVar();
-
-    const float y = (h - ImGui::GetFrameHeight()) * 0.5f;
-    ImGui::SetCursorPosY(y);
-
-    // ---- Logo menu: the list of logos and text items
-    const auto& items = g.settings.items;
-    std::string logoLabel = items.empty()       ? std::string("Add Logo")
-                            : items.size() == 1 ? (items[0].isText ? "Text: " : "Logo: ") + items[0].name
-                                                : "Logos (" + std::to_string(items.size()) + ")";
-    logoLabel = ellipsize(logoLabel, 180 * g.dpi) + "##logomenu";
-    if (ImGui::Button(logoLabel.c_str())) ImGui::OpenPopup("logo_menu");
-    if (ImGui::BeginPopup("logo_menu")) {
-        ImGui::SeparatorText("Logos and text");
-        itemsEditor(420 * g.dpi);
-        ImGui::Separator();
-        ImGui::MenuItem("Show logos", "G", &r.showLogo);
-        if (ImGui::MenuItem("Remove all", nullptr, false, !items.empty())) clearLogo();
-        ImGui::EndPopup();
+    {   // a raised edge along the bottom of the bar
+        const ImVec2 p = ImGui::GetWindowPos();
+        ImGui::GetWindowDrawList()->AddRectFilled({p.x, p.y + h - 3 * g.dpi}, {p.x + io.DisplaySize.x, p.y + h},
+                                                  ImGui::GetColorU32(ui3d::col::keyBase));
     }
 
-    // ---- Style controls
-    ImGui::SameLine(0, 16 * g.dpi);
-    if (ImGui::Button(" < ")) nextScene(-1);
-    ImGui::SameLine();
     const auto& scenes = builtInScenes();
-    int n = (int)scenes.size();
-    int cur = ((r.sceneIndex % n) + n) % n;
-    ImGui::SetNextItemWidth(170 * g.dpi);
-    if (ImGui::BeginCombo("##style", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
-        styleListBody(r, cur);
-        ImGui::EndCombo();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(" > ")) nextScene(1);
-    ImGui::SameLine();
-    ImGui::Checkbox("Auto-cycle", &r.autoCycle);
+    const int n = (int)scenes.size();
+    const int cur = ((r.sceneIndex % n) + n) % n;
+    const bool rec = g.recorder.isRecording();
+    const bool highlight = updateAvailable() &&
+                           (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil);
 
-    // ---- Record
-    ImGui::SameLine(0, 16 * g.dpi);
-    recordButton();
-    ImGui::SameLine(0, 2 * g.dpi);
-    if (ImGui::Button("v##recopts")) ImGui::OpenPopup("recopts");
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Recording settings: video size and where to save");
-    if (ImGui::BeginPopup("recopts")) {
-        beginPanel("Recording");
-        recordSettingsBody();
-        endPanel();
-        ImGui::EndPopup();
-    }
-
-    // ---- Panels
-    auto panelButton = [&](const char* label, const char* id) {
-        ImGui::SameLine(0, 12 * g.dpi);
-        if (ImGui::Button(label)) ImGui::OpenPopup(id);
+    using ui3d::BarItem;
+    using ui3d::Glyph;
+    using ui3d::Look;
+    std::vector<BarItem> bar;
+    auto add = [&](BarItem it) {
+        bar.push_back(std::move(it));
+        return (int)bar.size() - 1;
     };
+    auto menuKey = [&](const char* id, const char* word, const char* letter, const char* name, bool right = false) {
+        BarItem it;
+        it.id = id;
+        it.word = word;
+        it.letter = letter;
+        it.name = name;
+        it.caret = true;
+        it.right = right;
+        it.look = ImGui::IsPopupOpen(id + 2) ? Look::On : Look::Normal;   // "##motion" -> "motion"
+        return add(it);
+    };
+    BarItem divider;
+    divider.divider = true;
 
-    panelButton("Motion", "motion");
-    if (ImGui::BeginPopup("motion")) {
-        beginPanel("Logo motion - driven by the bass");
-        motionPanelBody(r);
-        endPanel();
+    BarItem it;
+    it.id = "##prev"; it.name = "Previous style (Left arrow)"; it.glyph = Glyph::Left; it.square = true;
+    const int iPrev = add(it);
+    it = BarItem();
+    it.id = "##stylename"; it.word = scenes[cur].name; it.letter = scenes[cur].name; it.name = "Pick a style";
+    it.look = ImGui::IsPopupOpen("stylelist") ? Look::On : Look::Name;
+    it.wordWidth = 180 * g.dpi; it.letterWidth = 128 * g.dpi;
+    const int iName = add(it);
+    it = BarItem();
+    it.id = "##next"; it.name = "Next style (Right arrow)"; it.glyph = Glyph::Right; it.square = true;
+    const int iNext = add(it);
+    it = BarItem();
+    it.id = "##auto"; it.word = "Auto"; it.letter = " "; it.glyph = Glyph::Cycle;
+    it.name = r.autoCycle ? "Auto-cycle is on (A). Right-click for settings."
+                          : "Auto-cycle is off (A). Right-click for settings.";
+    it.look = r.autoCycle ? Look::Lit : Look::Normal; it.spin = r.autoCycle;
+    const int iAuto = add(it);
+    add(divider);
+    const int iLogo = menuKey("##logos", "Logo", "L", "Logos and text");
+    const int iMotion = menuKey("##motion", "Motion", "M", "Motion");
+    const int iAudio = menuKey("##audio", g.audio.isRunning() ? "Audio" : "Audio (off)", "A",
+                               g.audio.isRunning() ? "Audio" : "Audio (off)");
+    if (!g.audio.isRunning() && bar[iAudio].look == Look::Normal) bar[iAudio].look = Look::Alert;
+    const int iLook = menuKey("##look", "Look", "V", "Look");
+    add(divider);
+    const std::string recTime = rec ? recordTimeLabel() : std::string();
+    it = BarItem();
+    it.id = "##record"; it.word = rec ? "Stop " + recTime : "Record"; it.letter = rec ? recTime : " ";
+    it.name = rec ? "Stop recording and save the video (R)" : "Record the visuals and music to a video (R)";
+    it.glyph = rec ? Glyph::Stop : Glyph::Dot; it.look = rec ? Look::Recording : Look::Normal;
+    const int iRec = add(it);
+    it = BarItem();
+    it.id = "##recopts"; it.letter = " "; it.glyph = Glyph::Down; it.name = "Recording settings";
+    it.wordWidth = it.letterWidth = 26 * g.dpi;
+    it.look = ImGui::IsPopupOpen("recopts") ? Look::On : Look::Normal;
+    const int iRecOpts = add(it);
+    it = BarItem();
+    it.id = "##detach"; it.word = "Detach"; it.right = true;   // always the full word: easy to find
+    it.name = "Move the controls into their own window (for a second screen)";
+    const int iDetach = add(it);
+    const int iScreen = menuKey("##screen", "Screen", "S", "Screen", true);
+    std::string updWord = installBusy() ? "Updating " + std::to_string((int)(gInstall.progress * 100)) + "%"
+                          : highlight   ? "Update " + g.settings.latestVersion
+                                        : std::string("Updates");
+    const int iUpd = menuKey("##update", "", "U", highlight ? "Update available" : "Updates", true);
+    bar[iUpd].word = updWord;
+    if (highlight) bar[iUpd].look = Look::On;
+    const int iKeys = menuKey("##keys", "Keys", "?", "Keyboard shortcuts", true);
+
+    char frameLabel[32] = {};
+    if (g.frameMs > 0) std::snprintf(frameLabel, sizeof(frameLabel), "  ·  %.1f ms", g.frameMs);
+    const std::string status = narrow(g.audio.status()) + frameLabel;
+    ui3d::toolbar(bar, 10 * g.dpi, io.DisplaySize.x - 10 * g.dpi, 0, status.c_str());
+
+    if (bar[iPrev].clicked) nextScene(-1);
+    if (bar[iNext].clicked) nextScene(1);
+    if (bar[iName].clicked) ui3d::openUnder("stylelist", bar[iName]);
+    if (bar[iAuto].clicked) r.autoCycle = !r.autoCycle;
+    if (bar[iAuto].rightClicked) ui3d::openUnder("autocycle", bar[iAuto]);
+    if (bar[iLogo].clicked) ui3d::openUnder("logos", bar[iLogo]);
+    if (bar[iMotion].clicked) ui3d::openUnder("motion", bar[iMotion]);
+    if (bar[iAudio].clicked) ui3d::openUnder("audio", bar[iAudio]);
+    if (bar[iLook].clicked) ui3d::openUnder("look", bar[iLook]);
+    if (bar[iRec].clicked) toggleRecording();
+    if (bar[iRecOpts].clicked) ui3d::openUnder("recopts", bar[iRecOpts]);
+    if (bar[iDetach].clicked) g.wantDetach = 1;
+    if (bar[iScreen].clicked) ui3d::openUnder("screen", bar[iScreen]);
+    if (bar[iUpd].clicked) ui3d::openUnder("update", bar[iUpd]);
+    if (bar[iKeys].clicked) ui3d::openUnder("keys", bar[iKeys]);
+
+    // ---- The drop-down menus, each titled with its full name.
+    const float menuW = 320 * g.dpi;
+    auto body = [&](float w) {
+        ImGui::Dummy(ImVec2(w, 0));
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + w);
+    };
+    if (ui3d::beginMenu("stylelist", "Styles", "Click a name to show it")) {
+        body(menuW);
+        styleListBody(r, cur);
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-
-    panelButton("Logo", "logo");
-    if (ImGui::BeginPopup("logo")) {
-        beginPanel("Logo");
+    if (ui3d::beginMenu("autocycle", "Auto-cycle")) {
+        body(menuW);
+        autoCycleBody(r, cur);
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    if (ui3d::beginMenu("logos", "Logos and text")) {
+        body(430 * g.dpi);
+        itemsEditor(430 * g.dpi);
+        ImGui::Separator();
         logoPanelBody(r);
-        endPanel();
+        if (!g.settings.items.empty() && ui3d::button("Remove all")) clearLogo();
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-
-    panelButton(g.audio.isRunning() ? "Audio" : "Audio (off)", "audio");
-    if (ImGui::BeginPopup("audio")) {
-        beginPanel("Audio input");
+    if (ui3d::beginMenu("motion", "Motion", "Your logo's moves, driven by the bass")) {
+        body(menuW);
+        motionPanelBody(r);
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    if (ui3d::beginMenu("audio", "Audio", "What Dropocalypse listens to")) {
+        body(menuW);
         audioPanelBody();
-        endPanel();
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-
-    panelButton("Look", "look");
-    if (ImGui::BeginPopup("look")) {
-        beginPanel("Look");
+    if (ui3d::beginMenu("look", "Look")) {
+        body(menuW);
         lookPanelBody(r);
-        endPanel();
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-
-    // ---- Updates menu: always here; turns pink with the version when an update is out.
-    {
-        ImGui::SameLine(0, 12 * g.dpi);
-        bool highlight = updateAvailable() &&
-                         (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil);
-        std::string label = installBusy() ? "Updating... " + std::to_string((int)(gInstall.progress * 100)) + "%"
-                            : highlight   ? "Update " + g.settings.latestVersion
-                                          : std::string("Updates");
-        label += "###updatebtn";
-        if (highlight) {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.92f, 0.29f, 0.67f, 1));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.42f, 0.76f, 1));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.2f, 0.58f, 1));
-        }
-        if (ImGui::Button(label.c_str())) ImGui::OpenPopup("update");
-        if (highlight) ImGui::PopStyleColor(3);
-        if (ImGui::BeginPopup("update")) {
-            beginPanel("Updates");
-            updatesPanelBody();
-            endPanel();
-            ImGui::EndPopup();
-        }
+    if (ui3d::beginMenu("recopts", "Recording")) {
+        body(menuW);
+        recordSettingsBody();
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
     }
-
-    // ---- Right side: status, screen picker, detach, shortcuts, full screen
-    const char* fsLabel = g.fullscreen ? "Exit full screen" : "Full screen";
-    const char* detachLabel = docked ? "Detach" : "Attach";
-    ImGuiStyle& st = ImGui::GetStyle();
-    float rightW = ImGui::CalcTextSize("Screen").x + ImGui::CalcTextSize(detachLabel).x +
-                   ImGui::CalcTextSize("Keys").x + ImGui::CalcTextSize(fsLabel).x + st.FramePadding.x * 8 +
-                   st.ItemSpacing.x * 3 + 10 * g.dpi;
-    ImGui::SameLine(0, 16 * g.dpi);
-    float statusW = ImGui::GetContentRegionAvail().x - rightW - 12 * g.dpi;
-    if (statusW > 60 * g.dpi) {
-        char frameLabel[32] = {};
-        if (g.frameMs > 0) std::snprintf(frameLabel, sizeof(frameLabel), "  ·  %.1f ms", g.frameMs);
-        std::string status = ellipsize(narrow(g.audio.status()) + frameLabel, statusW);
-        ImGui::SetCursorPosY(y + st.FramePadding.y);
-        ImGui::TextDisabled("%s", status.c_str());
-        ImGui::SameLine();
-    }
-    ImGui::SetCursorPosX(io.DisplaySize.x - rightW);
-    ImGui::SetCursorPosY(y);
-    if (ImGui::Button("Screen")) ImGui::OpenPopup("screen");
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show the visuals full screen on another display");
-    if (ImGui::BeginPopup("screen")) {
+    if (ui3d::beginMenu("screen", "Screen")) {
+        body(280 * g.dpi);
         ImGui::TextDisabled("Show the visuals full screen on:");
         HMONITOR cur = visualsMonitor();
         for (const auto& d : listDisplays()) {
             bool here = d.handle == cur && g.fullscreen;
             if (ImGui::MenuItem(d.name.c_str(), nullptr, here)) showVisualsOn(d);
         }
-        if (g.fullscreen) {
-            ImGui::Separator();
-            if (ImGui::MenuItem("Back to a window")) toggleFullscreen();
+        ImGui::Spacing();
+        if (ui3d::button(g.fullscreen ? "Exit full screen (F)" : "Full screen (F)", ImVec2(-FLT_MIN, 0))) {
+            toggleFullscreen();
+            ImGui::CloseCurrentPopup();
         }
+        if (ui3d::button("Detach the controls (D)", ImVec2(-FLT_MIN, 0))) {
+            g.wantDetach = 1;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-    ImGui::SameLine();
-    if (ImGui::Button(detachLabel)) g.wantDetach = docked ? 1 : 0;
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(docked ? "Move these controls into their own window (for a second screen)"
-                                 : "Put the controls back on top of the visuals");
-    ImGui::SameLine();
-    if (ImGui::Button("Keys")) ImGui::OpenPopup("keys");
-    if (ImGui::BeginPopup("keys")) {
-        beginPanel("Keyboard shortcuts");
+    if (ui3d::beginMenu("update", "Updates")) {
+        body(menuW);
+        updatesPanelBody();
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    if (ui3d::beginMenu("keys", "Keyboard shortcuts")) {
+        body(menuW);
         keysPanelBody();
-        endPanel();
+        ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
-    ImGui::SameLine();
-    if (ImGui::Button(fsLabel)) toggleFullscreen();
 
     ImGui::End();
 }
@@ -1870,6 +1904,7 @@ static void drawToolbar(float dt, bool docked = true) {
 // ---- Detached controls window: everything stacked top to bottom, sections shown in place.
 static void drawControlsPanel() {
     ImGuiIO& io = ImGui::GetIO();
+    ui3d::setScale(g.dpi);
     RenderSettings& r = g.settings.r;
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(io.DisplaySize);
@@ -1886,12 +1921,10 @@ static void drawControlsPanel() {
     {
         bool highlight = updateAvailable() &&
                          (installBusy() || (long long)std::time(nullptr) >= g.settings.updateSnoozeUntil);
-        if (highlight) ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.92f, 0.29f, 0.67f, 0.85f));
         std::string title = highlight ? "Updates - " + g.settings.latestVersion + " available###updates"
                                       : std::string("Updates###updates");
         if (highlight) ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-        if (ImGui::CollapsingHeader(title.c_str())) updatesPanelBody();
-        if (highlight) ImGui::PopStyleColor();
+        if (ui3d::section(title.c_str(), 0, highlight)) updatesPanelBody();
     }
 
     // Visuals: screen + full screen
@@ -1903,12 +1936,12 @@ static void drawControlsPanel() {
         for (const auto& d : displays) if (d.handle == cur) curName = d.name;
         ImGui::TextDisabled("Show the visuals full screen on:");
         ImGui::SetNextItemWidth(full);
-        if (ImGui::BeginCombo("##screen", curName.c_str())) {
+        if (ui3d::beginCombo("##screen", curName.c_str())) {
             for (const auto& d : displays)
                 if (ImGui::Selectable(d.name.c_str(), d.handle == cur && g.fullscreen)) showVisualsOn(d);
             ImGui::EndCombo();
         }
-        if (ImGui::Button(g.fullscreen ? "Exit full screen" : "Full screen", ImVec2(full, 0))) toggleFullscreen();
+        if (ui3d::button(g.fullscreen ? "Exit full screen" : "Full screen", ImVec2(full, 0))) toggleFullscreen();
     }
 
     // Record
@@ -1919,12 +1952,12 @@ static void drawControlsPanel() {
         ImGui::TextUnformatted(narrow(g.recordNotice).c_str());
         ImGui::PopTextWrapPos();
     }
-    if (ImGui::CollapsingHeader("Recording settings")) recordSettingsBody();
+    if (ui3d::section("Recording settings")) recordSettingsBody();
 
     // Logos and text
     ImGui::SeparatorText("Logos and text");
     itemsEditor(ImGui::GetContentRegionAvail().x);
-    ImGui::Checkbox("Show logos (G)", &r.showLogo);
+    ui3d::toggle("Show logos (G)", &r.showLogo);
 
     // Style
     ImGui::SeparatorText("Style");
@@ -1932,33 +1965,32 @@ static void drawControlsPanel() {
         const auto& scenes = builtInScenes();
         int n = (int)scenes.size();
         int cur = ((r.sceneIndex % n) + n) % n;
-        float bw = ImGui::GetFrameHeight() * 1.4f;
-        if (ImGui::Button(" < ", ImVec2(bw, 0))) nextScene(-1);
+        float bw = ui3d::buttonHeight();
+        if (ui3d::arrowKey("##prevstyle", ImGuiDir_Left)) nextScene(-1);
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - bw - ImGui::GetStyle().ItemSpacing.x);
-        if (ImGui::BeginCombo("##style2", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
+        if (ui3d::beginCombo("##style2", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
             for (int i = 0; i < n; ++i)
                 if (ImGui::Selectable(scenes[i].name, i == cur)) r.sceneIndex = i;
             ImGui::EndCombo();
         }
         ImGui::SameLine();
-        if (ImGui::Button(" > ", ImVec2(bw, 0))) nextScene(1);
-        ImGui::Checkbox("Auto-cycle", &r.autoCycle);
-        if (ImGui::CollapsingHeader("Styles in auto-cycle")) styleListBody(r, cur);
+        if (ui3d::arrowKey("##nextstyle", ImGuiDir_Right)) nextScene(1);
+        if (ui3d::section("Auto-cycle", ImGuiTreeNodeFlags_DefaultOpen)) autoCycleBody(r, cur);
     }
 
     // Sections
     ImGui::Spacing();
-    if (ImGui::CollapsingHeader("Motion", ImGuiTreeNodeFlags_DefaultOpen)) motionPanelBody(r);
-    if (ImGui::CollapsingHeader("Logo look")) logoPanelBody(r);
-    if (ImGui::CollapsingHeader(g.audio.isRunning() ? "Audio" : "Audio (off)", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ui3d::section("Motion", ImGuiTreeNodeFlags_DefaultOpen)) motionPanelBody(r);
+    if (ui3d::section("Logo look")) logoPanelBody(r);
+    if (ui3d::section(g.audio.isRunning() ? "Audio" : "Audio (off)", ImGuiTreeNodeFlags_DefaultOpen))
         audioPanelBody();
-    if (ImGui::CollapsingHeader("Look")) lookPanelBody(r);
-    if (ImGui::CollapsingHeader("Keyboard shortcuts")) keysPanelBody();
+    if (ui3d::section("Look")) lookPanelBody(r);
+    if (ui3d::section("Keyboard shortcuts")) keysPanelBody();
 
     ImGui::Spacing();
     ImGui::Separator();
-    if (ImGui::Button("Attach controls to the visuals", ImVec2(full, 0))) g.wantDetach = 0;
+    if (ui3d::button("Attach controls to the visuals", ImVec2(full, 0))) g.wantDetach = 0;
     ImGui::PopItemWidth();
     ImGui::End();
 }

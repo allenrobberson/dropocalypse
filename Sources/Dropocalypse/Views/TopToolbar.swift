@@ -44,9 +44,8 @@ struct TopToolbar: View {
                         Label(model.isFullScreen ? "Exit full screen" : "Full screen",
                               systemImage: model.isFullScreen ? "arrow.down.right.and.arrow.up.left"
                                                               : "arrow.up.left.and.arrow.down.right")
-                            .frame(maxWidth: .infinity)
                     }
-                    .controlSize(.large)
+                    .buttonStyle(RaisedKeyStyle(height: 34, fill: true))
                     Text(capture.isRunning ? capture.statusText : "Audio off")
                         .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
@@ -66,12 +65,15 @@ struct TopToolbar: View {
                 }
 
                 section("Style") {
-                    HStack(spacing: 4) {
-                        Button { model.nextScene(-1) } label: { Image(systemName: "chevron.left") }
-                        styleListButton.frame(maxWidth: .infinity)
-                        Button { model.nextScene(1) } label: { Image(systemName: "chevron.right") }
+                    HStack(spacing: 6) {
+                        arrowKey("chevron.left", help: "Previous style (←)") { model.nextScene(-1) }
+                        styleListButton(width: nil)
+                        arrowKey("chevron.right", help: "Next style (→)") { model.nextScene(1) }
                     }
-                    Toggle("Auto-cycle", isOn: $settings.autoCycle)
+                    Toggle("Auto-cycle (A)", isOn: $settings.autoCycle)
+                    Well {
+                        slider("Change style every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
+                    }
                 }
 
                 DisclosureGroup("Motion", isExpanded: $showMotion) { motionControls }
@@ -96,13 +98,16 @@ struct TopToolbar: View {
                     model.attachControls()
                 } label: {
                     Label("Attach controls to the visuals", systemImage: "rectangle.on.rectangle")
-                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(RaisedKeyStyle(height: 34, fill: true))
             }
             .padding(16)
+            .buttonStyle(RaisedKeyStyle(height: 28))
+            .toggleStyle(Switch3DStyle())
+            .disclosureGroupStyle(Raised3DDisclosureStyle())
         }
         .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(white: 0.08))
+        .background(Palette3D.bar)
         .environment(\.colorScheme, .dark)
     }
 
@@ -115,102 +120,76 @@ struct TopToolbar: View {
 
     // MARK: Over the visuals (horizontal)
 
+    /// Left: the style with its arrows, auto-cycle, the menus and record. Right: Detach, Screen,
+    /// Updates and Keys. The menus show their full names when they fit, and single letters (with
+    /// the name on hover) when they don't. Detach always shows its full name.
     private var horizontalBody: some View {
-        HStack(spacing: 4) {
-            logoMenu
-            separator
-            styleControls
-            separator
-            recordButton(compact: true)
-            popoverButton(nil, icon: "chevron.down", id: "record") { recordSettings }
-            separator
-            popoverButton("Motion", icon: "waveform.path.ecg", id: "motion") { motionControls }
-            popoverButton("Logo", icon: "sparkles", id: "logo") { logoLookControls(withItems: true) }
-            popoverButton("Audio", icon: capture.isRunning ? "mic.fill" : "mic.slash", id: "audio") { audioControls }
-            popoverButton("Look", icon: "sun.max", id: "look") { lookControls }
-
-            Spacer(minLength: 12)
-
-            if UpdateChecker.isEnabled {
-                updatesMenuButton
-            }
-
-            Text(capture.isRunning ? capture.statusText : "Audio off")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            if model.screens.count > 1 {
-                Menu {
-                    Text("Show the visuals full screen on:")
-                    ForEach(model.screens, id: \.self) { screen in
-                        Button(model.screenName(screen)) { model.showVisuals(on: screen) }
-                    }
-                } label: {
-                    Image(systemName: "display.2")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help("Show the visuals on another display")
-            }
-            toolbarButton(nil, icon: "rectangle.portrait.and.arrow.right",
-                          help: "Detach the controls into their own window (D)") {
-                model.detachControls()
-            }
-            popoverButton(nil, icon: "keyboard", id: "keys") { shortcuts }
-            toolbarButton(nil, icon: model.isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                          help: "Full screen (F)") {
-                model.toggleFullScreen()
-            }
+        ViewThatFits(in: .horizontal) {
+            toolbarRow(letters: false)
+            toolbarRow(letters: true)
         }
         .padding(.leading, model.isFullScreen ? 12 : 80) // leave room for the window buttons
         .padding(.trailing, 10)
-        .frame(height: 38)
+        .frame(height: 50)
         .frame(maxWidth: .infinity)
+        .background(Palette3D.bar.opacity(0.9))
         .background(.ultraThinMaterial)
-        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.08)).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Palette3D.base).frame(height: 3) }
         .environment(\.colorScheme, .dark)
         .onHover { model.pointerOverToolbar = $0 }
+    }
+
+    private func toolbarRow(letters: Bool) -> some View {
+        HStack(spacing: 6) {
+            arrowKey("chevron.left", help: "Previous style (←)") { model.nextScene(-1) }
+            styleListButton(width: letters ? 128 : 180)
+            arrowKey("chevron.right", help: "Next style (→)") { model.nextScene(1) }
+            autoCycleKey(letters: letters)
+            separator
+            menuKey("Logo", letter: "L", name: "Logos and text", id: "logo", letters: letters) {
+                logoLookControls(withItems: true)
+            }
+            menuKey("Motion", letter: "M", name: "Motion", id: "motion", letters: letters) { motionControls }
+            menuKey(capture.isRunning ? "Audio" : "Audio (off)", letter: "A",
+                    name: capture.isRunning ? "Audio" : "Audio (off)", id: "audio", letters: letters,
+                    look: capture.isRunning ? .normal : .alert) { audioControls }
+            menuKey("Look", letter: "V", name: "Look", id: "look", letters: letters) { lookControls }
+            separator
+            recordButton(compact: true, letters: letters)
+            menuKey("", letter: "", name: "Recording settings", id: "record", letters: letters,
+                    icon: "chevron.down", width: 26) { recordSettings }
+
+            Spacer(minLength: 12)
+                .overlay(alignment: .leading) {   // the status never forces the letters on
+                    Text(capture.isRunning ? capture.statusText : "Audio off")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .padding(.leading, 4)
+                }
+
+            Button("Detach") { model.detachControls() }
+                .buttonStyle(RaisedKeyStyle(height: 36))
+                .help("Move the controls into their own window, for a second screen (D)")
+            menuKey("Screen", letter: "S", name: "Screen", id: "screen", letters: letters) { screenMenu }
+            if UpdateChecker.isEnabled {
+                let highlight = updates.showBadge || updates.isBusy
+                menuKey(highlight ? "Update \(updates.available?.version ?? "")" : "Updates", letter: "U",
+                        name: highlight ? "Dropocalypse \(updates.available?.version ?? "") is available" : "Updates",
+                        id: "update", letters: letters, look: highlight ? .on : .normal) { updatesPanel }
+            }
+            menuKey("Keys", letter: "?", name: "Keyboard shortcuts", id: "keys", letters: letters) { shortcuts }
+        }
     }
 
     // MARK: Pieces
 
     private var separator: some View {
-        Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 18).padding(.horizontal, 4)
+        Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 24).padding(.horizontal, 3)
     }
 
     private var isPortrait: Bool { settings.pictureOrientation != 0 }
-
-    private var logoMenu: some View {
-        Menu {
-            ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                Menu("\(index + 1). " + (item.isText ? "“\(item.name)”" : item.name)) {
-                    if !item.isText {
-                        Button("Replace…") { model.replaceItem(item.id) }
-                    }
-                    Button(isPortrait ? "Move Up" : "Move Left") { model.moveItem(item.id, by: -1) }
-                        .disabled(index == 0)
-                    Button(isPortrait ? "Move Down" : "Move Right") { model.moveItem(item.id, by: 1) }
-                        .disabled(index == model.items.count - 1)
-                    Button("Remove") { model.removeItem(item.id) }
-                }
-            }
-            if !model.items.isEmpty { Divider() }
-            Button("Add Logo…  (L)") { model.chooseLogo() }.disabled(!model.canAddItem)
-            Button("Add Text") { model.addTextItem() }.disabled(!model.canAddItem)
-            Button("Edit Text and Order…") { model.openLogoPanel() }.disabled(model.items.isEmpty)
-            Button("Remove All") { model.clearLogo() }.disabled(model.items.isEmpty)
-            Divider()
-            Toggle("Show Logos  (G)", isOn: $settings.showLogo)
-        } label: {
-            Label(model.logoMenuTitle, systemImage: model.items.count > 1 ? "photo.on.rectangle" : "photo")
-                .labelStyle(.titleAndIcon)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .help("Up to 4 logos or text items (or drag images onto the window)")
-    }
 
     /// The list of logos and text items: each text item's words, font and color, plus
     /// replace, reorder and remove. In the Logo panel and the detached controls window.
@@ -298,16 +277,56 @@ struct TopToolbar: View {
             .help(OverlayLayout.textColorNames[index])
     }
 
-    private var styleControls: some View {
-        HStack(spacing: 2) {
-            toolbarButton(nil, icon: "chevron.left", help: "Previous style (←)") { model.nextScene(-1) }
-            styleListButton
-            toolbarButton(nil, icon: "chevron.right", help: "Next style (→)") { model.nextScene(1) }
-            Toggle(isOn: $settings.autoCycle) {
-                Image(systemName: "arrow.triangle.2.circlepath")
+    /// Auto-cycle key: green and lit while on. Right-click (or Control-click) for its settings.
+    private func autoCycleKey(letters: Bool) -> some View {
+        let isOpen = popoverBinding("autocycle")
+        return Button { settings.autoCycle.toggle() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 14, weight: .semibold))
+                if !letters { Text("Auto") }
             }
-            .toggleStyle(.button)
-            .help("Auto-cycle styles (A)")
+        }
+        .buttonStyle(RaisedKeyStyle(look: settings.autoCycle ? .lit : .normal, height: 36, minWidth: 36))
+        .help(settings.autoCycle ? "Auto-cycle is on (A). Right-click for settings."
+                                 : "Auto-cycle is off (A). Right-click for settings.")
+        .contextMenu {
+            Button(settings.autoCycle ? "Turn auto-cycle off" : "Turn auto-cycle on") { settings.autoCycle.toggle() }
+            Button("Auto-cycle settings…") { isOpen.wrappedValue = true }
+        }
+        .popover(isPresented: isOpen, arrowEdge: .bottom) {
+            MenuPanel(title: "Auto-cycle", subtitle: "Click the style name to choose which styles take part.") {
+                Toggle("Auto-cycle (A)", isOn: $settings.autoCycle)
+                Well {
+                    slider("Change style every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
+                }
+            }
+            .environment(\.colorScheme, .dark)
+        }
+    }
+
+    /// The Screen menu: which display shows the visuals, full screen, and detaching the controls.
+    private var screenMenu: some View {
+        MenuPanel(title: "Screen", width: 280) {
+            if model.screens.count > 1 {
+                Text("Show the visuals full screen on:").font(.caption).foregroundStyle(.secondary)
+                ForEach(model.screens, id: \.self) { screen in
+                    Button(model.screenName(screen)) {
+                        model.showVisuals(on: screen)
+                        model.openPopover = nil
+                    }
+                    .buttonStyle(RaisedKeyStyle(height: 30, fill: true))
+                }
+            }
+            Button(model.isFullScreen ? "Exit full screen (F)" : "Full screen (F)") {
+                model.openPopover = nil
+                model.toggleFullScreen()
+            }
+            .buttonStyle(RaisedKeyStyle(height: 30, fill: true))
+            Button("Detach the controls (D)") {
+                model.openPopover = nil
+                model.detachControls()
+            }
+            .buttonStyle(RaisedKeyStyle(height: 30, fill: true))
         }
     }
 
@@ -357,22 +376,17 @@ struct TopToolbar: View {
 
     /// The style name opens a list: click a name to show it now, and use the checkboxes to choose
     /// which styles auto-cycle rotates through.
-    private var styleListButton: some View {
-        let isOpen = Binding<Bool>(
-            get: { model.openPopover == "styles" },
-            set: { open in
-                if open { model.openPopover = "styles" } else if model.openPopover == "styles" { model.openPopover = nil }
-            })
+    private func styleListButton(width: CGFloat?) -> some View {
+        let isOpen = popoverBinding("styles")
         return Button {
             isOpen.wrappedValue.toggle()
         } label: {
-            HStack(spacing: 4) {
-                Text(model.currentSceneName)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
-            }
-            .frame(minWidth: 110)
+            Text(model.currentSceneName)
+                .truncationMode(.tail)
+                .frame(width: width.map { $0 - 20 })
+                .frame(maxWidth: width == nil ? .infinity : nil)
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(RaisedKeyStyle(look: isOpen.wrappedValue ? .on : .name, height: 36, fill: width == nil))
         .help("Pick a style, and check which ones auto-cycle rotates through")
         .popover(isPresented: isOpen, arrowEdge: .bottom) {
             styleList.environment(\.colorScheme, .dark)
@@ -438,40 +452,17 @@ struct TopToolbar: View {
 
     // MARK: Updates
 
-    /// Always in the toolbar; pink with the new version number when an update is out.
-    private var updatesMenuButton: some View {
-        let isOpen = Binding<Bool>(
-            get: { model.openPopover == "update" },
-            set: { open in
-                if open { model.openPopover = "update" } else if model.openPopover == "update" { model.openPopover = nil }
-            })
-        let highlight = updates.showBadge || updates.isBusy
-        return Button {
-            isOpen.wrappedValue.toggle()
-        } label: {
-            Label(highlight ? "Update \(updates.available?.version ?? "")" : "Updates",
-                  systemImage: highlight ? "arrow.down.circle.fill" : "arrow.down.circle")
-                .font(.system(size: 11, weight: highlight ? .semibold : .regular))
-                .padding(.horizontal, highlight ? 8 : 4)
-                .padding(.vertical, 3)
-                .background(highlight ? Color(red: 0.92, green: 0.29, blue: 0.67) : Color.clear, in: Capsule())
-                .foregroundStyle(highlight ? Color.white : Color.primary)
-        }
-        .buttonStyle(.plain)
-        .help(highlight ? "Dropocalypse \(updates.available?.version ?? "") is available (you have \(updates.currentVersion))"
-                        : "Check for updates")
-        .popover(isPresented: isOpen, arrowEdge: .bottom) {
-            updatesPanel.environment(\.colorScheme, .dark)
-        }
-    }
-
     private var updatesPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 2).fill(Palette3D.pink).frame(width: 4, height: 17)
+                Text("Updates").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+            }
+            .padding([.top, .horizontal], 14)
             if let update = updates.available, updates.showBadge || updates.isBusy {
                 updatePopover(update)
                 Divider().padding(.horizontal, 14)
             } else {
-                Text("Updates").font(.headline).padding([.top, .horizontal], 14)
                 Text("You have the latest version (\(updates.currentVersion)).")
                     .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 14)
             }
@@ -492,41 +483,45 @@ struct TopToolbar: View {
             .padding([.horizontal, .bottom], 14)
         }
         .frame(width: vertical ? nil : 360)
+        .background(vertical ? Color.clear : Palette3D.panel)
+        .buttonStyle(RaisedKeyStyle(height: 28))
+        .toggleStyle(Switch3DStyle())
     }
 
     // MARK: Recording
 
-    private func recordButton(compact: Bool) -> some View {
+    private func recordButton(compact: Bool, letters: Bool = false) -> some View {
         Button {
             model.toggleRecording()
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: model.isRecording ? "stop.circle.fill" : "record.circle")
-                Text(model.isRecording ? "Stop  \(VisualizerModel.timeLabel(model.recordingElapsed))" : "Record")
-                    .monospacedDigit()
+            HStack(spacing: 6) {
+                Image(systemName: model.isRecording ? "stop.fill" : "circle.fill")
+                    .font(.system(size: model.isRecording ? 10 : 11))
+                    .foregroundStyle(model.isRecording ? Color.white : Palette3D.red)
+                if model.isRecording {
+                    Text(letters ? VisualizerModel.timeLabel(model.recordingElapsed)
+                                 : "Stop  \(VisualizerModel.timeLabel(model.recordingElapsed))")
+                        .monospacedDigit()
+                } else if !letters {
+                    Text("Record")
+                }
             }
-            .font(.system(size: compact ? 11 : 13, weight: .semibold))
-            .padding(.horizontal, compact ? 8 : 12)
-            .padding(.vertical, compact ? 3 : 7)
-            .frame(maxWidth: compact ? nil : .infinity)
-            .background(model.isRecording ? Color.red : Color.white.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: compact ? 11 : 8))
-            .foregroundStyle(.white)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RaisedKeyStyle(look: model.isRecording ? .recording : .normal, height: compact ? 36 : 34,
+                                    minWidth: 36, fill: !compact))
         .help(model.isRecording ? "Stop recording and save the video (R)"
                                 : "Record the visuals and music to a video (R)")
     }
 
     private var recordSettings: some View {
         PopoverForm(title: "Recording") {
-            Picker("Video size", selection: $settings.recordQuality) {
-                ForEach(Recorder.Quality.allCases) { q in
-                    Text(recordSizeLabel(q)).tag(q.rawValue)
-                }
+            Text("Video size").font(.caption)
+            Segmented3D(selection: $settings.recordQuality,
+                        options: Recorder.Quality.allCases.map { (label: $0.label, value: $0.rawValue) })
+                .disabled(model.isRecording)
+            if let q = Recorder.Quality(rawValue: settings.recordQuality) {
+                Text(recordSizeLabel(q)).font(.caption2).foregroundStyle(.secondary)
             }
-            .pickerStyle(.radioGroup)
-            .disabled(model.isRecording)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Save recordings to").font(.caption)
                 Text(model.recordFolderName)
@@ -558,25 +553,29 @@ struct TopToolbar: View {
     // MARK: Popover contents
 
     private var motionControls: some View {
-        PopoverForm(title: "Logo motion — driven by the bass") {
-            slider("Pulse", $settings.pulse, 0...1.5)
-            slider("Squash & stretch", $settings.squash, 0...1.5)
-            slider("Bounce", $settings.bounce, 0...1.5)
-            slider("Slide", $settings.slide, 0...1.5)
-            slider("Wobble", $settings.wobble, 0...1.5)
-            Button("Reset to defaults") { settings.resetMotion() }.font(.caption)
+        PopoverForm(title: "Motion", subtitle: "Your logo's moves, driven by the bass") {
+            Well {
+                slider("Pulse", $settings.pulse, 0...1.5)
+                slider("Squash & stretch", $settings.squash, 0...1.5)
+                slider("Bounce", $settings.bounce, 0...1.5)
+                slider("Slide", $settings.slide, 0...1.5)
+                slider("Wobble", $settings.wobble, 0...1.5)
+            }
+            Button("Reset to defaults") { settings.resetMotion() }
         }
     }
 
     private func logoLookControls(withItems: Bool) -> some View {
-        PopoverForm(title: withItems ? "Logos and text" : "Logo", width: withItems ? 340 : 280) {
+        PopoverForm(title: withItems ? "Logos and text" : "Logo", width: withItems ? 360 : 300) {
             if withItems {
                 itemsEditor
                 Divider()
             }
-            slider("Size", $settings.logoSize, 0.08...0.8)
-            slider("Glow", $settings.glow, 0...1.5)
-            slider("Color tint", $settings.logoTint, 0...1)
+            Well {
+                slider("Size", $settings.logoSize, 0.08...0.8)
+                slider("Glow", $settings.glow, 0...1.5)
+                slider("Color tint", $settings.logoTint, 0...1)
+            }
             Toggle("Logo trails (feeds into the visuals)", isOn: $settings.logoTrails)
             Toggle("Show logos", isOn: $settings.showLogo)
         }
@@ -592,7 +591,7 @@ struct TopToolbar: View {
     }
 
     private var audioControls: some View {
-        PopoverForm(title: "Audio source") {
+        PopoverForm(title: "Audio", subtitle: "What Dropocalypse listens to") {
             Picker("Listen to", selection: $settings.inputDeviceUID) {
                 if AudioCapture.macAudioSupported {
                     Section("Mac audio: no mic needed") {
@@ -625,8 +624,10 @@ struct TopToolbar: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            slider("Sensitivity", $settings.sensitivity, 0.2...4)
-            slider("Beat threshold", $settings.beatThreshold, 1.1...2.2) { String(format: "%.2f×", $0) }
+            Well {
+                slider("Sensitivity", $settings.sensitivity, 0.2...4)
+                slider("Beat threshold", $settings.beatThreshold, 1.1...2.2) { String(format: "%.2f×", $0) }
+            }
             Text(capture.statusText)
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -636,26 +637,22 @@ struct TopToolbar: View {
 
     private var lookControls: some View {
         PopoverForm(title: "Look") {
-            slider("Beat flash", $settings.beatFlash, 0...1)
-            slider("Brightness", $settings.brightness, 0.4...1.6)
-            Picker("Frame", selection: $settings.pictureOrientation) {
-                Text("Landscape").tag(0)
-                Text("Portrait").tag(1)
+            Well {
+                slider("Beat flash", $settings.beatFlash, 0...1)
+                slider("Brightness", $settings.brightness, 0.4...1.6)
             }
-            .pickerStyle(.segmented)
-            .disabled(model.isRecording)
+            Text("Frame").font(.caption)
+            Segmented3D(selection: $settings.pictureOrientation,
+                        options: [(label: "Landscape", value: 0), (label: "Portrait (9:16)", value: 1)])
+                .disabled(model.isRecording)
             Text(settings.pictureOrientation == 0
                  ? "Landscape fills the window."
                  : "Portrait is a 9:16 frame, centered on screen. Recordings are 720×1280, 1080×1920, or 2160×3840.")
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            slider("Auto-cycle every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
-            Picker("Frame rate", selection: $settings.frameCap) {
-                Text("Display").tag(0)
-                Text("60").tag(60)
-                Text("30").tag(30)
-            }
-            .pickerStyle(.segmented)
+            Text("Frame rate").font(.caption)
+            Segmented3D(selection: $settings.frameCap,
+                        options: [(label: "Display", value: 0), (label: "60", value: 60), (label: "30", value: 30)])
             Text(settings.frameCap == 0
                  ? "Display matches the monitor."
                  : "A lower cap uses less CPU. The picture stays the same shape.")
@@ -693,29 +690,43 @@ struct TopToolbar: View {
 
     // MARK: Helpers
 
-    private func toolbarButton(_ title: String?, icon: String, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            if let title { Label(title, systemImage: icon) } else { Image(systemName: icon) }
-        }
-        .buttonStyle(.borderless)
-        .padding(.horizontal, 4)
-        .help(help)
-    }
-
-    private func popoverButton<Content: View>(_ title: String?, icon: String, id: String,
-                                              @ViewBuilder content: @escaping () -> Content) -> some View {
-        let isOpen = Binding<Bool>(
+    /// Open/close binding for one of the toolbar's drop-downs.
+    private func popoverBinding(_ id: String) -> Binding<Bool> {
+        Binding<Bool>(
             get: { model.openPopover == id },
             set: { open in
                 if open { model.openPopover = id } else if model.openPopover == id { model.openPopover = nil }
             })
+    }
+
+    /// A square raised key with a bold arrow.
+    private func arrowKey(_ icon: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 15, weight: .bold))
+        }
+        .buttonStyle(RaisedKeyStyle(height: 36, minWidth: 36))
+        .help(help)
+    }
+
+    /// A toolbar key that opens a drop-down: the full word, or one letter on small screens.
+    private func menuKey<Content: View>(_ word: String, letter: String, name: String, id: String, letters: Bool,
+                                        look: KeyLook = .normal, icon: String? = nil, width: CGFloat? = nil,
+                                        @ViewBuilder content: @escaping () -> Content) -> some View {
+        let isOpen = popoverBinding(id)
         return Button {
             isOpen.wrappedValue.toggle()
         } label: {
-            if let title { Label(title, systemImage: icon) } else { Image(systemName: icon) }
+            if let icon {
+                Image(systemName: icon).font(.system(size: 11, weight: .bold))
+            } else {
+                Text(letters ? letter : word)
+                    .font(.system(size: letters ? 15 : 13, weight: letters ? .semibold : .medium))
+            }
         }
-        .buttonStyle(.borderless)
-        .padding(.horizontal, 4)
+        .buttonStyle(RaisedKeyStyle(look: isOpen.wrappedValue ? .on : look, height: 36,
+                                    minWidth: width ?? 36, caret: icon == nil))
+        .frame(width: width)
+        .help(name)
         .popover(isPresented: isOpen, arrowEdge: .bottom) {
             content().environment(\.colorScheme, .dark)
         }
@@ -723,35 +734,9 @@ struct TopToolbar: View {
 
     private func slider(_ title: String, _ value: Binding<Double>, _ range: ClosedRange<Double>,
                         format: @escaping (Double) -> String = { String(format: "%.2f", $0) }) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(format(value.wrappedValue)).monospacedDigit().foregroundStyle(.secondary)
-            }
-            .font(.caption)
-            Slider(value: value, in: range).controlSize(.small)
-        }
+        Fader(title, value: value, range: range, format: format)
     }
 }
 
-private struct PopoverForm<Content: View>: View {
-    let title: String
-    var width: CGFloat = 280
-    @ViewBuilder let content: () -> Content
-
-    init(title: String, width: CGFloat = 280, @ViewBuilder content: @escaping () -> Content) {
-        self.title = title
-        self.width = width
-        self.content = content
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline)
-            content()
-        }
-        .padding(14)
-        .frame(width: width)
-    }
-}
+/// Every drop-down's contents use the 3D menu panel.
+private typealias PopoverForm<Content: View> = MenuPanel<Content>
