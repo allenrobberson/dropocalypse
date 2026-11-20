@@ -526,7 +526,7 @@ def build():
                "shows its full name as its title. <b>Detach</b> always shows the whole word. The full names come "
                "back by themselves when there's room, and the keyboard shortcuts don't change.", small))
     s.append(Spacer(1, 4))
-    s.append(shot("toolbar-letters.jpg", 5.2 * inch, "The same toolbar on a small screen"))
+    s.append(shot("toolbar-letters.jpg", 5.2 * inch, "The toolbar on a small screen (Windows shown; the Mac matches)"))
     s.append(Spacer(1, 4))
     s.append(P("Every button is a raised key and every slider a mixer fader, the same on Mac, Windows and Linux. "
                "A pink key has its menu open.", small))
