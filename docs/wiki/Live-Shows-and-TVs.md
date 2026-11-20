@@ -20,7 +20,7 @@
 
 | Method | Lag | Quality | How |
 |---|---|---|---|
-| **HDMI cable** | None | Best | Plug in, then pick the TV in the **Screen** list (or drag the window onto it and press **F**). Detach the controls to keep them on your laptop. The best choice for live shows. |
+| **HDMI cable** | None | Best | Plug in, then pick the TV in the **Screen** menu (or drag the window onto it and press **F**). Detach the controls to keep them on your laptop. The best choice for live shows. |
 | **AirPlay** (Mac) | Low | Good | Control Center → **Screen Mirroring** → your Apple TV or AirPlay TV (many Samsung, LG, Sony and Vizio sets) |
 | **Miracast** (Windows) | Low | Good | Press **Win + K** and pick a Miracast TV or adapter |
 | **Chromecast** | Some | OK | In Chrome: **⋮ menu → Cast… → Sources → Cast screen**, pick your TV, then run Dropocalypse full screen |

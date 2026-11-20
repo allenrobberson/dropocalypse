@@ -16,7 +16,7 @@ Your logo, style and all settings are saved automatically and come back the next
 ## Five things to try next
 
 1. Click the **style name** in the toolbar and pick a different look, or press **←** and **→**.
-2. Turn on **auto-cycle** (⟳) and uncheck any styles you don't want in the rotation. See [[Styles]].
+2. Turn on **auto-cycle** (the ⟳ **Auto** key; it glows green) and uncheck any styles you don't want in the rotation. See [[Styles]].
 3. Open **Motion** and push **Bounce** and **Squash** up for a wilder logo. See [[Your Logo and Motion]].
 4. Open **Logo** and turn on **Logo trails** so your logo melts into the visuals.
 5. Press **F** for edge-to-edge full screen, then **Esc** twice to come back.

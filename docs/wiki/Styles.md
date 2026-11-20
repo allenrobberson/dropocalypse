@@ -62,7 +62,7 @@ All styles react to the bass. Most also zoom, spin or ripple harder as it builds
 
 ## Auto-cycle and the checkboxes
 
-Turn on **auto-cycle** (⟳ in the toolbar, or press **A**) and Dropocalypse moves to the next style on a timer, with a smooth 2.5-second crossfade. Set the timer under **Look → Auto-cycle every** (5 to 360 seconds; 30 s by default).
+Turn on **auto-cycle** (the ⟳ **Auto** key in the toolbar, or press **A**) and Dropocalypse moves to the next style on a timer, with a smooth 2.5-second crossfade. Set the timer by right-clicking the **Auto** key (5 to 360 seconds; 30 s by default). In the detached controls window it's under **Auto-cycle**.
 
 The style list has a **checkbox** to the left of every style:
 

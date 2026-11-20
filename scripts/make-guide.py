@@ -297,6 +297,9 @@ def shot(name, width, caption=None):
     """A screenshot from docs/guide-images, scaled to `width`, with a thin frame and optional caption."""
     from reportlab.lib.utils import ImageReader
     path = os.path.join(IMAGES, name)
+    if not os.path.exists(path):   # a screenshot that hasn't been taken yet: leave it out
+        print(f"note: {name} is missing from docs/guide-images; the guide leaves it out")
+        return Spacer(1, 0)
     iw, ih = ImageReader(path).getSize()
     img = Image(path, width=width, height=width * ih / iw)
     cell = [img]
@@ -490,37 +493,43 @@ def build():
     s += bullets([
         "<b>To show it:</b> move the mouse toward the top of the screen, click anywhere, or press <b>T</b>.",
         "<b>It hides itself</b> after about 2.5 seconds without activity, and the mouse cursor hides with it.",
-        "<b>It stays open</b> while your pointer is over it or while one of its panels is open.",
+        "<b>It stays open</b> while your pointer is over it or while one of its menus is open.",
         "<b>To hide it right away</b>, press <b>Esc</b>.",
     ])
     s.append(Spacer(1, 6))
-    s.append(shot("toolbar.jpg", 6.4 * inch, "The toolbar, left to right: logo, style, auto-cycle, Record, Motion, Logo, "
-                  "Audio, Look, Updates, status, Detach, keys and full screen"))
+    s.append(shot("toolbar.jpg", 6.4 * inch, "The toolbar, left to right: style, auto-cycle, Logo, Motion, Audio, "
+                  "Look, Record, status, then Detach, Screen, Updates and Keys"))
     s.append(Spacer(1, 8))
     s.append(table(["Control", "What it does"], [
-        ["<b>Add Logo</b> / <b>Logos (2)</b>", "Opens the Logo menu: your logos and text items"],
-        ["<b>‹  Style name  ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
-        ["<b>Auto-cycle</b> (⟳ on Mac)", "Moves to the next <b>checked</b> style automatically, with a smooth crossfade. Unchecked styles are skipped; with nothing checked it uses them all"],
+        ["<b>‹ · Style name · ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
+        ["<b>⟳ Auto</b>", "Turns auto-cycle on or off; it glows green while on. Auto-cycle moves to the next <b>checked</b> style with a smooth crossfade. <b>Right-click</b> it to set how long each style stays up (5 seconds to 6 minutes)"],
+        ["<b>Logo</b>", "Your logos and text items, plus size, glow, color tint and trails"],
         ["<b>Motion</b>", "How your logo reacts to the bass"],
-        ["<b>Logo</b>", "Logo size, glow, color tint and trails"],
-        ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold"],
-        ["<b>Look</b>", "Beat flash, brightness, frame rate and auto-cycle timing"],
+        ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold. Red when audio isn't running"],
+        ["<b>Look</b>", "Beat flash, brightness, landscape or portrait, and frame rate"],
+        ["<b>● Record</b> / <b>■ Stop</b>", "Records the visuals and music to an MP4 video, without the toolbar. "
+                                          "The ▾ next to it sets the video size and where to save."],
         ["Status text", "The input, its sample rate and buffer size, plus a frame time (for example 6.2 ms) while the toolbar is showing"],
-        ["<b>Updates</b>", "In the toolbar and the detached controls window, not the Look panel. Your version, "
-                           "<b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
+        ["<b>Detach</b>", "Moves the controls into their own window, stacked top to bottom, so they stay on your laptop "
+                          "while the visuals play on a TV or projector. <b>Attach</b> puts them back."],
+        ["<b>Screen</b>", "Picks the display that shows the visuals full screen, and turns full screen on or off (F)"],
+        ["<b>Updates</b>", "Your version, <b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
                            "version is out. <b>Update now</b> checks the download and, if the checks pass, installs "
                            "it and reopens the app. If a check fails, nothing is changed."],
-        ["<b>Record</b> / <b>Stop</b>", "Records the visuals and music to an MP4 video, without the toolbar. "
-                                         "The ▾ next to it sets the video size and where to save."],
-        ["<b>Screen</b> (display icon on Mac)", "Shows the visuals full screen on another display (TV, projector, second monitor)"],
-        ["<b>Detach</b>", "Moves the controls into their own window, stacked top to bottom, so they stay on your main "
-                          "screen while the visuals play on another. <b>Attach</b> puts them back."],
-        ["<b>Keys</b> (⌨ on Mac)", "Shows the keyboard shortcuts"],
-        ["<b>Full screen</b>", "Full screen on or off"],
+        ["<b>Keys</b>", "Shows the keyboard shortcuts"],
     ], [1.9 * inch, 4.6 * inch]))
     s.append(Spacer(1, 6))
-    s.append(P("The Mac toolbar uses icons for a few buttons and Windows uses words, but the controls work the "
-               "same way.", small))
+    s.append(sub("On small screens: letters"))
+    s.append(P("When the window is too narrow for the full names (a 720p projector, a small laptop), each menu shows "
+               "one letter: <b>L</b> Logo, <b>M</b> Motion, <b>A</b> Audio, <b>V</b> Look, <b>S</b> Screen, "
+               "<b>U</b> Updates and <b>?</b> Keys. Hold the mouse over a letter to see its name, and the open menu "
+               "shows its full name as its title. <b>Detach</b> always shows the whole word. The full names come "
+               "back by themselves when there's room, and the keyboard shortcuts don't change.", small))
+    s.append(Spacer(1, 4))
+    s.append(shot("toolbar-letters.jpg", 5.2 * inch, "The same toolbar on a small screen"))
+    s.append(Spacer(1, 4))
+    s.append(P("Every button is a raised key and every slider a mixer fader, the same on Mac, Windows and Linux. "
+               "A pink key has its menu open.", small))
 
     # ---- Panels
     s += section(6, "Logo, Motion, Audio and Look settings")
@@ -530,18 +539,18 @@ def build():
                "each, so they don't move like clones.", small))
     s.append(Spacer(1, 4))
     s.append(table(["Item", "What it does"], [
-        ["Each item", "<b>Replace…</b> (images), move left / right (up / down in Portrait), <b>Remove</b>"],
-        ["<b>Add Logo…</b> (L)", "Adds an image. Empty transparent edges are trimmed automatically so each "
+        ["Each item", "<b>Replace…</b> (images), the <b>‹ ›</b> keys to move it (up / down in Portrait), <b>Remove</b>"],
+        ["<b>Add Logo…</b> / <b>Add image…</b> (L)", "Adds an image. Empty transparent edges are trimmed automatically so each "
                                  "logo moves around its visible shape."],
-        ["<b>Add Text</b>", "Adds a text item: type the words in the Logo panel, then pick Bold, Heavy, Serif or "
+        ["<b>Add Text</b>", "Adds a text item: type the words right in the list, then pick Bold, Heavy, Serif or "
                             "Mono and one of six colors. It gets an outline so it reads over bright visuals."],
-        ["<b>Remove All</b>", "Goes back to the “YOUR LOGO” placeholder"],
-        ["<b>Show Logos</b> (G)", "Hides or shows them all without removing them, for visuals only"],
+        ["<b>Remove all</b>", "Goes back to the “YOUR LOGO” placeholder (Mac: File → Remove All Logos)"],
+        ["<b>Show logos</b> (G)", "Hides or shows them all without removing them, for visuals only"],
     ], [1.9 * inch, 4.6 * inch]))
     s.append(Spacer(1, 4))
     s.append(P("You can also drag images onto the window at any time; drop several to add them all.", small))
 
-    s.append(sub("Motion panel: how the logo reacts to the bass"))
+    s.append(sub("Motion menu: how the logo reacts to the bass"))
     s.append(P("0 turns a motion off completely; the highest setting is 1.5.", small))
     s.append(Spacer(1, 4))
     s.append(table(["Slider", "Default", "What it does"], [
@@ -556,20 +565,20 @@ def build():
     s.append(tip_box("For a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "
                      "look, push Squash, Bounce and Wobble to 1.2 or higher."))
     s.append(Spacer(1, 8))
-    s.append(KeepTogether(side_by_side(shot("motion.jpg", 2.9 * inch, "The Motion panel"),
-                                       shot("audio.jpg", 2.75 * inch, "The Audio panel"),
+    s.append(KeepTogether(side_by_side(shot("motion.jpg", 2.9 * inch, "The Motion menu"),
+                                       shot("audio.jpg", 2.75 * inch, "The Audio menu"),
                                        widths=[3.25 * inch, 3.25 * inch])))
 
-    s.append(sub("Logo panel"))
+    s.append(sub("Logo size, glow and trails (under the items in the Logo menu)"))
     s.append(table(["Control", "Default", "What it does"], [
         ["<b>Size</b>", "0.32", "How big the logo is, as a fraction of the screen height"],
         ["<b>Glow</b>", "0.60", "A soft, colored halo that flares with the bass. 0 turns it off."],
         ["<b>Color tint</b>", "0.00", "Blends the logo toward the style's color. 0 keeps your original colors."],
         ["<b>Logo trails</b>", "Off", "Leaves echoes of the logo that swirl and fade with the visuals"],
-        ["<b>Show logos</b>", "On", "Same as Show Logos in the Logo menu"],
+        ["<b>Show logos</b> (G)", "On", "Hides or shows every logo and text item"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
 
-    s.append(sub("Audio panel"))
+    s.append(sub("Audio menu"))
     s.append(table(["Control", "Default", "What it does"], [
         ["<b>Listen to</b> (Mac)", "Default input",
          "Drop-down of everything you can listen to. <b>Mac audio</b> (macOS 14.2+): <b>All Mac audio</b> or "
@@ -589,14 +598,13 @@ def build():
     s.append(P("Dropocalypse adjusts its own levels to the loudness of the input, so a quiet room mic and a loud "
                "line-in both work without fiddling.", small))
 
-    s.append(sub("Look panel"))
+    s.append(sub("Look menu"))
     s.append(table(["Control", "Default", "What it does"], [
         ["<b>Beat flash</b>", "0.40", "The whole screen brightens briefly on each beat"],
         ["<b>Brightness</b>", "1.00", "Overall brightness (0.4 to 1.6). Lower it for dark rooms or bright projectors."],
         ["<b>Frame</b>", "Landscape",
          "<b>Landscape</b> fills the window. <b>Portrait</b> centers a 9:16 frame for Reels and TikToks. "
          "Recordings match it (720×1280, 1080×1920 or 2160×3840). It can't be changed while recording."],
-        ["<b>Auto-cycle every</b>", "30 s", "How long each style stays up when auto-cycle is on (5 to 360 s)"],
         ["<b>Frame rate</b>", "Display",
          "<b>Display</b> matches the monitor, and the picture is unchanged. <b>60</b> or <b>30</b> use less CPU "
          "on a laptop. The status line shows a frame time, such as 6.2 ms, while the toolbar is visible."],
@@ -613,7 +621,7 @@ def build():
           "the folder. Videos go to Movies (Mac) or Videos (Windows and Linux) unless you choose another. They are MP4 "
           "files that play anywhere and upload straight to YouTube, Instagram or TikTok.", small),
         Spacer(1, 4),
-        P("<b>Portrait</b> (Look panel, Frame) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. "
+        P("<b>Portrait</b> (Look menu, Frame) records a vertical 9:16 frame: 720×1280, 1080×1920 or 2160×3840. "
           "On a landscape screen the same frame is centered with black bars on either side, so the preview matches "
           "the file. Landscape still fills the window, and a window that isn't 16:9 is letterboxed into the video.",
           small),
@@ -770,7 +778,7 @@ def build():
         ["<b>It reacts, but only a little</b>",
          "Raise Sensitivity and lower Beat threshold. Check the input level in your system Sound settings."],
         ["<b>It twitches when no music is playing</b>", "Lower Sensitivity, or use a direct line-in feed"],
-        ["<b>My app or USB interface isn't listed</b>", "Open the app or plug it in, then click <b>Refresh list</b> in the Audio panel"],
+        ["<b>My app or USB interface isn't listed</b>", "Open the app or plug it in, then click <b>Refresh list</b> in the Audio menu"],
         ["<b>My logo looks blurry</b>", "Use a larger image: about 1000 pixels on the long side is ideal"],
         ["<b>My logo has a white box around it</b>",
          "The image has a solid background. Export it as a PNG with a transparent background."],

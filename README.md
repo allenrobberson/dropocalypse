@@ -76,7 +76,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
 - 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok. **Portrait** records a 9:16 frame (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
-- ⬇ **One-click updates**: the **Updates** menu (not the Look panel) tells you when a new version is out, checks the download, and installs it for you.
+- ⬇ **One-click updates**: the **Updates** menu tells you when a new version is out, checks the download, and installs it for you.
 - 🔏 **Signed and notarized Mac app** that opens without a security warning, and a **[Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)** signed by Microsoft.
 
 **→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
@@ -193,47 +193,59 @@ Every control lives in one slim bar along the **top edge** of the window.
 
 - **To show it:** move the mouse toward the top of the screen, click anywhere, or press **T**.
 - **It hides itself** after about 2.5 seconds without activity, and the mouse cursor hides with it, leaving a clean picture.
-- **It stays open** while your pointer is over it or while one of its panels is open.
+- **It stays open** while your pointer is over it or while one of its menus is open.
 - **To hide it right away:** press **Esc**.
 
 From left to right:
 
 | Control | What it does |
 |---|---|
-| 🖼 **Add Logo / Logos (2)** | Opens the [Logo menu](#logos-and-text): your logos and text items |
-| **‹  Style name  ›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
-| ⟳ | Turns auto-cycle on or off (lit = on) |
-| **Motion** | Opens the [Motion panel](#motion-panel): how the logo reacts to the bass |
-| **Logo** | Opens the [Logo panel](#logo-panel): size, glow, tint, trails |
-| **Audio** | Opens the [Audio panel](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. The mic icon is crossed out when audio isn't running. |
-| **Look** | Opens the [Look panel](#look-panel): flash, brightness, landscape or portrait, auto-cycle timing (5 seconds to 6 minutes) |
-| ⬇ **Updates** | Always in the toolbar (and its own section in the detached controls window), not in the Look panel. Shows your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. |
-| *Status text* | Shows the input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
-| ⌨ / **Keys** | Shows the keyboard shortcuts |
-| ⏺ **Record** / **Stop** | Grey until you press it, red while recording. Records the visuals and the music to an MP4 video and shows the running time. The **▾** next to it sets the video size and where to save. |
-| 🖥 / **Screen** | Shows the visuals full screen on another display (TV, projector, second monitor). Appears when more than one display is connected. |
-| ⇥ / **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your main screen |
-| ⤢ / **Full screen** | Full screen on / off |
+| **‹** · **Style name** · **›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
+| ⟳ **Auto** | Turns auto-cycle on or off. It glows green while auto-cycle is on. **Right-click** it (Mac: also Control-click) for its settings: how long each style stays up, from 5 seconds to 6 minutes |
+| **Logo** | Opens the [Logo menu](#logos-and-text): your logos and text items, plus size, glow, tint and trails |
+| **Motion** | Opens the [Motion menu](#motion-panel): how the logo reacts to the bass |
+| **Audio** | Opens the [Audio menu](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. It turns red when audio isn't running. |
+| **Look** | Opens the [Look menu](#look-panel): beat flash, brightness, landscape or portrait, frame rate |
+| ● **Record** / ■ **Stop** | Red while recording, with the running time. Records the visuals and the music to an MP4 video. The **▾** next to it sets the video size and where to save. See [Recording](#recording). |
+| *Status text* | The input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
+| **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your laptop while the visuals go on a TV or projector. See [Two screens](#two-screens-controls-on-one-visuals-on-the-other). |
+| **Screen** | Picks the display that shows the visuals full screen (TV, projector, second monitor), and turns full screen on or off (also **F**) |
+| **Updates** | Your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. Also in the detached controls window. |
+| **Keys** | Shows the keyboard shortcuts |
 
-> On Windows and Linux the toolbar shows text labels (**< Style >**, **Auto-cycle**, **Record**, **Updates**, **Screen**, **Detach**, **Keys**, **Full screen**) instead of icons, but the controls are the same.
->
+**On small screens the menus become letters.** When the window is too narrow for the full names (a 720p projector, a small laptop, a narrowed window), the menus show one letter each:
+
+| Letter | Menu |
+|---|---|
+| **L** | Logo |
+| **M** | Motion |
+| **A** | Audio |
+| **V** | Look ("visuals"; L is already Logo) |
+| **S** | Screen |
+| **U** | Updates |
+| **?** | Keys |
+
+Hold the mouse over a letter to see its name; the open menu shows its full name as its title. **Detach** always shows the whole word so it's easy to find. When there's room again, the full names come back by themselves. The letters are only on the toolbar: the keyboard shortcuts don't change.
+
+Every button is drawn as a raised key and every slider as a mixer fader, the same on Mac, Windows and Linux. A pink key has its menu open; the **Auto** key glows green while auto-cycle is on.
+
 > In full screen on a MacBook with a camera notch, the toolbar sits just below the notch so no button hides behind it, while the visuals still fill the whole screen.
 
 ### Logos and text
 
-Show **up to 4 logos and text items at once**. In landscape they sit side by side, left to right; in **Portrait** (Look panel) they stack top to bottom. Each one shrinks to fit its space, and **Size** in the Logo panel sets them all. They all react to the same beat, each with a small offset in timing and direction so they don't move like clones.
+Show **up to 4 logos and text items at once**. In landscape they sit side by side, left to right; in **Portrait** (Look menu) they stack top to bottom. Each one shrinks to fit its space, and **Size** in the Logo menu sets them all. They all react to the same beat, each with a small offset in timing and direction so they don't move like clones.
 
 The **Logo menu** in the toolbar lists your items:
 
 | Item | What it does |
 |---|---|
-| **1. band.png**, **2. "DJ NIGHT"** … | Each item, with **Replace…** (images), **Move left / right** (up / down in Portrait) and **Remove** |
-| **Add Logo… (L)** | Adds an image. PNGs with a transparent background look best. Empty transparent edges are trimmed automatically so each logo bounces around its visible shape. |
-| **Add Text** | Adds a text item. Type the words in the **Logo** panel. |
-| **Remove All** | Removes every item and goes back to the "YOUR LOGO" placeholder |
+| **1. band.png**, **2. "DJ NIGHT"** … | Each item, with **Replace…** (images), the **‹ ›** keys to move it (up / down in Portrait) and **Remove** |
+| **Add Logo… / Add image… (L)** | Adds an image. PNGs with a transparent background look best. Empty transparent edges are trimmed automatically so each logo bounces around its visible shape. |
+| **Add Text** | Adds a text item. Type the words right in the list. |
+| **Remove all** | Removes every item (Mac: **File → Remove All Logos**) and goes back to the "YOUR LOGO" placeholder |
 | **Show Logos (G)** | Hides or shows them all without removing them, so you get visuals only |
 
-**Text items:** type the words (up to 60 characters), pick a font (**Bold**, **Heavy**, **Serif** or **Mono**) and a color (white, pink, cyan, gold, lime or purple). Text gets a dark outline so it stays readable over bright visuals, and glows, tints and trails like a logo. Edit text and reorder items in the **Logo** panel, or in the detached controls window.
+**Text items:** type the words (up to 60 characters), pick a font (**Bold**, **Heavy**, **Serif** or **Mono**) and a color (white, pink, cyan, gold, lime or purple). Text gets a dark outline so it stays readable over bright visuals, and glows, tints and trails like a logo. Edit text and reorder items in the **Logo** menu, or in the detached controls window.
 
 You can also **drag images** from Finder, File Explorer, your file manager or a web browser onto the window at any time. Drop several to add them all. When all 4 spaces are used, a dropped image replaces the last item.
 
@@ -243,7 +255,7 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [26 styles](#the-26-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
-| ⟳ **Auto-cycle** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes under **Look**), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
+| ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes: right-click the **Auto** key), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
 
@@ -256,11 +268,13 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Bounce** | 0.50 | Kicks launch the logo upward and it falls back with gravity. A small squash happens when it lands. |
 | **Slide** | 0.40 | Each beat pushes the logo left or right, alternating sides, and a spring pulls it back to center. Adds a slow side-to-side drift too. |
 | **Wobble** | 0.35 | Each beat tips the logo into a quick rotation that settles back to level |
-| **Reset to defaults** | | Puts the Motion, Logo and Look sliders (except auto-cycle timing) back to their defaults |
+| **Reset to defaults** | | Puts the Motion, Logo and Look sliders back to their defaults |
 
 > **Tip:** for a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "everything goes off" look, push Squash, Bounce and Wobble to 1.2 or higher.
 
 ### Logo panel
+
+These sit under the list of items in the **Logo** menu, and in the detached controls window.
 
 | Control | Default | What it does |
 |---|---|---|
@@ -268,7 +282,7 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Glow** | 0.60 | A soft, colored halo behind the logo that flares brighter with the bass. 0 turns it off. |
 | **Color tint** | 0.00 | Blends the logo toward the current style's color. 0 keeps your logo's original colors; 1 recolors it completely. |
 | **Logo trails** | Off | Feeds a faint copy of the logo into the visuals every frame, so it leaves echoes that swirl, zoom and fade with the effect |
-| **Show logos** | On | Same as **Show Logos** in the Logo menu |
+| **Show logos (G)** | On | Hides or shows every logo and text item without removing them |
 
 ### Audio panel
 
@@ -292,7 +306,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Beat flash** | 0.40 | The whole screen brightens briefly on each beat. 0 turns it off. |
 | **Brightness** | 1.00 | Overall brightness of the visuals (0.4 to 1.6). Lower it for dark rooms or bright projectors. |
 | **Frame** | Landscape | **Landscape** fills the window. **Portrait** centers a 9:16 frame (pillarboxed on a wide screen) so what you see is what a Reel or TikTok recording captures. It can't be changed while a recording is in progress. |
-| **Auto-cycle every** | 30 s | How long each style stays up when auto-cycle is on (5 to 360 seconds, up to 6 minutes) |
+| **Frame rate** | Display | **Display** matches the monitor. **60** and **30** use less CPU. |
 
 ### The 26 styles
 
@@ -411,7 +425,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
 | **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** (Windows: **Refresh devices**) in the Audio panel |
 | **Visuals stutter for the first few minutes** (Mac, with a microphone) | Fixed in 1.2.2. Click **Updates → Update now**. |
-| **Update now doesn't work**, or the Updates menu says the download wasn't installed | Nothing was changed. The **Updates** menu is in the toolbar (and the detached controls window), not the Look panel. Mac: keep Dropocalypse in **Applications**. The new app must be signed with the same Developer ID and accepted by Gatekeeper. Windows: keep the folder somewhere you can edit, such as Documents or Desktop. Once this copy is code-signed, the download must be signed by the same publisher. Or use **Download page**. |
+| **Update now doesn't work**, or the Updates menu says the download wasn't installed | Nothing was changed. The **Updates** menu is in the toolbar (and the detached controls window). Mac: keep Dropocalypse in **Applications**. The new app must be signed with the same Developer ID and accepted by Gatekeeper. Windows: keep the folder somewhere you can edit, such as Documents or Desktop. Once this copy is code-signed, the download must be signed by the same publisher. Or use **Download page**. |
 | **I can't find my recording** | It's in your **Movies** (Mac) or **Videos** (Windows and Linux) folder unless you chose another one under **Record ▾**. Click the **Show** button in the message after you stop. |
 | **Recording has black bars** | The video is 16:9. Go full screen on a 16:9 display, or make the window 16:9, to fill the frame. |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
