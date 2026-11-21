@@ -566,7 +566,8 @@ public:
         float pulse = 1 + 0.12f * f.bass();
         for (int i = 0; i < n; ++i) {
             float v = (f.bands[std::max(0, i - 1)] + 2 * f.bands[i] + f.bands[std::min(n - 1, i + 1)]) / 4;
-            float h = (0.008f + std::pow(v, 1.2f) * 0.42f * s) * pulse;
+            // Tall enough to fill most of the screen, stopping just short of the top and bottom.
+            float h = std::min(0.95f, (0.008f + std::pow(v, 1.2f) * 0.82f * s) * pulse);
             float frac = (float)i / (n - 1);
             Rgb c = hsv(0.93f + frac * 0.24f + 0.03f * std::sin(f.t * 0.4f), 0.9f, 1);
             RGBA core = rgba(c, 1);

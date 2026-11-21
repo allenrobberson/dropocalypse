@@ -324,7 +324,8 @@ final class StyleFX {
         for i in 0..<n {
             let prev = f.bands[max(0, i - 1)], next = f.bands[min(n - 1, i + 1)]
             let v = (prev + 2 * f.bands[i] + next) / 4
-            let h = (0.008 + pow(v, 1.2) * 0.42 * s) * pulse
+            // Tall enough to fill most of the screen, stopping just short of the top and bottom.
+            let h = min(0.95, (0.008 + pow(v, 1.2) * 0.82 * s) * pulse)
             let frac = Float(i) / Float(n - 1)
             let c = hsv(0.93 + frac * 0.24 + 0.03 * sin(f.t * 0.4), 0.9, 1)
             let core: GeometryBuilder.RGBA = (c.0, c.1, c.2, 1)
