@@ -91,13 +91,12 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.5.3: taller Mirror Equalizer
+- 📊 **Mirror Equalizer fills the screen**: the bars now reach almost the top and bottom edges when the music is loud.
+
 ### 1.5.2: smoother on Mac
 - ⚡ **Less work per frame** on the CPU and the graphics card, so Dropocalypse uses less power and runs cooler on busy styles. Everything looks the same.
 - 🛠️ **Steadier waveforms**: each frame keeps its own copy of the audio it draws.
-
-### 1.5.1: Mac polish
-- 🎨 **3D style list (Mac)**: clicking the style name opens the list in the same 3D style as the other menus.
-- 🧹 **Tidier controls window (Mac)**: when the controls are detached, each section no longer repeats its own title.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 

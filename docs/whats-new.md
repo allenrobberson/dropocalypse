@@ -11,6 +11,9 @@ Write for people who aren't technical: short, friendly bullets, no file names or
   CI fails if you forget, and the release fails if the version being released has no section here.
 -->
 
+## 1.5.3
+- **Taller Mirror Equalizer.** The bars now stretch almost to the top and bottom of the screen when the music is loud.
+
 ## 1.5.2
 - **Smoother on Mac.** Dropocalypse does less work for every frame it draws, so it uses less of your Mac's power and runs cooler, especially on busy styles like Digital Rain, Inferno and LED Meter. Everything looks the same.
 
