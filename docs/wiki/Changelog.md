@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.5.2
+- ⚡ **Mac: faster drawing.** Less work per frame on the CPU and the graphics card: no throwaway lists or repeated colour and trig maths in the styles, the audio analysis uses the Mac's fast vector maths, logo trails are drawn in the main pass instead of a second one, and the screen pass uses 16-bit colour maths. The picture is unchanged.
+- 🛠️ **Mac: steadier waveforms.** The wave and spectrum samples are copied into each frame's own commands, so a frame still being drawn can never pick up the next frame's samples.
+
 ## 1.5.1
 - 🎨 **Mac: the style list uses the 3D menu look**, like every other menu.
 - 🧹 **Mac: the detached controls window** no longer repeats each menu's title under its section bar.

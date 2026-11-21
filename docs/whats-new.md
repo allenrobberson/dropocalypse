@@ -11,6 +11,9 @@ Write for people who aren't technical: short, friendly bullets, no file names or
   CI fails if you forget, and the release fails if the version being released has no section here.
 -->
 
+## 1.5.2
+- **Smoother on Mac.** Dropocalypse does less work for every frame it draws, so it uses less of your Mac's power and runs cooler, especially on busy styles like Digital Rain, Inferno and LED Meter. Everything looks the same.
+
 ## 1.5.1
 - **Style list in 3D (Mac).** Clicking the style name now opens the list in the same 3D style as the other menus.
 - **Tidier controls window (Mac).** When the controls are detached, each section no longer repeats its own title.

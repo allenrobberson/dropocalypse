@@ -91,14 +91,13 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.5.2: smoother on Mac
+- ⚡ **Less work per frame** on the CPU and the graphics card, so Dropocalypse uses less power and runs cooler on busy styles. Everything looks the same.
+- 🛠️ **Steadier waveforms**: each frame keeps its own copy of the audio it draws.
+
 ### 1.5.1: Mac polish
 - 🎨 **3D style list (Mac)**: clicking the style name opens the list in the same 3D style as the other menus.
 - 🧹 **Tidier controls window (Mac)**: when the controls are detached, each section no longer repeats its own title.
-
-### 1.5.0: a new 3D toolbar
-- 🎛️ **Raised keys and mixer faders** on Mac, Windows and Linux, in every menu and in the detached controls window.
-- 🔤 **Letters on small screens**: when the full names don't fit, the menus show **L M A V** and **S U ?** (hold the mouse over one for its name). **Detach** always shows the whole word.
-- 🧭 **New layout**: style and **Auto** on the left, then Logo, Motion, Audio, Look and Record; Detach, Screen, Updates and Keys on the right.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 
