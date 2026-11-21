@@ -6,13 +6,16 @@ import DropocalypseCore
 // Uniform layouts. Plain Float/Int32 fields only, matching the structs in ShaderSource.swift.
 
 private struct WarpUniforms {
-    var aspect: Float = 1, time: Float = 0, zoom: Float = 1, rotation: Float = 0
+    // Rotation and hue shift are the same for every pixel, so their cos/sin are worked out once
+    // per frame here instead of in the shader.
+    var aspect: Float = 1, time: Float = 0, zoom: Float = 1, rotCos: Float = 1
     var warpAmount: Float = 0, warpScale: Float = 6, warpSpeed: Float = 1, decay: Float = 0.95
-    var driftX: Float = 0, driftY: Float = 0, kaleido: Float = 0, hueShift: Float = 0
+    var driftX: Float = 0, driftY: Float = 0, kaleido: Float = 0, hueCos: Float = 1
     var plasma: Float = 0, bass: Float = 0, mid: Float = 0, treble: Float = 0
     var texelX: Float = 0, texelY: Float = 0
     var mirror: Int32 = 0
     var generative: Float = 0
+    var rotSin: Float = 0, hueSin: Float = 0
 }
 
 private struct PresentUniforms {
@@ -66,7 +69,10 @@ final class Renderer: NSObject, MTKViewDelegate {
     /// Textures by item key, so editing one text item doesn't reload every image.
     private var textureCache: [String: MTLTexture] = [:]
     private var placeholderTexture: MTLTexture?
-    private var signalSamples: MTLBuffer?
+    /// Wave (512) and band (48) samples for vs_signal. Copied into the command stream with
+    /// setVertexBytes each frame, so frames still in flight never see the next frame's samples.
+    private static let signalSampleCount = 560
+    private var signalScratch = [Float](repeating: 0, count: signalSampleCount)
 
     private let spectrum = Spectrum()
     private let fx = StyleFX()
@@ -119,7 +125,6 @@ final class Renderer: NSObject, MTKViewDelegate {
                 vertexBuffers.append(b)
             }
         }
-        signalSamples = device.makeBuffer(length: 560 * MemoryLayout<Float>.stride, options: .storageModeShared)
 
         placeholderTexture = LogoTexture.placeholder(device: device)
         itemTextures = placeholderTexture.map { [$0] } ?? []
@@ -338,7 +343,9 @@ final class Renderer: NSObject, MTKViewDelegate {
             wu.aspect = aspect
             wu.time = t
             wu.zoom = pow(scene.zoom + scene.zoomBass * audio.bass, frames)
-            wu.rotation = (scene.rotation + scene.rotationBass * audio.bass) * frames
+            let rotation = (scene.rotation + scene.rotationBass * audio.bass) * frames
+            wu.rotCos = cos(rotation)
+            wu.rotSin = sin(rotation)
             wu.warpAmount = scene.warpAmount * (1 + audio.mid * 0.8)
             wu.warpScale = scene.warpScale
             wu.warpSpeed = scene.warpSpeed
@@ -348,7 +355,9 @@ final class Renderer: NSObject, MTKViewDelegate {
             wu.kaleido = scene.kaleido
             wu.mirror = scene.mirror
             wu.generative = scene.generative
-            wu.hueShift = scene.hueShift * frames
+            let hueShift = scene.hueShift * frames
+            wu.hueCos = cos(hueShift)
+            wu.hueSin = sin(hueShift)
             wu.plasma = scene.plasma
             wu.bass = audio.bass
             wu.mid = audio.mid
@@ -382,16 +391,10 @@ final class Renderer: NSObject, MTKViewDelegate {
                 enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: builder.count)
             }
             drawGpuSignal(enc, scene: scene, audio: audio, time: t, aspect: aspect)
-            enc.endEncoding()
-        }
 
-        // ---- Optional logo trail into the feedback buffer.
-        if settings.showLogo, settings.logoTrails, !textures.isEmpty {
-            let trp = MTLRenderPassDescriptor()
-            trp.colorAttachments[0].texture = dst
-            trp.colorAttachments[0].loadAction = .load
-            trp.colorAttachments[0].storeAction = .store
-            if let enc = cb.makeRenderCommandEncoder(descriptor: trp) {
+            // Optional logo trail into the feedback buffer, in the same pass (a second pass on
+            // the same texture would make the GPU store and reload it).
+            if settings.showLogo, settings.logoTrails, !textures.isEmpty {
                 enc.setRenderPipelineState(logoTrailPipeline)
                 for (i, logo) in textures.enumerated() {
                     var tu = items[i]
@@ -402,8 +405,8 @@ final class Renderer: NSObject, MTKViewDelegate {
                     enc.setFragmentTexture(logo, index: 0)
                     enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
                 }
-                enc.endEncoding()
             }
+            enc.endEncoding()
         }
 
         // ---- Pass 3: composite to screen.
@@ -499,7 +502,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     private func drawGpuSignal(_ enc: MTLRenderCommandEncoder, scene: VisualScene,
                                audio: AudioAnalysis.Snapshot, time t: Float, aspect: Float) {
-        guard let pipeline = signalPipeline, let buf = signalSamples else { return }
+        guard let pipeline = signalPipeline else { return }
         let gpu: Bool
         switch scene.wave {
         case .circle, .twinRings, .line, .verticalLine, .bars, .radialBars, .spiralDots, .lissajous:
@@ -508,9 +511,15 @@ final class Renderer: NSObject, MTKViewDelegate {
             gpu = false
         }
         guard gpu else { return }
-        let ptr = buf.contents().bindMemory(to: Float.self, capacity: 560)
-        for i in 0..<Spectrum.waveCount { ptr[i] = spectrum.wave[i] }
-        for i in 0..<Spectrum.bandCount { ptr[512 + i] = spectrum.bands[i] }
+        signalScratch.withUnsafeMutableBufferPointer { dst in
+            spectrum.wave.withUnsafeBufferPointer { w in
+                dst.baseAddress!.update(from: w.baseAddress!, count: Spectrum.waveCount)
+            }
+            spectrum.bands.withUnsafeBufferPointer { b in
+                (dst.baseAddress! + Spectrum.waveCount).update(from: b.baseAddress!, count: Spectrum.bandCount)
+            }
+        }
+        let sampleBytes = Self.signalSampleCount * MemoryLayout<Float>.stride
 
         let bass = min(audio.bass, 1.4)
         let width = 0.0065 * scene.thickness * (1 + bass * 0.6)
@@ -536,7 +545,7 @@ final class Renderer: NSObject, MTKViewDelegate {
             cb.closed = closed ? 1 : 0
             enc.setRenderPipelineState(pipeline)
             enc.setVertexBytes(&cb, length: MemoryLayout<SignalUniforms>.stride, index: 0)
-            enc.setVertexBuffer(buf, offset: 0, index: 1)
+            signalScratch.withUnsafeBytes { enc.setVertexBytes($0.baseAddress!, length: sampleBytes, index: 1) }
             enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: n)
         }
 

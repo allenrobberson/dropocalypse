@@ -7,6 +7,7 @@ struct GeometryBuilder {
     private let ptr: UnsafeMutablePointer<GeomVertex>
     private let capacity: Int
     let aspect: Float
+    private let invAspect: Float
     private(set) var count = 0
 
     /// `start` is the first vertex slot this builder may write; `capacity` is how many it may use.
@@ -15,12 +16,51 @@ struct GeometryBuilder {
         ptr = base + start
         self.capacity = capacity
         self.aspect = aspect
+        self.invAspect = 1 / aspect
+    }
+
+    // Unit-circle points for every dot size up to `maxTableSegments`, built once, so drawing a
+    // dot needs no sin/cos. Point i of an n-segment circle is at angle i/n·2π, computed with the
+    // same arithmetic the per-dot trig used, so the shapes are unchanged.
+    private static let maxTableSegments = 64
+    /// Where each segment count's points start in `unitTable` (point i of n is at unitBase[n] + i).
+    private static let unitBase: [Int] = {
+        var base = [Int](repeating: 0, count: maxTableSegments + 1)
+        var next = 0
+        for n in 1...maxTableSegments { base[n] = next - 1; next += n } // stores i = 1…n
+        return base
+    }()
+    /// Allocated once for the life of the app, read through a raw pointer in the hot loops.
+    private static let unitTable: UnsafePointer<SIMD2<Float>> = {
+        let total = maxTableSegments * (maxTableSegments + 1) / 2
+        let table = UnsafeMutablePointer<SIMD2<Float>>.allocate(capacity: total)
+        var k = 0
+        for n in 1...maxTableSegments {
+            for i in 1...n {
+                let a = Float(i) / Float(n) * 2 * .pi
+                table[k] = SIMD2(cos(a), sin(a))
+                k += 1
+            }
+        }
+        return UnsafePointer(table)
+    }()
+
+    /// Point i (1…n) on an n-segment unit circle. `base` comes from `unitBase` (Int.min = not in the table).
+    @inline(__always) private static func rimPoint(_ i: Int, of n: Int, base: Int,
+                                                   table: UnsafePointer<SIMD2<Float>>) -> SIMD2<Float> {
+        if base != Int.min { return table[base + i] }
+        let a = Float(i) / Float(n) * 2 * .pi
+        return SIMD2(cos(a), sin(a))
+    }
+
+    @inline(__always) private static func tableBase(_ n: Int) -> Int {
+        n >= 1 && n <= maxTableSegments ? unitBase[n] : Int.min
     }
 
     typealias RGBA = (Float, Float, Float, Float)
 
     @inline(__always) private mutating func v(_ x: Float, _ y: Float, _ c: RGBA) {
-        ptr[count] = GeomVertex(x: x / aspect, y: y, r: c.0, g: c.1, b: c.2, a: c.3)
+        ptr[count] = GeomVertex(x: x * invAspect, y: y, r: c.0, g: c.1, b: c.2, a: c.3)
         count += 1
     }
 
@@ -45,10 +85,11 @@ struct GeometryBuilder {
     /// Disc that fades from `col` in the middle to transparent at the rim.
     mutating func softDot(_ center: SIMD2<Float>, radius: Float, _ col: RGBA, segments: Int = 16) {
         let rim: RGBA = (col.0, col.1, col.2, 0)
+        guard segments > 0 else { return }
+        let base = Self.tableBase(segments), table = Self.unitTable
         var prev = center + SIMD2(radius, 0)
         for i in 1...segments {
-            let a = Float(i) / Float(segments) * 2 * .pi
-            let p = center + SIMD2(cos(a), sin(a)) * radius
+            let p = center + Self.rimPoint(i, of: segments, base: base, table: table) * radius
             triangle(center, col, prev, rim, p, rim)
             prev = p
         }
@@ -77,10 +118,10 @@ struct GeometryBuilder {
 
     mutating func dot(_ center: SIMD2<Float>, radius: Float, _ col: RGBA) {
         let segments = 8
+        let base = Self.tableBase(segments), table = Self.unitTable
         var prev = center + SIMD2(radius, 0)
         for i in 1...segments {
-            let a = Float(i) / Float(segments) * 2 * .pi
-            let p = center + SIMD2(cos(a), sin(a)) * radius
+            let p = center + Self.rimPoint(i, of: segments, base: base, table: table) * radius
             triangle(center, prev, p, col)
             prev = p
         }

@@ -61,6 +61,8 @@ final class StyleFX {
     private static let ridgeRows = 30
     private static let ridgePoints = 96
     private var ridges: [[Float]] = []
+    /// Index of the newest row in `ridges` (a ring buffer, so a new row never shifts or allocates).
+    private var ridgeHead = StyleFX.ridgeRows - 1
     private var ridgeTimer: Float = 0
 
     private struct RainColumn { var y: Float; var speed: Float; var length: Int; var seed: UInt32 }
@@ -96,14 +98,17 @@ final class StyleFX {
             }
         }
         // Thin inner ring.
-        var ring: [SIMD2<Float>] = []
         let segs = 96
-        for i in 0..<segs {
-            let a = Float(i) / Float(segs) * 2 * .pi
-            ring.append(c + SIMD2(cos(a), sin(a)) * (r0 - 0.012))
-        }
         let ringColor = f.color(0.1, 0.7)
-        g.polyline(ring, closed: true, width: 0.004, color: { _ in ringColor })
+        let first = c + SIMD2<Float>(1, 0) * (r0 - 0.012)
+        var prev = first
+        for i in 1..<segs {
+            let a = Float(i) / Float(segs) * 2 * .pi
+            let p = c + SIMD2(cos(a), sin(a)) * (r0 - 0.012)
+            g.line(prev, p, width: 0.004, ringColor)
+            prev = p
+        }
+        g.line(prev, first, width: 0.004, ringColor) // close the loop
 
         // Sparks fly off the ring, a burst on every beat.
         var spawn = Int(2 + f.audio.treble * 6)
@@ -152,22 +157,23 @@ final class StyleFX {
 
     func pulsarRidges(_ f: FXFrame, _ over: inout GeometryBuilder) {
         let rows = Self.ridgeRows, pts = Self.ridgePoints
-        if ridges.isEmpty { ridges = Array(repeating: Array(repeating: 0, count: pts), count: rows) }
+        if ridges.isEmpty {
+            ridges = Array(repeating: Array(repeating: 0, count: pts), count: rows)
+            ridgeHead = rows - 1
+        }
 
         ridgeTimer += f.dt
         if ridgeTimer >= 1.0 / 20.0 {
             ridgeTimer = 0
-            var row = [Float](repeating: 0, count: pts)
+            ridgeHead = (ridgeHead + 1) % rows // overwrite the oldest row in place
             let n = f.bands.count
             for j in 0..<pts {
                 let x01 = Float(j) / Float(pts - 1)
                 let d = abs(x01 - 0.5) * 2                       // 0 center … 1 edge
                 let env = exp(-pow((x01 - 0.5) / 0.22, 2)) * 0.85 + 0.15
                 let idx = min(n - 1, Int(d * Float(n) * 0.7))    // bass in the middle
-                row[j] = (pow(f.bands[idx], 1.4) + rng.range(0, 0.06)) * env
+                ridges[ridgeHead][j] = (pow(f.bands[idx], 1.4) + rng.range(0, 0.06)) * env
             }
-            ridges.removeFirst()
-            ridges.append(row)
         }
 
         let spacing: Float = 1.3 / Float(rows)
@@ -179,7 +185,7 @@ final class StyleFX {
 
         // Oldest (top, farthest) first so newer ridges overlap them.
         for k in 0..<rows {
-            let row = ridges[k]
+            let row = ridges[(ridgeHead + 1 + k) % rows]
             let baseY = 0.68 - Float(k) * spacing
             var prev = SIMD2<Float>(-halfWidth, baseY + row[0] * 0.32 * s)
             for j in 1..<pts {
@@ -212,18 +218,17 @@ final class StyleFX {
         gridPhase += (0.45 + bass * 2.2 + (beatFired ? 0.6 : 0)) * f.dt
         gridPhase -= floor(gridPhase)
         let gridHue = f.scene.baseHue
+        let c = hsv(gridHue, 0.85, 1)
         for i in 0..<26 {
             let z = 1 + Float(i) + (1 - gridPhase)
             let y = horizon - 0.95 / z
             let a = min(1, 1.8 / z)
-            let c = hsv(gridHue, 0.85, 1)
             g.line(SIMD2(-w, y), SIMD2(w, y), width: 0.0025 + 0.004 / z, (c.0, c.1, c.2, a))
         }
         for k in -16...16 {
             let xw = Float(k) * 0.5
             let near = SIMD2<Float>(xw * 0.95, horizon - 0.95)
             let far = SIMD2<Float>(xw * 0.95 / 30, horizon - 0.95 / 30)
-            let c = hsv(gridHue, 0.85, 1)
             g.line(far, near, width: 0.003, (c.0, c.1, c.2, 0.75))
         }
         // Horizon line and a spectrum "skyline" sitting on it.
@@ -339,12 +344,19 @@ final class StyleFX {
     // MARK: - 22. LED Meter
 
     private var ledPeaks: [Float] = []
+    private static let ledSegments = 18
+    /// Green → yellow → red, one color per LED row (bottom to top).
+    private static let ledRowColors: [(Float, Float, Float)] = (0..<ledSegments).map { k in
+        let frac = Float(k) / Float(ledSegments - 1)
+        let hue: Float = frac < 0.6 ? 0.33 - frac / 0.6 * 0.12 : 0.21 - (frac - 0.6) / 0.4 * 0.21
+        return hsv(hue, 0.95, 1)
+    }
     private var ledHold: [Float] = []
 
     /// A classic hardware spectrum analyzer: segmented LEDs from green through yellow to red,
     /// with peak-hold caps that hang for a moment and then drop.
     func ledMeter(_ f: FXFrame, _ g: inout GeometryBuilder) {
-        let cols = 24, segs = 18
+        let cols = 24, segs = Self.ledSegments
         let n = f.bands.count
         if ledPeaks.count != cols { ledPeaks = Array(repeating: 0, count: cols); ledHold = ledPeaks }
         let total = 1.7 * f.aspect
@@ -367,9 +379,7 @@ final class StyleFX {
             let x0 = left + Float(c) * slot + slot * 0.12, x1 = x0 + slot * 0.76
             for k in 0..<segs {
                 let y0 = base + Float(k) * segH + segH * 0.12, y1 = y0 + segH * 0.76
-                let frac = Float(k) / Float(segs - 1)
-                let hue: Float = frac < 0.6 ? 0.33 - frac / 0.6 * 0.12 : 0.21 - (frac - 0.6) / 0.4 * 0.21
-                let col = hsv(hue, 0.95, 1)
+                let col = Self.ledRowColors[k]
                 let on = k < lit
                 g.rect(x0: x0, y0: y0, x1: x1, y1: y1, (col.0, col.1, col.2, on ? 1 : 0.07))
             }
@@ -625,7 +635,7 @@ final class StyleFX {
         }
         let tick = Int(f.t * 7)
         let tempo = (0.55 + f.bass * 1.6 + (beatFired ? 0.5 : 0)) * f.scene.waveScale
-        let hue = f.scene.baseHue
+        let glyphRGB = hsv(f.scene.baseHue, f.scene.saturation, 1)
 
         for c in 0..<columns {
             var col = rain[c]
@@ -648,28 +658,35 @@ final class StyleFX {
                 if k == 0 {
                     color = (0.85, 1, 0.9, 1)
                 } else {
-                    let cc = hsv(hue, f.scene.saturation, 1)
-                    color = (cc.0, cc.1, cc.2, 0.9 * fade)
+                    color = (glyphRGB.0, glyphRGB.1, glyphRGB.2, 0.9 * fade)
                 }
                 glyph(&g, center: SIMD2(x, cy), size: cell, hash: h, color)
             }
         }
     }
 
+    /// Glyph corners at unit size (scaled by the cell size when drawn), and the strokes between them.
+    private static let glyphPoints: [SIMD2<Float>] = [
+        SIMD2(-0.32, 0.4), SIMD2(0.32, 0.4),
+        SIMD2(-0.32, 0.0), SIMD2(0.32, 0.0),
+        SIMD2(-0.32, -0.4), SIMD2(0.32, -0.4),
+    ]
+    private static let glyphSegs: [(Int, Int)] = [
+        (0, 1), (2, 3), (4, 5), (0, 2), (2, 4), (1, 3), (3, 5), (0, 3), (2, 5), (1, 2),
+    ]
+
     private func glyph(_ g: inout GeometryBuilder, center c: SIMD2<Float>, size: Float, hash: UInt32,
                        _ col: GeometryBuilder.RGBA) {
-        let w = size * 0.32, h = size * 0.4
-        let p: [SIMD2<Float>] = [SIMD2(-w, h), SIMD2(w, h), SIMD2(-w, 0), SIMD2(w, 0), SIMD2(-w, -h), SIMD2(w, -h)]
-        let segs: [(Int, Int)] = [(0, 1), (2, 3), (4, 5), (0, 2), (2, 4), (1, 3), (3, 5), (0, 3), (2, 5), (1, 2)]
-        var bits = hash
+        let p = Self.glyphPoints, segs = Self.glyphSegs // shared constants: no allocation per glyph
         var drawn = 0
-        for (i, s) in segs.enumerated() where drawn < 4 {
-            if (bits >> UInt32(i)) & 1 == 1 {
-                g.line(c + p[s.0], c + p[s.1], width: size * 0.07, col)
+        for i in 0..<segs.count where drawn < 4 {
+            if (hash >> UInt32(i)) & 1 == 1 {
+                let s = segs[i]
+                g.line(c + p[s.0] * size, c + p[s.1] * size, width: size * 0.07, col)
                 drawn += 1
             }
         }
-        if drawn == 0 { bits = 0; g.line(c + p[0], c + p[5], width: size * 0.07, col) }
+        if drawn == 0 { g.line(c + p[0] * size, c + p[5] * size, width: size * 0.07, col) }
     }
 
     // MARK: - 19. Lava Lamp
@@ -726,11 +743,13 @@ final class StyleFX {
     // Thin symmetric rings and spokes on top of the shader mandala. Drawn already
     // mirrored so the current frame stays symmetric; bass pulses them, bands set the spokes.
 
+    private static let kaleidoHues: [Float] = [0.50, 0.92, 0.62, 0.11, 0.30] // cyan, magenta, blue, gold, acid green
+
     func fullKaleidoscope(_ f: FXFrame, _ g: inout GeometryBuilder) {
         let bass = f.bass
         let pulse = 1 + bass * 0.22
         let reach = min(0.92, f.aspect * 0.92)
-        let hues: [Float] = [0.50, 0.92, 0.62, 0.11, 0.30] // cyan, magenta, blue, gold, acid green
+        let hues = Self.kaleidoHues
         func neon(_ i: Int, _ alpha: Float) -> GeometryBuilder.RGBA {
             let c = hsv(hues[i % hues.count] + f.audio.mid * 0.04, 1, 1)
             return (c.0, c.1, c.2, alpha)
@@ -739,14 +758,18 @@ final class StyleFX {
         let segments = 72
         for i in 0..<ringCount {
             let radius = min(reach, (0.16 + Float(i) * 0.22) * pulse)
-            var pts = [SIMD2<Float>]()
-            pts.reserveCapacity(segments)
-            for k in 0..<segments {
-                let a = Float(k) / Float(segments) * 2 * .pi + f.t * 0.04 * Float(i + 1)
-                pts.append(SIMD2(cos(a), sin(a)) * radius)
-            }
             let col = neon(i, 0.28 + bass * 0.22)
-            g.polyline(pts, closed: true, width: 0.0035 + bass * 0.003) { _ in col }
+            let width = 0.0035 + bass * 0.003
+            let spin = f.t * 0.04 * Float(i + 1)
+            let first = SIMD2(cos(spin), sin(spin)) * radius
+            var prev = first
+            for k in 1..<segments {
+                let a = Float(k) / Float(segments) * 2 * .pi + spin
+                let p = SIMD2(cos(a), sin(a)) * radius
+                g.line(prev, p, width: width, col)
+                prev = p
+            }
+            g.line(prev, first, width: width, col) // close the ring
         }
         let arms = 8
         let bands = f.bands

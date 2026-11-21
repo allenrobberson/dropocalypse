@@ -31,7 +31,7 @@ struct WarpUniforms {
     float aspect;
     float time;
     float zoom;
-    float rotation;
+    float rotCos;     // cos/sin of this frame's rotation and hue shift, worked out on the CPU
     float warpAmount;
     float warpScale;
     float warpSpeed;
@@ -39,7 +39,7 @@ struct WarpUniforms {
     float driftX;
     float driftY;
     float kaleido;
-    float hueShift;
+    float hueCos;
     float plasma;
     float bass;
     float mid;
@@ -48,6 +48,8 @@ struct WarpUniforms {
     float texelY;
     int   mirror;
     float generative; // 0 off, 1 = Full Kaleidoscope field mixed over the feedback
+    float rotSin;
+    float hueSin;
 };
 
 // Full Kaleidoscope: a mandala that fills the frame. Four-way mirror always;
@@ -138,14 +140,14 @@ static float3 kaleidoField(float2 uv, float time, float bass, float mid, float t
     return col * (0.9 + bass * 0.45);
 }
 
-static float3 hueRotate(float3 c, float a) {
+// Rotates color c around the grey axis by the angle whose cosine and sine are ca and sa.
+static float3 hueRotate(float3 c, float ca, float sa) {
     const float3 k = float3(0.57735027);
-    float ca = cos(a);
-    return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
+    return c * ca + cross(k, c) * sa + k * dot(k, c) * (1.0 - ca);
 }
 
 fragment float4 fs_warp(FSOut in [[stage_in]],
-                        texture2d<float> prev [[texture(0)]],
+                        texture2d<half> prev [[texture(0)]],
                         constant WarpUniforms& u [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_zero);
 
@@ -167,9 +169,7 @@ fragment float4 fs_warp(FSOut in [[stage_in]],
         p = r * float2(cos(a), sin(a));
     }
 
-    float ca = cos(u.rotation);
-    float sa = sin(u.rotation);
-    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    p = float2(u.rotCos * p.x - u.rotSin * p.y, u.rotSin * p.x + u.rotCos * p.y);
     p /= u.zoom;
 
     float t = u.time * u.warpSpeed;
@@ -180,14 +180,17 @@ fragment float4 fs_warp(FSOut in [[stage_in]],
     p.x /= u.aspect;
     float2 uv = p + 0.5;
 
+    // The feedback texture is 16-bit float, so it is sampled and blurred in half precision.
+    // Coordinates stay 32-bit, and the hue rotation and decay, which repeat every frame, stay
+    // 32-bit so long trails fade exactly as before.
     float2 tx = float2(u.texelX, u.texelY);
-    float3 c = prev.sample(s, uv).rgb * 0.6
-             + (prev.sample(s, uv + float2(tx.x, 0.0)).rgb
-              + prev.sample(s, uv - float2(tx.x, 0.0)).rgb
-              + prev.sample(s, uv + float2(0.0, tx.y)).rgb
-              + prev.sample(s, uv - float2(0.0, tx.y)).rgb) * 0.1;
+    half3 blur = prev.sample(s, uv).rgb * 0.6h
+               + (prev.sample(s, uv + float2(tx.x, 0.0)).rgb
+                + prev.sample(s, uv - float2(tx.x, 0.0)).rgb
+                + prev.sample(s, uv + float2(0.0, tx.y)).rgb
+                + prev.sample(s, uv - float2(0.0, tx.y)).rgb) * 0.1h;
 
-    c = hueRotate(c, u.hueShift) * u.decay;
+    float3 c = hueRotate(float3(blur), u.hueCos, u.hueSin) * u.decay;
 
     if (u.plasma > 0.0) {
         float2 q = (in.uv - 0.5) * float2(u.aspect, 1.0) * 3.0;
@@ -391,16 +394,19 @@ struct PresentUniforms {
     float pad;
 };
 
-fragment float4 fs_present(FSOut in [[stage_in]],
-                           texture2d<float> tex [[texture(0)]],
-                           constant PresentUniforms& u [[buffer(0)]]) {
+// Color math in half precision: the source is a 16-bit texture and the screen is 8-bit.
+fragment half4 fs_present(FSOut in [[stage_in]],
+                          texture2d<half> tex [[texture(0)]],
+                          constant PresentUniforms& u [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_edge);
-    float3 c = tex.sample(s, in.uv).rgb * u.brightness;
+    // The clamp keeps a very bright pixel from overflowing half; anything above about 1.4
+    // already ends up pure white after the tone curve, so the picture is unchanged.
+    half3 c = min(tex.sample(s, in.uv).rgb * half(u.brightness), half3(4096.0h));
     float2 p = in.uv - 0.5;
-    c *= 1.0 - u.vignette * dot(p, p) * 2.0;
-    c += u.flash * 0.18;
-    c = c / (1.0 + c * 0.25);
-    return float4(saturate(c), 1.0);
+    c *= half(1.0 - u.vignette * dot(p, p) * 2.0);
+    c += half(u.flash * 0.18);
+    c = c / (1.0h + c * 0.25h);
+    return half4(saturate(c), 1.0h);
 }
 
 // ---------------------------------------------------------------- logo

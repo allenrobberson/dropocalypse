@@ -17,6 +17,7 @@ final class Spectrum {
     private var imag = [Float](repeating: 0, count: fftSize / 2)
     private var magnitudes = [Float](repeating: 0, count: fftSize / 2)
     private var bandPeaks = [Float](repeating: 1e-4, count: bandCount)
+    private var bandMax = [Float](repeating: 0, count: bandCount) // this frame's loudest bin per band
     private var bandEdges: [Int] = []
     private var wavePeak: Float = 0.05
 
@@ -45,12 +46,18 @@ final class Spectrum {
         samples.withUnsafeMutableBufferPointer { analysis.copyRecentSamples(into: $0.baseAddress!, count: Self.fftSize) }
 
         // Waveform: newest 512 samples, auto-scaled.
-        var peak: Float = 0
         let offset = Self.fftSize - Self.waveCount
-        for i in 0..<Self.waveCount { peak = max(peak, abs(samples[offset + i])) }
-        wavePeak = max(peak, wavePeak * 0.995, 0.01)
-        let inv = 1 / wavePeak
-        for i in 0..<Self.waveCount { wave[i] = samples[offset + i] * inv }
+        let count = vDSP_Length(Self.waveCount)
+        samples.withUnsafeBufferPointer { buf in
+            let src = buf.baseAddress! + offset
+            var peak: Float = 0
+            vDSP_maxmgv(src, 1, &peak, count)
+            wavePeak = max(peak, wavePeak * 0.995, 0.01)
+            var inv = 1 / wavePeak
+            wave.withUnsafeMutableBufferPointer { dst in
+                vDSP_vsmul(src, 1, &inv, dst.baseAddress!, 1, count)
+            }
+        }
 
         // FFT magnitudes.
         vDSP_vmul(samples, 1, window, 1, &windowed, 1, vDSP_Length(Self.fftSize))
@@ -66,16 +73,20 @@ final class Spectrum {
         }
 
         // Log-spaced bands with per-band auto gain, instant attack, smooth release.
+        // One pass over the bins: each band's loudest bin, and the loudest overall.
         var frameMax: Float = 0
-        for b in 0..<Self.bandCount {
-            let a = bandEdges[b], e = max(bandEdges[b + 1], a + 1)
-            for k in a..<e { frameMax = max(frameMax, magnitudes[k]) }
+        magnitudes.withUnsafeBufferPointer { mag in
+            for b in 0..<Self.bandCount {
+                let a = bandEdges[b], e = max(bandEdges[b + 1], a + 1)
+                var m: Float = 0
+                vDSP_maxv(mag.baseAddress! + a, 1, &m, vDSP_Length(e - a))
+                bandMax[b] = max(m, 0)
+                frameMax = max(frameMax, bandMax[b])
+            }
         }
         overallPeak = max(frameMax, overallPeak * 0.998, 1e-3)
         for b in 0..<Self.bandCount {
-            let a = bandEdges[b], e = max(bandEdges[b + 1], a + 1)
-            var sum: Float = 0
-            for k in a..<e { sum = max(sum, magnitudes[k]) }
+            let sum = bandMax[b]
             bandPeaks[b] = max(sum, bandPeaks[b] * 0.997, overallPeak * 0.2)
             let v = min(1, sum / bandPeaks[b])
             bands[b] = v > bands[b] ? v : bands[b] * 0.86 + v * 0.14
