@@ -92,21 +92,24 @@ inline std::string checksumFor(const std::string& file, const std::string& listi
 }
 
 /// Bit i set in `cycleSkip` means style i is left out of auto-cycle.
-inline bool cycleBitSkipped(std::uint32_t cycleSkip, int index) {
-    return (cycleSkip & (1u << index)) != 0;
+inline bool cycleBitSkipped(std::uint64_t cycleSkip, int index) {
+    return index >= 0 && index < 64 && ((cycleSkip >> index) & 1u) != 0;
 }
 
 /// Next style after `index`. If every style is skipped, still advances by one
-/// (auto-cycle keeps moving when nothing is checked).
-inline int nextCycleIndex(int index, int count, std::uint32_t cycleSkip) {
+/// (auto-cycle keeps moving when nothing is checked). Styles at `cycleable` and above (MilkDrop
+/// presets from the user's own folder, when they aren't included) are never chosen; -1 = all.
+inline int nextCycleIndex(int index, int count, std::uint64_t cycleSkip, int cycleable = -1) {
     if (count <= 0) return 0;
     const int n = count;
+    const int limit = (cycleable < 0 || cycleable > n) ? n : (cycleable == 0 ? n : cycleable);
     int requested = index % n;
     if (requested < 0) requested += n;
     int next = (requested + 1) % n;
+    if (next >= limit) next = 0;
     for (int k = 1; k <= n; ++k) {
         const int c = (requested + k) % n;
-        if (!cycleBitSkipped(cycleSkip, c)) {
+        if (c < limit && !cycleBitSkipped(cycleSkip, c)) {
             next = c;
             break;
         }

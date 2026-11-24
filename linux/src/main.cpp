@@ -10,6 +10,8 @@
 #include "whats_new_notes.h"
 #include "recorder.h"
 #include "renderer.h"
+#include "milkdrop.h"
+#include "milkdrop_bundled.h"
 
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>
@@ -37,6 +39,7 @@
 #include <cstring>
 #include <ctime>
 #include <functional>
+#include <filesystem>
 #include <map>
 #include <mutex>
 #include <string>
@@ -145,6 +148,7 @@ struct AppSettings {
     int recordQuality = 1;            // 0 = 720p, 1 = 1080p, 2 = 4K
     std::wstring recordFolder;        // empty = the Videos folder
     int frameCap = 0;                 // 0 = the display refresh, otherwise 30 or 60
+    std::wstring milkFolder;          // the user's own MilkDrop presets (searched with subfolders)
 };
 
 static std::wstring appDataDir() {
@@ -167,6 +171,8 @@ static std::string serialize(const AppSettings& s) {
                   r.brightness, s.sensitivity, s.beatThreshold);
     std::string out = buf;
     out += "cycleSkip=" + std::to_string(r.cycleSkip) + "\n";
+    out += std::string("cycleUserPresets=") + (r.cycleUserPresets ? "1" : "0") + "\n";
+    out += "milkFolder=" + narrow(s.milkFolder) + "\n";
     out += "audioSource=" + s.audioSource + "\n";
     out += std::string("checkForUpdates=") + (s.checkForUpdates ? "1" : "0") + "\n";
     out += "lastUpdateCheck=" + std::to_string(s.lastUpdateCheck) + "\n";
@@ -209,7 +215,9 @@ static bool loadSettings(const std::wstring& path, AppSettings& s) {
     RenderSettings& r = s.r;
     if (kv.count("sceneIndex")) r.sceneIndex = std::max(0, std::atoi(kv["sceneIndex"].c_str()));
     flag("autoCycle", r.autoCycle);
-    if (kv.count("cycleSkip")) r.cycleSkip = (uint32_t)std::strtoul(kv["cycleSkip"].c_str(), nullptr, 10);
+    if (kv.count("cycleSkip")) r.cycleSkip = (uint64_t)std::strtoull(kv["cycleSkip"].c_str(), nullptr, 10);
+    flag("cycleUserPresets", r.cycleUserPresets);
+    if (kv.count("milkFolder")) s.milkFolder = widen(kv["milkFolder"]);
     num("cycleSeconds", r.cycleSeconds, 5, 360);
     flag("showLogo", r.showLogo);
     num("logoSize", r.logoSize, 0.08f, 0.8f);
@@ -279,6 +287,9 @@ struct App {
     double lastPresent = 0;
 
     Renderer renderer;
+    MilkdropHost milkHost;            // plays MilkDrop presets (projectM)
+    MilkCatalog milkCatalog;          // bundled presets, then the user's folder
+    bool milkRescan = true;           // look through the presets folder again
     AudioCapture audio;
     Recorder recorder;
     std::mutex recordMutex;
@@ -829,7 +840,7 @@ struct DialogState {
     std::mutex m;
     std::atomic<bool> busy{false};
     bool ready = false;
-    int kind = 0;            // 1 = logo file, 2 = recording folder
+    int kind = 0;            // 1 = logo file, 2 = recording folder, 3 = MilkDrop presets folder
     std::string result;
 };
 static DialogState gDialog;
@@ -1149,6 +1160,35 @@ static void pollDialog() {
     }
     if (gDialog.kind == 1) loadLogoFrom(widen(gDialog.result));
     else if (gDialog.kind == 2) g.settings.recordFolder = widen(gDialog.result);
+    else if (gDialog.kind == 3) {
+        g.settings.milkFolder = widen(gDialog.result);
+        g.milkRescan = true;
+    }
+}
+
+// ---- MilkDrop presets: where they live on this computer.
+
+/// The bundled presets are unpacked here (see milkdrop_bundled.h).
+static std::filesystem::path milkBundledDir() { return std::filesystem::path(narrow(appDataDir())) / "milkdrop"; }
+static std::filesystem::path milkUserDir() {
+    return g.settings.milkFolder.empty() ? std::filesystem::path() : std::filesystem::path(narrow(g.settings.milkFolder));
+}
+/// The folder this program runs from (projectM's library sits beside it, or in ../lib).
+static std::filesystem::path milkLibraryDir() {
+    std::error_code ec;
+    std::filesystem::path exe = std::filesystem::read_symlink("/proc/self/exe", ec);
+    return ec ? std::filesystem::path(".") : exe.parent_path();
+}
+
+static void chooseMilkFolder() {
+    std::string start = g.settings.milkFolder.empty() ? homeDir() + "/" : narrow(g.settings.milkFolder) + "/";
+    runDialog(3, {"zenity", "--file-selection", "--directory",
+                  "--title=Choose the folder with your MilkDrop presets (.milk files)", "--filename=" + start},
+              {"kdialog", "--title", "Choose the folder with your MilkDrop presets", "--getexistingdirectory", start});
+}
+
+static void openMilkFolder() {
+    if (!g.settings.milkFolder.empty()) openWithDesktop(narrow(g.settings.milkFolder));
 }
 
 static std::string recordTimeLabel() {
@@ -1287,8 +1327,23 @@ static void showVisualsOn(const DisplayInfo& d) { enterFullscreen(d.handle); }
 static GLFWmonitor* visualsMonitor() { return monitorForWindow(g.window); }
 
 static void nextScene(int delta) {
-    int n = (int)builtInScenes().size();
+    int n = (int)allScenes().size();
     g.settings.r.sceneIndex = ((g.settings.r.sceneIndex + delta) % n + n) % n;
+}
+
+/// Builds the MilkDrop part of the style list again: bundled presets, then the user's folder.
+static void refreshMilkdrop() {
+    g.milkRescan = false;
+    if (g.milkHost.available()) {
+        extractBundledMilk(kBundledMilkFiles, milkBundledDir());
+        g.milkCatalog.rebuild(milkBundledDir() / "presets", milkUserDir());
+    } else {
+        g.milkCatalog = MilkCatalog();
+    }
+    setMilkdropScenes(g.milkCatalog.names());
+    RenderSettings& r = g.settings.r;
+    r.userPresetStart = g.milkCatalog.userCount() > 0 ? kBuiltInSceneCount + g.milkCatalog.bundledCount : -1;
+    g.renderer.setMilkdrop(&g.milkHost, &g.milkCatalog, milkUserDir());
 }
 
 static void startAudio() {
@@ -1571,31 +1626,117 @@ static void updatesPanelBody() {
     }
 }
 
-static void styleListBody(RenderSettings& r, int cur) {
-    const auto& scenes = builtInScenes();
-    int n = (int)scenes.size();
-    // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
-    ImGui::TextDisabled("Checked = included in auto-cycle");
-    if (ui3d::smallButton("All")) r.cycleSkip = 0;
-    ImGui::SameLine();
-    if (ui3d::smallButton("None")) r.cycleSkip = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1);
-    ImGui::Separator();
-    int checked = 0;
-    for (int i = 0; i < n; ++i) {
-        ImGui::PushID(i);
+static void styleRow(RenderSettings& r, int i, int cur) {
+    const auto& scenes = allScenes();
+    ImGui::PushID(i);
+    const bool user = r.userPresetStart >= 0 && i >= r.userPresetStart;
+    if (!user) {
         bool on = r.inCycle(i);
         if (ImGui::Checkbox("##cycle", &on)) r.setInCycle(i, on);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Include %s in auto-cycle", scenes[i].name);
         ImGui::SameLine();
-        char label[64];
-        std::snprintf(label, sizeof(label), "%d. %s", i + 1, scenes[i].name);
-        if (ImGui::Selectable(label, i == cur)) r.sceneIndex = i;
-        ImGui::PopID();
-        if (on) ++checked;
     }
+    char label[160];
+    if (user) std::snprintf(label, sizeof(label), "%s", scenes[i].name);
+    else std::snprintf(label, sizeof(label), "%d. %s", i + 1, scenes[i].name);
+    if (ImGui::Selectable(label, i == cur)) r.sceneIndex = i;
+    if (user && ImGui::IsItemHovered() && i - kBuiltInSceneCount < (int)g.milkCatalog.presets.size())
+        ImGui::SetTooltip("%s", pathUtf8(g.milkCatalog.presets[i - kBuiltInSceneCount].path).c_str());
+    ImGui::PopID();
+}
+
+/// The user's own MilkDrop presets: the folder, whether they join auto-cycle, and a searchable list.
+static void milkFolderBody(RenderSettings& r, int cur) {
+    ImGui::SeparatorText("Your MilkDrop presets");
+    if (!g.milkHost.available()) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextDisabled("%s", g.milkHost.error().empty() ? "The MilkDrop engine isn't available."
+                                                              : g.milkHost.error().c_str());
+        ImGui::PopTextWrapPos();
+        return;
+    }
+    ImGui::PushTextWrapPos(0);
+    if (g.settings.milkFolder.empty())
+        ImGui::TextDisabled("Pick a folder of .milk files (subfolders too), for example a MilkDrop or "
+                            "NestDrop \"Presets\" folder. A \"Textures\" folder next to it is used as well.");
+    else
+        ImGui::TextDisabled("%s", narrow(g.settings.milkFolder).c_str());
+    ImGui::PopTextWrapPos();
+    if (ui3d::button(g.settings.milkFolder.empty() ? "Choose folder..." : "Change folder...")) chooseMilkFolder();
+    if (!g.settings.milkFolder.empty()) {
+        ImGui::SameLine();
+        if (ui3d::button("Open")) openMilkFolder();
+        ImGui::SameLine();
+        if (ui3d::button("Rescan")) g.milkRescan = true;
+        ImGui::SameLine();
+        if (ui3d::button("Remove")) {
+            g.settings.milkFolder.clear();
+            g.milkRescan = true;
+        }
+    }
+    if (g.settings.milkFolder.empty()) return;
+
+    const int count = g.milkCatalog.userCount();
+    if (count == 0) {
+        ImGui::TextDisabled("No .milk files found in this folder.");
+        return;
+    }
+    ImGui::TextDisabled(g.milkCatalog.userTruncated ? "First %d presets" : "%d presets", count);
+    ui3d::toggle("Include these in auto-cycle", &r.cycleUserPresets);
+
+    static char filter[96] = "";
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputTextWithHint("##milkfilter", "Search presets", filter, sizeof(filter));
+    static std::vector<int> shown;
+    static std::string lastFilter = "\x01";
+    static size_t lastCount = (size_t)-1;
+    if (lastFilter != filter || lastCount != (size_t)count) {
+        lastFilter = filter;
+        lastCount = (size_t)count;
+        shown.clear();
+        const std::string needle = milkLower(filter);
+        for (int k = 0; k < count; ++k) {
+            const MilkPreset& p = g.milkCatalog.presets[g.milkCatalog.bundledCount + k];
+            if (needle.empty() || milkLower(p.name).find(needle) != std::string::npos)
+                shown.push_back(r.userPresetStart + k);
+        }
+    }
+    if (ImGui::BeginChild("##milklist", ImVec2(0, 220 * g.dpi), ImGuiChildFlags_Borders)) {
+        ImGuiListClipper clip;
+        clip.Begin((int)shown.size());
+        while (clip.Step())
+            for (int k = clip.DisplayStart; k < clip.DisplayEnd; ++k) styleRow(r, shown[k], cur);
+    }
+    ImGui::EndChild();
+    if (shown.empty()) ImGui::TextDisabled("No presets match.");
+}
+
+static void styleListBody(RenderSettings& r, int cur) {
+    const int n = (int)allScenes().size();
+    const int bundledEnd = kBuiltInSceneCount + g.milkCatalog.bundledCount;
+    const int fixed = std::min(n, 64); // styles with their own auto-cycle checkbox
+    // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
+    ImGui::TextDisabled("Checked = included in auto-cycle");
+    if (ui3d::smallButton("All")) r.cycleSkip = 0;
+    ImGui::SameLine();
+    if (ui3d::smallButton("None"))
+        r.cycleSkip = fixed >= 64 ? ~0ull : ((1ull << std::min(fixed, bundledEnd)) - 1);
     ImGui::Separator();
+    for (int i = 0; i < std::min(n, kBuiltInSceneCount); ++i) styleRow(r, i, cur);
+    if (bundledEnd > kBuiltInSceneCount) {
+        ImGui::SeparatorText("MilkDrop");
+        for (int i = kBuiltInSceneCount; i < bundledEnd && i < n; ++i) styleRow(r, i, cur);
+    }
+    milkFolderBody(r, cur);
+    ImGui::Separator();
+    int checked = 0, cycling = 0;
+    for (int i = 0; i < std::min(n, bundledEnd); ++i) {
+        ++cycling;
+        if (r.inCycle(i)) ++checked;
+    }
     if (checked == 0) ImGui::TextDisabled("Nothing checked: auto-cycle uses every style");
-    else ImGui::TextDisabled("Auto-cycle: %d of %d styles", checked, n);
+    else ImGui::TextDisabled("Auto-cycle: %d of %d styles%s", checked, cycling,
+                             (r.userPresetStart >= 0 && r.cycleUserPresets) ? ", plus your presets" : "");
 }
 
 /// Auto-cycle settings: how long each style stays, and which styles take part.
@@ -1650,7 +1791,7 @@ static void drawToolbar(float dt) {
                                                   ImGui::GetColorU32(ui3d::col::keyBase));
     }
 
-    const auto& scenes = builtInScenes();
+    const auto& scenes = allScenes();
     const int n = (int)scenes.size();
     const int cur = ((r.sceneIndex % n) + n) % n;
     const bool rec = g.recorder.isRecording();
@@ -1897,7 +2038,7 @@ static void drawControlsPanel() {
     // Style
     ImGui::SeparatorText("Style");
     {
-        const auto& scenes = builtInScenes();
+        const auto& scenes = allScenes();
         int n = (int)scenes.size();
         int cur = ((r.sceneIndex % n) + n) % n;
         float bw = ui3d::buttonHeight();
@@ -1905,8 +2046,11 @@ static void drawControlsPanel() {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - bw - ImGui::GetStyle().ItemSpacing.x);
         if (ui3d::beginCombo("##style2", scenes[cur].name, ImGuiComboFlags_HeightLargest)) {
-            for (int i = 0; i < n; ++i)
-                if (ImGui::Selectable(scenes[i].name, i == cur)) r.sceneIndex = i;
+            ImGuiListClipper clip; // the user's presets folder can hold thousands
+            clip.Begin(n);
+            while (clip.Step())
+                for (int i = clip.DisplayStart; i < clip.DisplayEnd; ++i)
+                    if (ImGui::Selectable(scenes[i].name, i == cur)) r.sceneIndex = i;
             ImGui::EndCombo();
         }
         ImGui::SameLine();
@@ -2275,6 +2419,10 @@ int main(int argc, char** argv) {
         showFatal(narrow(error));
         return 1;
     }
+    // MilkDrop presets: optional. Without projectM the styles just don't appear.
+    if (!g.milkHost.init(g.window, milkLibraryDir(), milkBundledDir() / "textures"))
+        std::fprintf(stderr, "Dropocalypse: MilkDrop presets unavailable: %s\n", g.milkHost.error().c_str());
+    refreshMilkdrop();
 
     IMGUI_CHECKVERSION();
     g.mainCtx = ImGui::CreateContext();
@@ -2354,6 +2502,7 @@ int main(int argc, char** argv) {
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
 
         // Visualizer.
+        if (g.milkRescan) refreshMilkdrop();
         g.renderer.render(0, g.width, g.height, g.audio.analysis, g.audio.sampleRate.load(), g.settings.r);
         if (g.recorder.isRecording()) {   // before the toolbar is drawn on top
             const ContentRect frame = fitContentRect((float)g.width, (float)g.height, g.settings.r.portrait);
@@ -2387,8 +2536,10 @@ int main(int argc, char** argv) {
         if (selfTest && ++frameCount == 180) {
             GLenum err = glGetError();
             if (!selfTestShot.empty()) savePpm(selfTestShot, g.width, g.height);
-            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d\n", frameCount, g.width,
-                        g.height, (unsigned)err, g.renderer.sceneName(), (int)g.settings.items.size());
+            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d, milkdrop %s (%d presets)\n",
+                        frameCount, g.width, g.height, (unsigned)err, g.renderer.sceneName(),
+                        (int)g.settings.items.size(), g.milkHost.available() ? "on" : "off",
+                        (int)g.milkCatalog.presets.size());
             exitCode = err == GL_NO_ERROR ? 0 : 2;
             running = false;
         }

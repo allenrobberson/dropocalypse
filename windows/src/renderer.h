@@ -4,6 +4,7 @@
 #include "audio.h"
 #include "core_logic.h"
 #include "scenes.h"
+#include "milkdrop_host.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -22,9 +23,21 @@ struct RenderSettings {
     float cycleSeconds = 30;
     /// Bit i set = style i is left out of auto-cycle (unchecked in the style list).
     /// Stored as "skipped" so styles added in later versions are included automatically.
-    uint32_t cycleSkip = 0;
-    bool inCycle(int i) const { return !cycleBitSkipped(cycleSkip, i); }
-    void setInCycle(int i, bool on) { if (on) cycleSkip &= ~(1u << i); else cycleSkip |= (1u << i); }
+    /// Covers the built-in styles and the bundled MilkDrop presets (the first 64 styles).
+    uint64_t cycleSkip = 0;
+    /// MilkDrop presets from the user's own folder take part in auto-cycle only when this is on.
+    bool cycleUserPresets = false;
+    /// Set by the app: styles from here on are the user's presets (-1 = none).
+    int userPresetStart = -1;
+    bool inCycle(int i) const {
+        if (userPresetStart >= 0 && i >= userPresetStart) return cycleUserPresets;
+        return !cycleBitSkipped(cycleSkip, i);
+    }
+    void setInCycle(int i, bool on) {
+        if (i < 0 || i >= 64) return;
+        if (on) cycleSkip &= ~(1ull << i); else cycleSkip |= (1ull << i);
+    }
+    int cycleable() const { return (userPresetStart >= 0 && !cycleUserPresets) ? userPresetStart : -1; }
     bool showLogo = true;
     float logoSize = 0.32f;
     float pulse = 0.7f, squash = 0.6f, bounce = 0.5f, slide = 0.4f, wobble = 0.35f;
@@ -114,7 +127,19 @@ public:
     void render(ID3D11RenderTargetView* target, int width, int height, AudioAnalysis& analysis,
                 double sampleRate, RenderSettings& settings);
 
-    const char* sceneName() const { return builtInScenes()[activeScene_ < 0 ? 0 : activeScene_].name; }
+    const char* sceneName() const {
+        const auto& scenes = allScenes();
+        int i = activeScene_ < 0 ? 0 : activeScene_;
+        return i < (int)scenes.size() ? scenes[i].name : scenes[0].name;
+    }
+
+    /// MilkDrop presets: the host that plays them, the list they come from, and the user's folder.
+    void setMilkdrop(MilkdropHost* host, const MilkCatalog* catalog, const std::filesystem::path& userDir) {
+        milk_ = host;
+        catalog_ = catalog;
+        milkUserDir_ = userDir;
+        milkLoaded_ = -1;   // the list may have changed: load the current preset again
+    }
 
 private:
     template <typename T> using Com = Microsoft::WRL::ComPtr<T>;
@@ -157,6 +182,11 @@ private:
     LARGE_INTEGER qpcFreq_{}, qpcStart_{}, qpcLast_{};
     float flash_ = 0;
     int lastFlashBeat_ = 0;
+
+    MilkdropHost* milk_ = nullptr;
+    const MilkCatalog* catalog_ = nullptr;
+    std::filesystem::path milkUserDir_;
+    int milkLoaded_ = -1;
 
     VisualScene current_, previous_;
     float sceneBlend_ = 1;

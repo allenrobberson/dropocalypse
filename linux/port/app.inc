@@ -9,6 +9,9 @@ struct App {
     double lastPresent = 0;
 
     Renderer renderer;
+    MilkdropHost milkHost;            // plays MilkDrop presets (projectM)
+    MilkCatalog milkCatalog;          // bundled presets, then the user's folder
+    bool milkRescan = true;           // look through the presets folder again
     AudioCapture audio;
     Recorder recorder;
     std::mutex recordMutex;

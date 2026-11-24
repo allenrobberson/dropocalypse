@@ -19,6 +19,7 @@ FSOut vs_fullscreen(uint vid : SV_VertexID) {
 }
 
 Texture2D tex0 : register(t0);
+Texture2D tex1 : register(t1);  // final composite: the MilkDrop picture
 SamplerState sampZero : register(s0);  // linear, border = transparent black
 SamplerState sampClamp : register(s1); // linear, clamp
 SamplerState sampMip : register(s2);   // trilinear, border = transparent black
@@ -387,11 +388,11 @@ cbuffer PresentCB : register(b1) {
     float flash;
     float vignette;
     float brightness;
-    float presentPad;
+    float milkMix;   // 0 = our picture, 1 = the MilkDrop preset (tex1)
 };
 
 float4 fs_present(FSOut i) : SV_Target {
-    float3 c = tex0.Sample(sampClamp, i.uv).rgb * brightness;
+    float3 c = lerp(tex0.Sample(sampClamp, i.uv).rgb, tex1.Sample(sampClamp, i.uv).rgb, milkMix) * brightness;
     float2 p = i.uv - 0.5;
     c *= 1.0 - vignette * dot(p, p) * 2.0;
     c += flash * 0.18;

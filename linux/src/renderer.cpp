@@ -31,7 +31,7 @@ struct WarpCB {
 static_assert(sizeof(WarpCB) == 80, "WarpCB layout");
 
 struct PresentCB {
-    float flash, vignette, brightness, pad;
+    float flash, vignette, brightness, milkMix;
 };
 
 struct LogoCB {
@@ -1373,6 +1373,10 @@ bool Renderer::init(std::wstring& error) {
         GLint loc = glGetUniformLocation(progSignal_, "sigSamples");
         glUseProgram(progSignal_);
         if (loc >= 0) glUniform1i(loc, 1);   // texture unit 1
+        glUseProgram(progPresent_);
+        GLint t0 = glGetUniformLocation(progPresent_, "tex0"), t1 = glGetUniformLocation(progPresent_, "tex1");
+        if (t0 >= 0) glUniform1i(t0, 0);
+        if (t1 >= 0) glUniform1i(t1, 2);     // texture unit 2: the MilkDrop picture
     }
 
     bindBlock(progWarp_, "WarpCB", 0);
@@ -1408,7 +1412,7 @@ bool Renderer::init(std::wstring& error) {
     vertices_.resize(MaxVertices);
 
     start_ = last_ = std::chrono::steady_clock::now();
-    current_ = previous_ = builtInScenes()[0];
+    current_ = previous_ = allScenes()[0];
     setItems({});
     return glGetError() == GL_NO_ERROR || true;
 }
@@ -1508,11 +1512,12 @@ VisualScene Renderer::blendedScene() const {
 }
 
 void Renderer::updateScene(double now, float dt, RenderSettings& st) {
-    const auto& scenes = builtInScenes();
+    const auto& scenes = allScenes();
     const int n = (int)scenes.size();
     int requested = ((st.sceneIndex % n) + n) % n;
     if (st.autoCycle && now - sceneStart_ > std::max(5.0f, st.cycleSeconds)) {
-        requested = nextCycleIndex(requested, n, st.cycleSkip); // nothing checked -> use every style
+        // Nothing checked -> use every style.
+        requested = nextCycleIndex(requested, n, st.cycleSkip, st.cycleable());
         sceneStart_ = now;
         st.sceneIndex = requested;
     }
@@ -1670,6 +1675,30 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
     updateScene(now, dt, st);
     VisualScene scene = blendedScene();
 
+    // ---- MilkDrop: fade its picture in and out with the style blend; projectM itself blends
+    // from one preset to the next. Drawn in its own context, which leaves ours untouched.
+    float milkMix = 0;
+    GLuint milkTex = 0;
+    if (milk_ && milk_->available() && catalog_) {
+        const float k = sceneBlend_ * sceneBlend_ * (3 - 2 * sceneBlend_);
+        const float a = previous_.milk >= 0 ? 1.0f : 0.0f, b = current_.milk >= 0 ? 1.0f : 0.0f;
+        milkMix = a + (b - a) * k;
+        if (current_.milk >= 0 && current_.milk != milkLoaded_ && current_.milk < (int)catalog_->presets.size()) {
+            milk_->setPreset(catalog_->presets[current_.milk], milkUserDir_, milkLoaded_ >= 0);
+            milkLoaded_ = current_.milk;
+        }
+        if (milkMix > 0.001f) {
+            float samples[2048];
+            const int count = std::clamp((int)(sampleRate * std::max(dt, 0.0f)), 64, 2048);
+            analysis.copyRecent(samples, count);
+            const float scale = std::min(1.0f, 1280.0f / (float)std::max(fbWidth_, fbHeight_));
+            milkTex = milk_->render(std::max(16, (int)(fbWidth_ * scale)), std::max(16, (int)(fbHeight_ * scale)),
+                                    samples, count);
+        }
+        if (!milkTex) milkMix = 0;
+        if (current_.milk < 0 && milkMix <= 0) milkLoaded_ = -1;
+    }
+
     if (audio.beatCount != lastFlashBeat_) {
         if (lastFlashBeat_ != 0) flash_ = std::max(flash_, audio.beatStrength);
         lastFlashBeat_ = audio.beatCount;
@@ -1801,14 +1830,20 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
         glViewport(vx, vy, vw, vh);
     }
     setBlend(BlendNone);
-    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, 0};
+    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, milkMix};
     updateUBO(uboPresent_, pu);
     glUseProgram(progPresent_);
     glBindVertexArray(emptyVao_);
+    glActiveTexture(GL_TEXTURE2);   // the MilkDrop picture (or ours again, unused, when there is none)
+    glBindTexture(GL_TEXTURE_2D, milkTex ? milkTex : dst.tex);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, dst.tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   // clamp while presenting
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); // border again for the warp
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 

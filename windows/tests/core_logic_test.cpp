@@ -58,6 +58,14 @@ static void testSceneCycle() {
     CHECK(nextCycleIndex(0, 1, 0) == 0);
     CHECK(nextCycleIndex(5, 0, 0) == 0);
     CHECK(!cycleBitSkipped(0, 3));
+    // Styles past 32 (bundled MilkDrop presets) use the upper bits.
+    CHECK(cycleBitSkipped(1ull << 40, 40));
+    CHECK(!cycleBitSkipped(1ull << 40, 70));
+    CHECK(nextCycleIndex(39, 45, 1ull << 40) == 41);
+    // Presets from the user's folder (index 35 and up here) stay out of auto-cycle.
+    CHECK(nextCycleIndex(34, 40, 0, 35) == 0);
+    CHECK(nextCycleIndex(36, 40, 0, 35) == 0);
+    CHECK(nextCycleIndex(10, 40, 0, 35) == 11);
     CHECK(cycleBitSkipped(1u << 3, 3));
 }
 

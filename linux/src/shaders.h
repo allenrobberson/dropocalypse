@@ -377,14 +377,16 @@ static const char* kPresentFS = R"GLSL(#version 330 core
 in vec2 uv;
 out vec4 fragColor;
 uniform sampler2D tex0;          // clamp to edge
+uniform sampler2D tex1;          // the MilkDrop picture
 layout(std140) uniform PresentCB {
     float flash;
     float vignette;
     float brightness;
-    float presentPad;
+    float milkMix;   // 0 = our picture, 1 = the MilkDrop preset
 };
 void main() {
-    vec3 c = texture(tex0, vec2(uv.x, 1.0 - uv.y)).rgb * brightness;
+    vec2 st = vec2(uv.x, 1.0 - uv.y);
+    vec3 c = mix(texture(tex0, st).rgb, texture(tex1, st).rgb, milkMix) * brightness;
     vec2 p = uv - 0.5;
     c *= 1.0 - vignette * dot(p, p) * 2.0;
     c += flash * 0.18;

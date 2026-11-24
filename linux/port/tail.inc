@@ -316,6 +316,10 @@ int main(int argc, char** argv) {
         showFatal(narrow(error));
         return 1;
     }
+    // MilkDrop presets: optional. Without projectM the styles just don't appear.
+    if (!g.milkHost.init(g.window, milkLibraryDir(), milkBundledDir() / "textures"))
+        std::fprintf(stderr, "Dropocalypse: MilkDrop presets unavailable: %s\n", g.milkHost.error().c_str());
+    refreshMilkdrop();
 
     IMGUI_CHECKVERSION();
     g.mainCtx = ImGui::CreateContext();
@@ -395,6 +399,7 @@ int main(int argc, char** argv) {
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
 
         // Visualizer.
+        if (g.milkRescan) refreshMilkdrop();
         g.renderer.render(0, g.width, g.height, g.audio.analysis, g.audio.sampleRate.load(), g.settings.r);
         if (g.recorder.isRecording()) {   // before the toolbar is drawn on top
             const ContentRect frame = fitContentRect((float)g.width, (float)g.height, g.settings.r.portrait);
@@ -428,8 +433,10 @@ int main(int argc, char** argv) {
         if (selfTest && ++frameCount == 180) {
             GLenum err = glGetError();
             if (!selfTestShot.empty()) savePpm(selfTestShot, g.width, g.height);
-            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d\n", frameCount, g.width,
-                        g.height, (unsigned)err, g.renderer.sceneName(), (int)g.settings.items.size());
+            std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d, milkdrop %s (%d presets)\n",
+                        frameCount, g.width, g.height, (unsigned)err, g.renderer.sceneName(),
+                        (int)g.settings.items.size(), g.milkHost.available() ? "on" : "off",
+                        (int)g.milkCatalog.presets.size());
             exitCode = err == GL_NO_ERROR ? 0 : 2;
             running = false;
         }

@@ -40,6 +40,7 @@ add_executable(dropocalypse
     src/renderer.cpp
     src/logo.cpp
     src/recorder.cpp
+    src/milkdrop_host.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp

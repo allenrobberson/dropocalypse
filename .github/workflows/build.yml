@@ -38,6 +38,10 @@ jobs:
         run: |
           python3 scripts/make-whats-new.py --check
           if [ -n "$RELEASE_VERSION" ]; then python3 scripts/make-whats-new.py --has "${RELEASE_VERSION#v}"; fi
+          python3 scripts/make-milkdrop-bundle.py --check
+
+      - name: Build projectM (MilkDrop engine)
+        run: scripts/build-projectm.sh build/projectm
 
       - name: Test
         run: swift test
@@ -127,6 +131,10 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
+      - name: Build projectM (MilkDrop engine)
+        shell: pwsh
+        run: ./scripts/build-projectm.ps1 -Prefix build/projectm
+
       - name: Check HLSL shaders compile
         shell: pwsh
         run: |
@@ -156,6 +164,10 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Put the MilkDrop engine beside the exe
+        shell: pwsh
+        run: Copy-Item build/projectm/bin/*.dll build/Release/
+
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 
@@ -164,6 +176,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path package/Dropocalypse | Out-Null
           Copy-Item build/Release/Dropocalypse.exe package/Dropocalypse/
+          Copy-Item build/Release/*.dll package/Dropocalypse/
+          Copy-Item milkdrop/CREDITS.md package/Dropocalypse/MilkDrop-credits.txt
           Copy-Item windows/README.txt package/Dropocalypse/README.txt
           Copy-Item LICENSE package/Dropocalypse/LICENSE.txt
           $gv = (Get-Content docs/guide-version.txt -ErrorAction SilentlyContinue | Select-Object -First 1)
@@ -199,6 +213,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "configure failed" }
           cmake --build build-store --config Release --parallel
           if ($LASTEXITCODE -ne 0) { throw "build failed" }
+          Copy-Item build/projectm/bin/*.dll build-store/Release/
 
       - name: Package MSIX for the Microsoft Store
         shell: pwsh
@@ -254,6 +269,9 @@ jobs:
           sys.exit(0 if ok else 1)
           PY
 
+      - name: Build projectM (MilkDrop engine)
+        run: scripts/build-projectm.sh build/projectm
+
       - name: Configure
         run: |
           v="${RELEASE_VERSION#v}"
@@ -262,7 +280,10 @@ jobs:
           cmake -S linux -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr "-DAPP_VERSION=$v"
 
       - name: Build
-        run: cmake --build build-linux
+        run: |
+          cmake --build build-linux
+          # The MilkDrop engine sits beside the program (dropocalypse looks there first).
+          cp -P build/projectm/lib/libprojectM-4.so* build-linux/
 
       - name: Unit tests (shared update, auto-cycle and layout rules)
         run: ./build-linux/dropocalypse_tests
@@ -281,6 +302,14 @@ jobs:
             grep -q "items 3" items$frame.log || { echo "expected 3 items on screen"; exit 1; }
             convert items$frame.ppm -resize 50% selftest/items-$([ $frame = 1 ] && echo portrait || echo landscape).png
           done
+          # A bundled MilkDrop preset (style 27, Acid Mandala) through projectM.
+          rm -rf /tmp/dropocalypse-selftest && mkdir -p /tmp/dropocalypse-selftest/dropocalypse
+          printf 'sceneIndex=26\nautoCycle=0\n' > /tmp/dropocalypse-selftest/dropocalypse/settings.ini
+          xvfb-run -a -s "-screen 0 1280x720x24" ./build-linux/dropocalypse --self-test=milk.ppm | tee milk.log
+          grep -q "milkdrop on (9 presets)" milk.log || { echo "MilkDrop presets did not load"; exit 1; }
+          grep -q "style Acid Mandala" milk.log || { echo "expected the Acid Mandala style"; exit 1; }
+          convert milk.ppm -resize 50% selftest/milkdrop.png
+          convert milk.ppm -format "milkdrop frame mean brightness %[fx:mean]\n" info:
 
       - name: Upload self-test picture
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -297,11 +326,14 @@ jobs:
           mkdir -p dist
           export LDAI_OUTPUT="dist/Dropocalypse-$APP_VERSION-Linux-x86_64.AppImage"
           export APPIMAGE_EXTRACT_AND_RUN=1
+          mkdir -p AppDir/usr/lib && cp -P build/projectm/lib/libprojectM-4.so* AppDir/usr/lib/
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
             --desktop-file linux/dropocalypse.desktop --icon-file linux/dropocalypse.png --output appimage
           # Plain archive for people who prefer not to use AppImages.
           mkdir -p "pkg/Dropocalypse-$APP_VERSION-Linux"
           cp build-linux/dropocalypse linux/dropocalypse.desktop linux/dropocalypse.png LICENSE "pkg/Dropocalypse-$APP_VERSION-Linux/"
+          cp -P build/projectm/lib/libprojectM-4.so* "pkg/Dropocalypse-$APP_VERSION-Linux/"
+          cp milkdrop/CREDITS.md "pkg/Dropocalypse-$APP_VERSION-Linux/MilkDrop-credits.txt"
           cp linux/README.txt "pkg/Dropocalypse-$APP_VERSION-Linux/README.txt"
           cp docs/Dropocalypse-User-Guide.pdf "pkg/Dropocalypse-$APP_VERSION-Linux/Dropocalypse User Guide.pdf"
           tar -C pkg -czf "dist/Dropocalypse-$APP_VERSION-Linux-x86_64.tar.gz" "Dropocalypse-$APP_VERSION-Linux"

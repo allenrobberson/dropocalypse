@@ -7,7 +7,7 @@ struct DialogState {
     std::mutex m;
     std::atomic<bool> busy{false};
     bool ready = false;
-    int kind = 0;            // 1 = logo file, 2 = recording folder
+    int kind = 0;            // 1 = logo file, 2 = recording folder, 3 = MilkDrop presets folder
     std::string result;
 };
 static DialogState gDialog;

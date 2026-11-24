@@ -41,5 +41,34 @@ static void pollDialog() {
     }
     if (gDialog.kind == 1) loadLogoFrom(widen(gDialog.result));
     else if (gDialog.kind == 2) g.settings.recordFolder = widen(gDialog.result);
+    else if (gDialog.kind == 3) {
+        g.settings.milkFolder = widen(gDialog.result);
+        g.milkRescan = true;
+    }
+}
+
+// ---- MilkDrop presets: where they live on this computer.
+
+/// The bundled presets are unpacked here (see milkdrop_bundled.h).
+static std::filesystem::path milkBundledDir() { return std::filesystem::path(narrow(appDataDir())) / "milkdrop"; }
+static std::filesystem::path milkUserDir() {
+    return g.settings.milkFolder.empty() ? std::filesystem::path() : std::filesystem::path(narrow(g.settings.milkFolder));
+}
+/// The folder this program runs from (projectM's library sits beside it, or in ../lib).
+static std::filesystem::path milkLibraryDir() {
+    std::error_code ec;
+    std::filesystem::path exe = std::filesystem::read_symlink("/proc/self/exe", ec);
+    return ec ? std::filesystem::path(".") : exe.parent_path();
+}
+
+static void chooseMilkFolder() {
+    std::string start = g.settings.milkFolder.empty() ? homeDir() + "/" : narrow(g.settings.milkFolder) + "/";
+    runDialog(3, {"zenity", "--file-selection", "--directory",
+                  "--title=Choose the folder with your MilkDrop presets (.milk files)", "--filename=" + start},
+              {"kdialog", "--title", "Choose the folder with your MilkDrop presets", "--getexistingdirectory", start});
+}
+
+static void openMilkFolder() {
+    if (!g.settings.milkFolder.empty()) openWithDesktop(narrow(g.settings.milkFolder));
 }
 

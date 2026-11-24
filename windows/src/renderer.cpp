@@ -34,7 +34,7 @@ struct WarpCB {
 static_assert(sizeof(WarpCB) == 80, "WarpCB layout");
 
 struct PresentCB {
-    float flash, vignette, brightness, pad;
+    float flash, vignette, brightness, milkMix;
 };
 
 struct LogoCB {
@@ -1410,7 +1410,7 @@ bool Renderer::init(ID3D11Device* device, ID3D11DeviceContext* ctx, std::wstring
     QueryPerformanceCounter(&qpcStart_);
     qpcLast_ = qpcStart_;
 
-    current_ = previous_ = builtInScenes()[0];
+    current_ = previous_ = allScenes()[0];
     setItems({});
     return true;
 }
@@ -1508,11 +1508,12 @@ VisualScene Renderer::blendedScene() const {
 }
 
 void Renderer::updateScene(double now, float dt, RenderSettings& st) {
-    const auto& scenes = builtInScenes();
+    const auto& scenes = allScenes();
     const int n = (int)scenes.size();
     int requested = ((st.sceneIndex % n) + n) % n;
     if (st.autoCycle && now - sceneStart_ > std::max(5.0f, st.cycleSeconds)) {
-        requested = nextCycleIndex(requested, n, st.cycleSkip); // nothing checked -> use every style
+        // Nothing checked -> use every style.
+        requested = nextCycleIndex(requested, n, st.cycleSkip, st.cycleable());
         sceneStart_ = now;
         st.sceneIndex = requested;
     }
@@ -1674,6 +1675,30 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     updateScene(now, dt, st);
     VisualScene scene = blendedScene();
 
+    // ---- MilkDrop: fade its picture in and out with the style blend; projectM itself blends
+    // from one preset to the next.
+    float milkMix = 0;
+    ID3D11ShaderResourceView* milkSRV = nullptr;
+    if (milk_ && milk_->available() && catalog_) {
+        const float k = sceneBlend_ * sceneBlend_ * (3 - 2 * sceneBlend_);
+        const float a = previous_.milk >= 0 ? 1.0f : 0.0f, b = current_.milk >= 0 ? 1.0f : 0.0f;
+        milkMix = a + (b - a) * k;
+        if (current_.milk >= 0 && current_.milk != milkLoaded_ && current_.milk < (int)catalog_->presets.size()) {
+            milk_->setPreset(catalog_->presets[current_.milk], milkUserDir_, milkLoaded_ >= 0);
+            milkLoaded_ = current_.milk;
+        }
+        if (milkMix > 0.001f) {
+            float samples[2048];
+            const int count = std::clamp((int)(sampleRate * std::max(dt, 0.0f)), 64, 2048);
+            analysis.copyRecent(samples, count);
+            const float scale = std::min(1.0f, 1280.0f / (float)std::max(fbWidth_, fbHeight_));
+            milkSRV = milk_->render(std::max(16, (int)(fbWidth_ * scale)), std::max(16, (int)(fbHeight_ * scale)),
+                                    samples, count);
+        }
+        if (!milkSRV) milkMix = 0;
+        if (current_.milk < 0 && milkMix <= 0) milkLoaded_ = -1;
+    }
+
     if (audio.beatCount != lastFlashBeat_) {
         if (lastFlashBeat_ != 0) flash_ = std::max(flash_, audio.beatStrength);
         lastFlashBeat_ = audio.beatCount;
@@ -1818,7 +1843,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ctx_->RSSetViewports(1, &svp);
     ctx_->OMSetRenderTargets(1, &target, nullptr);
     ctx_->OMSetBlendState(blendNone_.Get(), nullptr, 0xffffffff);
-    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, 0};
+    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, milkMix};
     updateCB(ctx_, presentCB_.Get(), pu);
     ID3D11Buffer* cb1 = presentCB_.Get();
     ctx_->IASetInputLayout(nullptr);
@@ -1826,9 +1851,11 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ctx_->VSSetShader(vsFullscreen_.Get(), nullptr, 0);
     ctx_->PSSetShader(psPresent_.Get(), nullptr, 0);
     ctx_->PSSetConstantBuffers(1, 1, &cb1);
-    ID3D11ShaderResourceView* dstSRV = dst.srv.Get();
-    ctx_->PSSetShaderResources(0, 1, &dstSRV);
+    ID3D11ShaderResourceView* presentSRVs[2] = {dst.srv.Get(), milkSRV ? milkSRV : dst.srv.Get()};
+    ctx_->PSSetShaderResources(0, 2, presentSRVs);
     ctx_->Draw(3, 0);
+    ID3D11ShaderResourceView* nullPair[2] = {nullptr, nullptr};
+    ctx_->PSSetShaderResources(0, 2, nullPair);
 
     for (int i = 0; st.showLogo && i < items; ++i) {
         logoSRV = logoSRV_[i].Get();

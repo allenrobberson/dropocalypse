@@ -1,7 +1,11 @@
-// Dropocalypse for Windows - the 26 built-in styles (same values as the macOS Scenes.swift).
+// Dropocalypse for Windows - the 26 built-in styles (same values as the macOS Scenes.swift),
+// plus MilkDrop presets added at run time (see allScenes()).
 #pragma once
 
 #include <array>
+#include <deque>
+#include <string>
+#include <vector>
 
 enum class WaveStyle {
     Circle, Line, VerticalLine, Bars, RadialBars, SpiralDots, Lissajous, TwinRings,
@@ -12,7 +16,9 @@ enum class WaveStyle {
     MirrorEqualizer, LedMeter, RainbowPeaks,
     Tesseract,
     FullKaleidoscope,
-    MainStage
+    MainStage,
+    // A MilkDrop preset played by projectM (milkdrop.h); VisualScene::milk says which.
+    Milkdrop
 };
 
 struct VisualScene {
@@ -27,7 +33,12 @@ struct VisualScene {
     WaveStyle wave = WaveStyle::Circle;
     float centerRadius = 0.32f, waveScale = 1, thickness = 1;
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
+    /// For WaveStyle::Milkdrop: index into the MilkDrop preset list (bundled first, then the
+    /// user's folder). -1 for every built-in style.
+    int milk = -1;
 };
+
+constexpr int kBuiltInSceneCount = 26;
 
 inline const std::array<VisualScene, 26>& builtInScenes() {
     static const std::array<VisualScene, 26> scenes = [] {
@@ -164,3 +175,30 @@ inline const std::array<VisualScene, 26>& builtInScenes() {
     }();
     return scenes;
 }
+
+/// Every style: the 26 built-ins, then one per MilkDrop preset (setMilkdropScenes).
+inline std::vector<VisualScene>& sceneRegistry() {
+    static std::vector<VisualScene> list(builtInScenes().begin(), builtInScenes().end());
+    return list;
+}
+inline const std::vector<VisualScene>& allScenes() { return sceneRegistry(); }
+
+/// Replaces the MilkDrop styles with one per name (bundled presets first, then the user's folder).
+/// Names are kept for the life of the app, so a style's name pointer never dangles.
+inline void setMilkdropScenes(const std::vector<std::string>& names) {
+    static std::deque<std::string> nameStore;
+    auto& list = sceneRegistry();
+    list.assign(builtInScenes().begin(), builtInScenes().end());
+    for (size_t i = 0; i < names.size(); ++i) {
+        nameStore.push_back(names[i]);
+        VisualScene s;
+        s.name = nameStore.back().c_str();
+        s.wave = WaveStyle::Milkdrop;
+        s.milk = (int)i;
+        s.vignette = 0.15f;
+        // Our own feedback layer rests quietly underneath while a preset plays.
+        s.zoom = 1.0f; s.zoomBass = 0; s.warpAmount = 0; s.decay = 0.8f; s.hueShift = 0;
+        list.push_back(s);
+    }
+}
+

@@ -8,6 +8,8 @@
 #include "whats_new_notes.h"
 #include "recorder.h"
 #include "renderer.h"
+#include "milkdrop.h"
+#include "milkdrop_bundled.h"
 
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>
@@ -35,6 +37,7 @@
 #include <cstring>
 #include <ctime>
 #include <functional>
+#include <filesystem>
 #include <map>
 #include <mutex>
 #include <string>

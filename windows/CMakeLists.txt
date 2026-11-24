@@ -23,7 +23,10 @@ add_executable(Dropocalypse WIN32
     src/renderer.cpp
     src/logo.cpp
     src/recorder.cpp
+    src/milkdrop_host.cpp
     src/recorder.h
+    src/milkdrop.h
+    src/milkdrop_host.h
     src/audio.h
     src/renderer.h
     src/scenes.h
@@ -46,7 +49,7 @@ if(DROPOCALYPSE_STORE)
 endif()
 target_compile_options(Dropocalypse PRIVATE /W3 /permissive- /utf-8 /MP)
 target_link_libraries(Dropocalypse PRIVATE
-    d3d11 dxgi d3dcompiler ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt crypt32 wintrust mfplat mfreadwrite mfuuid)
+    d3d11 dxgi d3dcompiler opengl32 ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt crypt32 wintrust mfplat mfreadwrite mfuuid)
 
 include(CTest)
 if(BUILD_TESTING)
