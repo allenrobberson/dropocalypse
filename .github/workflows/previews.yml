@@ -1,0 +1,53 @@
+name: README previews
+
+# Records the style GIFs in docs/media/styles from the real Linux app, with a synthetic dance
+# loop playing, and commits them. Run it by hand after adding or changing a style.
+on:
+  workflow_dispatch:
+    inputs:
+      styles:
+        description: "Slugs to record (space separated). Empty = all listed in scripts/make-style-previews.sh."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  previews:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config ninja-build \
+            libgl-dev libpulse-dev libcurl4-openssl-dev \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev \
+            libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules \
+            xvfb mesa-utils libgl1-mesa-dri fonts-dejavu-core \
+            pulseaudio pulseaudio-utils ffmpeg gifsicle python3-numpy
+
+      - name: Build projectM and the app
+        run: |
+          scripts/build-projectm.sh build/projectm
+          cmake -S linux -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DAPP_VERSION=0.0.0-dev.previews
+          cmake --build build-linux --target dropocalypse
+          cp -P build/projectm/lib/libprojectM-4.so* build-linux/
+
+      - name: Record the GIFs
+        env:
+          STYLES: ${{ inputs.styles }}
+        run: scripts/make-style-previews.sh $STYLES
+
+      - name: Commit them
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/media/styles/*.gif
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "README previews: recorded from the Linux app"
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -262,9 +262,15 @@ int main(int argc, char** argv) {
     // CI runs this under a virtual display to make sure the OpenGL code works.
     bool selfTest = false, updated = false;
     std::string selfTestShot;
+    // --preview=DIR: like --self-test, but saves the visuals (no toolbar) of every frame after a
+    // warm-up into DIR as NNNN.ppm, with their times in DIR/times.txt. Used to make the README GIFs.
+    std::string previewDir;
+    double previewWarmup = 4.0, previewSeconds = 4.4;
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         if (a == "--updated") updated = true;
+        if (a.rfind("--preview=", 0) == 0) { previewDir = a.substr(10); selfTest = true; }
+        if (a.rfind("--preview-seconds=", 0) == 0) previewSeconds = std::max(0.5, std::atof(a.c_str() + 18));
         if (a.rfind("--self-test", 0) == 0) {
             selfTest = true;
             if (a.size() > 12 && a[11] == '=') selfTestShot = a.substr(12);
@@ -297,7 +303,8 @@ int main(int argc, char** argv) {
     glfwWindowHintString(GLFW_X11_CLASS_NAME, "dropocalypse");
     glfwWindowHintString(GLFW_X11_INSTANCE_NAME, "dropocalypse");
     glfwWindowHintString(GLFW_WAYLAND_APP_ID, "dropocalypse");
-    g.window = glfwCreateWindow(1280, 720, "Dropocalypse", nullptr, nullptr);
+    g.window = previewDir.empty() ? glfwCreateWindow(1280, 720, "Dropocalypse", nullptr, nullptr)
+                                  : glfwCreateWindow(720, 406, "Dropocalypse", nullptr, nullptr);
     if (!g.window) {
         showFatal("Couldn't start OpenGL 3.3. Please update your graphics driver.");
         glfwTerminate();
@@ -405,6 +412,26 @@ int main(int argc, char** argv) {
             const ContentRect frame = fitContentRect((float)g.width, (float)g.height, g.settings.r.portrait);
             g.recorder.captureFrame(g.width, g.height, frame.x, frame.y, frame.width, frame.height);
         }
+        if (!previewDir.empty()) {
+            static double previewStart = nowSeconds();
+            static int previewIndex = 0;
+            static FILE* times = nullptr;
+            const double t = nowSeconds() - previewStart - previewWarmup;
+            if (t >= 0 && t <= previewSeconds) {
+                if (!times) times = std::fopen((previewDir + "/times.txt").c_str(), "w");
+                char name[64];
+                std::snprintf(name, sizeof(name), "/%04d.ppm", previewIndex);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                savePpm(previewDir + name, g.width, g.height);
+                if (times) std::fprintf(times, "%d %.4f\n", previewIndex, t);
+                ++previewIndex;
+            } else if (t > previewSeconds) {
+                if (times) std::fclose(times);
+                std::printf("preview: %d frames, %dx%d, style %s, milkdrop %s\n", previewIndex, g.width, g.height,
+                            g.renderer.sceneName(), g.milkHost.available() ? "on" : "off");
+                running = false;
+            }
+        }
 
         // Toolbar auto-hide.
         if (cursorShouldHide()) io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -430,7 +457,7 @@ int main(int argc, char** argv) {
         glViewport(0, 0, g.width, g.height);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        if (selfTest && ++frameCount == 180) {
+        if (selfTest && previewDir.empty() && ++frameCount == 180) {
             GLenum err = glGetError();
             if (!selfTestShot.empty()) savePpm(selfTestShot, g.width, g.height);
             std::printf("self-test: %d frames, %dx%d, GL error 0x%x, style %s, items %d, milkdrop %s (%d presets)\n",
