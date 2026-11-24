@@ -178,8 +178,8 @@ public enum LayerMode: Int, CaseIterable {
     public var name: String { ["Off", "Wave", "Explode", "Bands", "Scatter"][rawValue] }
 }
 
-/// Offset of one layer from where it sits in the logo. x and y are in units of the logo's half
-/// height (y up), rotation in radians, scale 1 = unchanged.
+/// Offset of one layer from where it sits in the logo. x and y are in units of the logo's longer half
+/// side (y up), rotation in radians, scale 1 = unchanged.
 public struct LayerPose: Equatable {
     public var x: Float = 0, y: Float = 0, rotation: Float = 0, scale: Float = 1
     public init(x: Float = 0, y: Float = 0, rotation: Float = 0, scale: Float = 1) {
@@ -231,7 +231,7 @@ public struct LayerMotion {
                 switch mode {
                 case .wave:
                     s.kickAt = time + (nx[i] + 1) * 0.5 * 0.32
-                    s.kick = LayerPose(x: 0, y: 2.8 * amount * punch, rotation: 0, scale: 0.6 * amount * punch)
+                    s.kick = LayerPose(x: 0, y: 5.0 * amount * punch, rotation: 0, scale: 0.8 * amount * punch)
                     s.pending = true
                 case .explode:
                     if beatStrength >= 0.35 {
@@ -241,15 +241,15 @@ public struct LayerMotion {
                             let a = Self.hash01(UInt32(i) &* 7919 &+ 13) * 6.2832
                             dx = cos(a); dy = sin(a); len = 1
                         }
-                        s.vx += dx / len * 3.4 * amount * punch
-                        s.vy += dy / len * 3.4 * amount * punch
+                        s.vx += dx / len * 7.0 * amount * punch
+                        s.vy += dy / len * 7.0 * amount * punch
                         s.vr += (Self.hash01(UInt32(i) &* 31 &+ UInt32(truncatingIfNeeded: beatCount)) - 0.5) * 6 * amount
                         s.vs += 1.2 * amount * punch
                     }
                 case .scatter:
                     let seed = UInt32(truncatingIfNeeded: beatCount) &* 2_654_435_761 &+ UInt32(i) &* 40503
                     let a = Self.hash01(seed) * 6.2832
-                    let sp = 1.6 + 1.8 * Self.hash01(seed ^ 0x9e37_79b9)
+                    let sp = 3.2 + 3.2 * Self.hash01(seed ^ 0x9e37_79b9)
                     s.vx += cos(a) * sp * amount * punch
                     s.vy += sin(a) * sp * amount * punch
                     s.vr += (Self.hash01(seed &* 3 &+ 1) - 0.5) * 9 * amount
@@ -266,7 +266,7 @@ public struct LayerMotion {
             var ty: Float = 0, ts: Float = 1
             if mode == .bands {
                 let level = min([bass, mid, treble][i % 3], 1.4)
-                ty = level * 0.55 * amount
+                ty = level * 0.35 * amount
                 ts = 1 + level * 0.22 * amount
             }
             let k: Float = 170, c: Float = 13, kr: Float = 120, cr: Float = 11
@@ -292,8 +292,9 @@ public struct LayerQuad: Equatable {
 
     public init(itemCx: Float, itemCy: Float, itemHx: Float, itemHy: Float, itemRotation: Float,
                 u0: Float, v0: Float, u1: Float, v1: Float, pose p: LayerPose) {
-        let lx = ((u0 + u1) - 1) * itemHx + p.x * itemHy
-        let ly = (1 - (v0 + v1)) * itemHy + p.y * itemHy
+        let reach = max(itemHx, itemHy) // moves scale with the item's longer side
+        let lx = ((u0 + u1) - 1) * itemHx + p.x * reach
+        let ly = (1 - (v0 + v1)) * itemHy + p.y * reach
         let c = cos(itemRotation), s = sin(itemRotation)
         cx = itemCx + c * lx - s * ly
         cy = itemCy + s * lx + c * ly

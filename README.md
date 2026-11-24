@@ -59,10 +59,36 @@
   </tr>
   <tr>
     <td align="center"><a href="docs/media/styles/main-stage.gif"><img src="docs/media/styles/main-stage.gif" width="170" alt="Main Stage"></a><br><sub><b>Main Stage</b></sub></td>
+    <td align="center"><a href="docs/media/styles/monstercat-bars.gif"><img src="docs/media/styles/monstercat-bars.gif" width="170" alt="Monstercat Bars"></a><br><sub><b>Monstercat Bars</b></sub></td>
+    <td align="center"><a href="docs/media/styles/lo-fi-chill.gif"><img src="docs/media/styles/lo-fi-chill.gif" width="170" alt="Lo-fi Chill"></a><br><sub><b>Lo-fi Chill</b></sub></td>
+    <td align="center"><a href="docs/media/styles/glitch-vhs.gif"><img src="docs/media/styles/glitch-vhs.gif" width="170" alt="Glitch VHS"></a><br><sub><b>Glitch VHS</b></sub></td>
+    <td align="center"><a href="docs/media/styles/liquid-chrome.gif"><img src="docs/media/styles/liquid-chrome.gif" width="170" alt="Liquid Chrome"></a><br><sub><b>Liquid Chrome</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/kinetic-text.gif"><img src="docs/media/styles/kinetic-text.gif" width="170" alt="Kinetic Text"></a><br><sub><b>Kinetic Text</b></sub></td>
+    <td align="center"><a href="docs/media/styles/logo-layers.gif"><img src="docs/media/styles/logo-layers.gif" width="170" alt="Logo layers (Explode)"></a><br><sub><b>Logo layers (Explode)</b></sub></td>
   </tr>
 </table>
 
-<p align="center"><sub>26 of the 31 styles, plus 9 MilkDrop presets in the app. The first 25 were recorded in the Mac app with real music playing; Main Stage is rendered from the same drawing code. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
+<p align="center"><b>MilkDrop presets</b> (built in, played by projectM)</p>
+
+<table>
+  <tr>
+    <td align="center"><a href="docs/media/styles/milk-acid-mandala.gif"><img src="docs/media/styles/milk-acid-mandala.gif" width="170" alt="Acid Mandala"></a><br><sub><b>Acid Mandala</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-flame-face.gif"><img src="docs/media/styles/milk-flame-face.gif" width="170" alt="Flame Face"></a><br><sub><b>Flame Face</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-mind-blob.gif"><img src="docs/media/styles/milk-mind-blob.gif" width="170" alt="Mind Blob"></a><br><sub><b>Mind Blob</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-geiss-lightning.gif"><img src="docs/media/styles/milk-geiss-lightning.gif" width="170" alt="Geiss Lightning"></a><br><sub><b>Geiss Lightning</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-dark-galaxy.gif"><img src="docs/media/styles/milk-dark-galaxy.gif" width="170" alt="Dark Galaxy"></a><br><sub><b>Dark Galaxy</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/media/styles/milk-hypraxis.gif"><img src="docs/media/styles/milk-hypraxis.gif" width="170" alt="Hypraxis"></a><br><sub><b>Hypraxis</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-planar-travel.gif"><img src="docs/media/styles/milk-planar-travel.gif" width="170" alt="Planar Travel"></a><br><sub><b>Planar Travel</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-box-of-tricks.gif"><img src="docs/media/styles/milk-box-of-tricks.gif" width="170" alt="Box of Tricks"></a><br><sub><b>Box of Tricks</b></sub></td>
+    <td align="center"><a href="docs/media/styles/milk-lorenz-chaser.gif"><img src="docs/media/styles/milk-lorenz-chaser.gif" width="170" alt="Lorenz Chaser"></a><br><sub><b>Lorenz Chaser</b></sub></td>
+  </tr>
+</table>
+
+<p align="center"><sub>All 31 styles, logo layers and the 9 built-in MilkDrop presets. The first 25 were recorded in the Mac app with real music playing; the rest were recorded from the Linux app with a synthetic 126 BPM dance loop (<code>scripts/make-style-previews.sh</code>). The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 

@@ -211,8 +211,8 @@ inline const char* layerModeName(int m) {
     return names[(m >= 0 && m < kLayerModeCount) ? m : 0];
 }
 
-/// Offset of one layer from where it sits in the logo. x and y are in units of the logo's half
-/// height (y up), rotation in radians, scale 1 = unchanged.
+/// Offset of one layer from where it sits in the logo. x and y are in units of the logo's longer
+/// half side (y up), rotation in radians, scale 1 = unchanged.
 struct LayerPose {
     float x = 0, y = 0, rotation = 0, scale = 1;
 };
@@ -243,7 +243,7 @@ public:
                 switch (mode) {
                 case kLayersWave: // left to right, like a stadium wave
                     s.kickAt = time_ + (nx[i] + 1) * 0.5f * 0.32f;
-                    s.kick = {0, 2.8f * amount * punch, 0, 0.6f * amount * punch};
+                    s.kick = {0, 5.0f * amount * punch, 0, 0.8f * amount * punch};
                     s.pending = true;
                     break;
                 case kLayersExplode: { // outward from the centre on bigger hits
@@ -254,8 +254,8 @@ public:
                         const float a = hash01((uint32_t)i * 7919u + 13u) * 6.2832f;
                         dx = std::cos(a); dy = std::sin(a); len = 1;
                     }
-                    s.vx += dx / len * 3.4f * amount * punch;
-                    s.vy += dy / len * 3.4f * amount * punch;
+                    s.vx += dx / len * 7.0f * amount * punch;
+                    s.vy += dy / len * 7.0f * amount * punch;
                     s.vr += (hash01((uint32_t)i * 31u + (uint32_t)beatCount) - 0.5f) * 6 * amount;
                     s.vs += 1.2f * amount * punch;
                     break;
@@ -263,7 +263,7 @@ public:
                 case kLayersScatter: { // every layer its own direction and spin
                     const uint32_t seed = (uint32_t)beatCount * 2654435761u + (uint32_t)i * 40503u;
                     const float a = hash01(seed) * 6.2832f;
-                    const float sp = 1.6f + 1.8f * hash01(seed ^ 0x9e3779b9u);
+                    const float sp = 3.2f + 3.2f * hash01(seed ^ 0x9e3779b9u);
                     s.vx += std::cos(a) * sp * amount * punch;
                     s.vy += std::sin(a) * sp * amount * punch;
                     s.vr += (hash01(seed * 3u + 1u) - 0.5f) * 9 * amount;
@@ -282,7 +282,7 @@ public:
             if (mode == kLayersBands) { // each layer rides its own part of the music
                 const float levels[3] = {bass, mid, treble};
                 const float level = std::min(levels[i % 3], 1.4f);
-                ty = level * 0.55f * amount;
+                ty = level * 0.35f * amount;
                 ts = 1 + level * 0.22f * amount;
             }
             // Damped springs back to the resting place (or the band's target).
@@ -324,8 +324,9 @@ struct LayerQuad {
 };
 inline LayerQuad layerQuad(float itemCx, float itemCy, float itemHx, float itemHy, float itemRotation, float u0,
                            float v0, float u1, float v1, const LayerPose& p) {
-    const float lx = ((u0 + u1) - 1) * itemHx + p.x * itemHy;  // layer centre in the item's frame
-    const float ly = (1 - (v0 + v1)) * itemHy + p.y * itemHy;
+    const float reach = std::max(itemHx, itemHy);              // moves scale with the item's longer side
+    const float lx = ((u0 + u1) - 1) * itemHx + p.x * reach;   // layer centre in the item's frame
+    const float ly = (1 - (v0 + v1)) * itemHy + p.y * reach;
     const float c = std::cos(itemRotation), s = std::sin(itemRotation);
     LayerQuad q;
     q.cx = itemCx + c * lx - s * ly;
