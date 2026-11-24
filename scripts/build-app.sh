@@ -69,6 +69,26 @@ if [ -f "Resources/AppIcon.icns" ]; then
   cp "Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 fi
 
+# MilkDrop presets: the bundled presets and textures, and the projectM engine (LGPL, built by
+# scripts/build-projectm.sh). Without the engine the app still runs; the MilkDrop styles just
+# don't appear.
+mkdir -p "$APP/Contents/Resources/MilkDrop"
+cp -R milkdrop/presets milkdrop/textures milkdrop/CREDITS.md "$APP/Contents/Resources/MilkDrop/"
+PROJECTM_LIB="${PROJECTM_LIB:-build/projectm/lib/libprojectM-4.dylib}"
+if [ -f "$PROJECTM_LIB" ]; then
+  mkdir -p "$APP/Contents/Frameworks"
+  cp -L "$PROJECTM_LIB" "$APP/Contents/Frameworks/libprojectM-4.dylib"
+  echo "==> Bundled the MilkDrop engine ($(lipo -archs "$APP/Contents/Frameworks/libprojectM-4.dylib"))"
+else
+  echo "==> No MilkDrop engine at $PROJECTM_LIB (run scripts/build-projectm.sh); building without it"
+fi
+sign_engine() {
+  # Nested code is signed first, with the same identity, so the hardened runtime loads it.
+  if [ -f "$APP/Contents/Frameworks/libprojectM-4.dylib" ]; then
+    codesign --force --options runtime --timestamp --sign "$1" "$APP/Contents/Frameworks/libprojectM-4.dylib"
+  fi
+}
+
 ENT_DIR="scripts/entitlements"
 
 if [ "$EDITION" = "appstore" ]; then
@@ -77,6 +97,7 @@ if [ "$EDITION" = "appstore" ]; then
   : "${PROVISION_PROFILE:?set PROVISION_PROFILE to the Mac App Store provisioning profile}"
   echo "==> Signing for the Mac App Store"
   cp "$PROVISION_PROFILE" "$APP/Contents/embedded.provisionprofile"
+  sign_engine "$SIGN_IDENTITY"
   codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
     --entitlements "$ENT_DIR/AppStore.entitlements" "$APP"
   codesign --verify --strict --verbose=2 "$APP"
@@ -91,6 +112,7 @@ fi
 
 if [ -n "$SIGN_IDENTITY" ]; then
   echo "==> Signing with $SIGN_IDENTITY (hardened runtime)"
+  sign_engine "$SIGN_IDENTITY"
   codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" \
     --entitlements "$ENT_DIR/DeveloperID.entitlements" "$APP"
 else

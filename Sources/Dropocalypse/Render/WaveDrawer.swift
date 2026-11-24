@@ -187,6 +187,7 @@ enum WaveDrawer {
         case .tesseract: fx.tesseract(frame, &g)
         case .fullKaleidoscope: fx.fullKaleidoscope(frame, &g)
         case .mainStage: fx.mainStage(frame, &g, &over)
+        case .milkdrop: break // drawn by projectM (Milkdrop.swift)
 
         case .circle:
             ring(wave: wave, stride: 2, radius: scene.centerRadius * s * (1 + 0.25 * bass), amplitude: 0.12 * s,

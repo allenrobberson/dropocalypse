@@ -1,33 +1,36 @@
-# Builds projectM (the MilkDrop engine, LGPL-2.1) as projectM-4.dll for the Windows app, with the
-# glew32.dll it needs. Dropocalypse loads it at run time, so the app itself builds without it.
+# Builds projectM (the MilkDrop engine, LGPL-2.1) as projectM-4.dll for the Windows app.
+# Dropocalypse loads it at run time, so the app itself builds without it.
 #
 #   ./scripts/build-projectm.ps1 [-Prefix build/projectm]
 param([string]$Prefix = "build/projectm")
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot "..")
-$tag = "v4.1.8"
+# A fixed commit of projectM's main branch (4.2 development, 2026-11-20): it can draw into our
+# own framebuffer (projectm_opengl_render_frame_fbo), which the 4.1 releases can't.
+$commit = "9e26f5b5bf89b015f197a16a61bcb21f4946d985"
 $src = "build/projectm-src"
-if (-not (Test-Path "$src/.git")) {
+$have = ""
+if (Test-Path "$src/.git") { $have = (git -C $src rev-parse HEAD 2>$null) }
+if ($have -ne $commit) {
     if (Test-Path $src) { Remove-Item -Recurse -Force $src }
-    git clone --quiet --depth 1 --branch $tag --recurse-submodules --shallow-submodules `
-        https://github.com/projectM-visualizer/projectm.git $src
-    if ($LASTEXITCODE -ne 0) { throw "clone failed" }
+    git init --quiet $src
+    git -C $src remote add origin https://github.com/projectM-visualizer/projectm.git
+    git -C $src fetch --quiet --depth 1 origin $commit
+    if ($LASTEXITCODE -ne 0) { throw "fetch failed" }
+    git -C $src checkout --quiet FETCH_HEAD
+    git -C $src submodule update --quiet --init --depth 1
+    if ($LASTEXITCODE -ne 0) { throw "submodules failed" }
 }
-$vcpkg = $env:VCPKG_INSTALLATION_ROOT
-if (-not $vcpkg) { throw "VCPKG_INSTALLATION_ROOT is not set" }
 New-Item -ItemType Directory -Force -Path $Prefix | Out-Null
 $prefixFull = (Resolve-Path $Prefix).Path
-# GLEW comes from vcpkg (projectM's manifest); GLM and the expression library from its submodules.
-cmake -S $src -B build/projectm-build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$vcpkg/scripts/buildsystems/vcpkg.cmake" `
-    -DVCPKG_TARGET_TRIPLET=x64-windows -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON `
-    -DBUILD_SHARED_LIBS=ON -DENABLE_PLAYLIST=OFF -DENABLE_SDL_UI=OFF -DBUILD_TESTING=OFF -DBUILD_DOCS=OFF `
-    -DENABLE_SYSTEM_GLM=OFF -DENABLE_SYSTEM_PROJECTM_EVAL=OFF "-DCMAKE_INSTALL_PREFIX=$prefixFull"
+# Static C runtime, like Dropocalypse.exe, so no Visual C++ Redistributable is needed.
+cmake -S $src -B build/projectm-build -A x64 -DBUILD_SHARED_LIBS=ON -DENABLE_PLAYLIST=OFF -DENABLE_SDL_UI=OFF `
+    -DBUILD_TESTING=OFF -DBUILD_DOCS=OFF -DENABLE_SYSTEM_GLM=OFF -DENABLE_SYSTEM_PROJECTM_EVAL=OFF `
+    -DENABLE_DEBUG_POSTFIX=OFF "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+    "-DCMAKE_INSTALL_PREFIX=$prefixFull"
 if ($LASTEXITCODE -ne 0) { throw "configure failed" }
 cmake --build build/projectm-build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 cmake --install build/projectm-build --config Release
 if ($LASTEXITCODE -ne 0) { throw "install failed" }
-$glew = Get-ChildItem build/projectm-build -Recurse -Filter "glew32.dll" | Select-Object -First 1
-if (-not $glew) { throw "glew32.dll not found" }
-Copy-Item $glew.FullName "$prefixFull/bin/" -Force
 Get-ChildItem "$prefixFull/bin"

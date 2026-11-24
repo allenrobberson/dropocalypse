@@ -52,6 +52,14 @@ final class CoreLogicTests: XCTestCase {
         XCTAssertEqual(Checksums.sha256(for: "only.txt", in: "deadbeef  only.txt\n"), "deadbeef")
     }
 
+    func testSceneCycleLeavesOutUserPresets() {
+        let names = (0..<40).map { "s\($0)" }
+        XCTAssertEqual(SceneCycle.nextIndex(after: 34, names: names, skipped: [], cycleable: 35), 0)
+        XCTAssertEqual(SceneCycle.nextIndex(after: 36, names: names, skipped: [], cycleable: 35), 0)
+        XCTAssertEqual(SceneCycle.nextIndex(after: 10, names: names, skipped: [], cycleable: 35), 11)
+        XCTAssertEqual(SceneCycle.nextIndex(after: 36, names: names, skipped: []), 37)
+    }
+
     func testSceneCycleSkipsUncheckedStyles() {
         let names = ["Classic Tunnel", "Spectrum Skyline", "Starburst", "Vortex"]
         XCTAssertEqual(SceneCycle.nextIndex(after: 0, names: names, skipped: []), 1)

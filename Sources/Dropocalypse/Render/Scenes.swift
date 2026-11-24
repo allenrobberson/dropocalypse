@@ -28,6 +28,7 @@ enum WaveStyle: Int, CaseIterable {
     case tesseract       // a 4D hypercube rotating through the fourth dimension
     case fullKaleidoscope // full-frame 4-way / 8-way mandala
     case mainStage       // arena floor: cathedral beam vaults, lasers, crowd
+    case milkdrop        // a MilkDrop preset played by projectM (Milkdrop.swift); `milk` says which
 }
 
 /// A built-in visual style. All motion is bass-reactive; these numbers set the character.
@@ -63,6 +64,27 @@ struct VisualScene {
     var hueSpeed: Float = 0.03      // palette drift per second
     var saturation: Float = 0.9
     var vignette: Float = 0.35
+    /// For `.milkdrop`: index into the MilkDrop preset list (bundled first, then the user's
+    /// folder). -1 for every built-in style.
+    var milk: Int = -1
+}
+
+extension VisualScene {
+    static let builtInCount = 26
+
+    /// Every style: the 26 built-ins, then one per MilkDrop preset. Main thread only.
+    private(set) static var all: [VisualScene] = builtIn
+
+    /// Replaces the MilkDrop styles with one per name (bundled presets first, then the user's folder).
+    static func setMilkdrop(names: [String]) {
+        all = builtIn + names.enumerated().map { i, name in
+            // Our own feedback layer rests quietly underneath while a preset plays.
+            var s = VisualScene(name: name, zoom: 1, zoomBass: 0, warpAmount: 0, decay: 0.8, hueShift: 0,
+                                wave: .milkdrop, vignette: 0.15)
+            s.milk = i
+            return s
+        }
+    }
 }
 
 extension VisualScene {

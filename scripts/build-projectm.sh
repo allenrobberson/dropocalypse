@@ -9,13 +9,18 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PREFIX="${1:-build/projectm}"
 PREFIX="$(mkdir -p "$PREFIX" && cd "$PREFIX" && pwd)"
-TAG="v4.1.8"
+# A fixed commit of projectM's main branch (4.2 development, 2026-11-20): it can draw into our
+# own framebuffer (projectm_opengl_render_frame_fbo), which the 4.1 releases can't.
+COMMIT="9e26f5b5bf89b015f197a16a61bcb21f4946d985"
 SRC="build/projectm-src"
 
-if [ ! -d "$SRC/.git" ]; then
+if [ "$(git -C "$SRC" rev-parse HEAD 2>/dev/null)" != "$COMMIT" ]; then
   rm -rf "$SRC"
-  git clone --quiet --depth 1 --branch "$TAG" --recurse-submodules --shallow-submodules \
-    https://github.com/projectM-visualizer/projectm.git "$SRC"
+  git init --quiet "$SRC"
+  git -C "$SRC" remote add origin https://github.com/projectM-visualizer/projectm.git
+  git -C "$SRC" fetch --quiet --depth 1 origin "$COMMIT"
+  git -C "$SRC" checkout --quiet FETCH_HEAD
+  git -C "$SRC" submodule update --quiet --init --depth 1
 fi
 
 EXTRA=()

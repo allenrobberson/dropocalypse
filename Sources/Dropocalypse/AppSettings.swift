@@ -16,6 +16,12 @@ final class AppSettings: ObservableObject {
     /// Names of styles left out of auto-cycle (unchecked in the style list). Stored as names, so
     /// styles added in later versions are included automatically.
     @AppStorage("cycleSkip") var cycleSkip: String = ""
+    /// MilkDrop presets from the user's own folder take part in auto-cycle only when this is on.
+    @AppStorage("cycleUserPresets") var cycleUserPresets: Bool = false
+    /// The folder of the user's own MilkDrop presets (a security-scoped bookmark).
+    @AppStorage("milkFolderBookmark") var milkFolderBookmark: Data = Data()
+    /// Set by the model: styles from here on are the user's presets (nil = none).
+    var userPresetStart: Int?
     /// Check GitHub for a newer version once a day and show "Update available" in the toolbar.
     @AppStorage("checkForUpdates") var checkForUpdates: Bool = true
     @AppStorage("recordQuality") var recordQuality: Int = 1          // 0 = 720p, 1 = 1080p, 2 = 4K
@@ -36,12 +42,15 @@ final class AppSettings: ObservableObject {
     }
 
     func setAllInCycle(_ on: Bool) {
-        cycleSkip = on ? "" : VisualScene.builtIn.map(\.name).joined(separator: "\n")
+        let fixed = VisualScene.all.prefix(userPresetStart ?? VisualScene.all.count)
+        cycleSkip = on ? "" : fixed.map(\.name).joined(separator: "\n")
     }
 
     /// The next checked style after `index`. If nothing is checked, cycles through all of them.
+    /// The user's own presets join in only when `cycleUserPresets` is on.
     func nextCycleIndex(after index: Int) -> Int {
-        SceneCycle.nextIndex(after: index, names: VisualScene.builtIn.map(\.name), skipped: skipped)
+        SceneCycle.nextIndex(after: index, names: VisualScene.all.map(\.name), skipped: skipped,
+                             cycleable: cycleUserPresets ? nil : userPresetStart)
     }
 
     // Logo

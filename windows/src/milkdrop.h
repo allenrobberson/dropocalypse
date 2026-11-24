@@ -58,7 +58,7 @@ struct ProjectMApi {
         if (loaded) return true;
         for (const auto& path : candidates) {
 #ifdef _WIN32
-            // Let the DLL find glew32.dll beside it.
+            // Any DLL it needs is looked for beside it.
             HMODULE h = LoadLibraryExW(path.wstring().c_str(), nullptr,
                                        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
             lib = (void*)h;

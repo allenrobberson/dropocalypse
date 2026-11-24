@@ -19,3 +19,4 @@ DerivedData/
 *.provisionprofile
 *.mobileprovision
 .cook/
+build/

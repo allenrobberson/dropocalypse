@@ -391,17 +391,24 @@ struct PresentUniforms {
     float flash;
     float vignette;
     float brightness;
-    float pad;
+    float milkMix;   // 0 = our picture, 1 = the MilkDrop preset (milk)
 };
 
 // Color math in half precision: the source is a 16-bit texture and the screen is 8-bit.
 fragment half4 fs_present(FSOut in [[stage_in]],
                           texture2d<half> tex [[texture(0)]],
+                          texture2d<half> milk [[texture(1)]],
                           constant PresentUniforms& u [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_edge);
+    half3 base = tex.sample(s, in.uv).rgb;
+    if (u.milkMix > 0.0) {
+        // projectM draws with OpenGL, whose rows run bottom to top.
+        half3 m = milk.sample(s, float2(in.uv.x, 1.0 - in.uv.y)).rgb;
+        base = mix(base, m, half(u.milkMix));
+    }
     // The clamp keeps a very bright pixel from overflowing half; anything above about 1.4
     // already ends up pure white after the tone curve, so the picture is unchanged.
-    half3 c = min(tex.sample(s, in.uv).rgb * half(u.brightness), half3(4096.0h));
+    half3 c = min(base * half(u.brightness), half3(4096.0h));
     float2 p = in.uv - 0.5;
     c *= half(1.0 - u.vignette * dot(p, p) * 2.0);
     c += half(u.flash * 0.18);

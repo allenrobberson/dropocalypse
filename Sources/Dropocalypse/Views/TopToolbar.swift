@@ -16,6 +16,7 @@ struct TopToolbar: View {
     @State var showAudio = true
     @State var showLook = false
     @State var showKeys = false
+    @State private var milkFilter = ""
     @State var showUpdates = false
 
     var body: some View {
@@ -395,11 +396,13 @@ struct TopToolbar: View {
     }
 
     private var styleList: some View {
-        let scenes = VisualScene.builtIn
+        let scenes = VisualScene.all
         let current = ((settings.sceneIndex % scenes.count) + scenes.count) % scenes.count
-        let checked = scenes.filter { settings.isInCycle($0.name) }.count
+        let bundledEnd = VisualScene.builtInCount + model.milkCatalog.bundledCount
+        let fixed = min(scenes.count, bundledEnd)
+        let checked = scenes.prefix(fixed).filter { settings.isInCycle($0.name) }.count
         return MenuPanel(title: "Styles", subtitle: "Click a name to show it. Checked styles are the ones auto-cycle rotates through.",
-                         width: 320) {
+                         width: 340) {
             HStack {
                 Toggle("Auto-cycle", isOn: $settings.autoCycle)
                 Spacer()
@@ -408,46 +411,123 @@ struct TopToolbar: View {
             }
             .font(.caption)
             ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(scenes.enumerated()), id: \.offset) { index, scene in
-                        HStack(spacing: 8) {
-                            Toggle("", isOn: Binding(
-                                get: { settings.isInCycle(scene.name) },
-                                set: { settings.setInCycle(scene.name, $0) }))
-                                .toggleStyle(.checkbox)
-                                .tint(Palette3D.pink)
-                                .labelsHidden()
-                                .help("Include \(scene.name) in auto-cycle")
-                            Button {
-                                settings.sceneIndex = index
-                            } label: {
-                                HStack {
-                                    Text("\(index + 1).").monospacedDigit().foregroundStyle(.secondary)
-                                        .frame(width: 24, alignment: .trailing)
-                                    Text(scene.name).fontWeight(index == current ? .bold : .regular)
-                                    Spacer()
-                                    if index == current {
-                                        Image(systemName: "play.fill").font(.caption2).foregroundStyle(Palette3D.pink)
-                                    }
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.vertical, 3)
-                        .padding(.horizontal, 6)
-                        .background(index == current ? Palette3D.pink.opacity(0.22) : Color.clear,
-                                    in: RoundedRectangle(cornerRadius: 6))
+                LazyVStack(alignment: .leading, spacing: 2) {
+                    ForEach(0..<min(scenes.count, VisualScene.builtInCount), id: \.self) { index in
+                        styleRow(scenes[index], index: index, current: current, checkbox: true)
                     }
+                    if bundledEnd > VisualScene.builtInCount {
+                        styleSectionHeader("MilkDrop")
+                        ForEach(VisualScene.builtInCount..<min(scenes.count, bundledEnd), id: \.self) { index in
+                            styleRow(scenes[index], index: index, current: current, checkbox: true)
+                        }
+                    }
+                    milkFolderSection(scenes: scenes, current: current, start: bundledEnd)
                 }
                 .padding(6)
             }
-            .frame(height: 420)
+            .frame(height: 460)
             .background(RoundedRectangle(cornerRadius: 9).fill(Palette3D.well))
             .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.black, lineWidth: 1))
             Text(checked == 0 ? "Nothing checked, so auto-cycle uses every style."
-                              : "Auto-cycle: \(checked) of \(scenes.count) styles")
+                              : "Auto-cycle: \(checked) of \(fixed) styles"
+                                + (settings.userPresetStart != nil && settings.cycleUserPresets ? ", plus your presets" : ""))
                 .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func styleSectionHeader(_ title: String) -> some View {
+        Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            .padding(.top, 10).padding(.bottom, 2).padding(.horizontal, 6)
+    }
+
+    private func styleRow(_ scene: VisualScene, index: Int, current: Int, checkbox: Bool) -> some View {
+        HStack(spacing: 8) {
+            if checkbox {
+                Toggle("", isOn: Binding(
+                    get: { settings.isInCycle(scene.name) },
+                    set: { settings.setInCycle(scene.name, $0) }))
+                    .toggleStyle(.checkbox)
+                    .tint(Palette3D.pink)
+                    .labelsHidden()
+                    .help("Include \(scene.name) in auto-cycle")
+            }
+            Button {
+                settings.sceneIndex = index
+            } label: {
+                HStack {
+                    if checkbox {
+                        Text("\(index + 1).").monospacedDigit().foregroundStyle(.secondary)
+                            .frame(width: 24, alignment: .trailing)
+                    }
+                    Text(scene.name).fontWeight(index == current ? .bold : .regular).lineLimit(1)
+                    Spacer()
+                    if index == current {
+                        Image(systemName: "play.fill").font(.caption2).foregroundStyle(Palette3D.pink)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 3)
+        .padding(.horizontal, 6)
+        .background(index == current ? Palette3D.pink.opacity(0.22) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    /// The user's own MilkDrop presets: the folder, whether they join auto-cycle, and a searchable list.
+    @ViewBuilder
+    private func milkFolderSection(scenes: [VisualScene], current: Int, start: Int) -> some View {
+        styleSectionHeader("Your MilkDrop presets")
+        if let error = model.milkEngineError {
+            Text(error).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                if let folder = model.milkFolder {
+                    Text(folder.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(2).truncationMode(.middle)
+                } else {
+                    Text("Pick a folder of .milk files (subfolders too), for example a MilkDrop or NestDrop \"Presets\" folder. A \"Textures\" folder next to it is used as well.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: 6) {
+                    Button(model.milkFolder == nil ? "Choose Folder…" : "Change…") { model.chooseMilkFolder() }
+                    if model.milkFolder != nil {
+                        Button("Open") { model.openMilkFolder() }
+                        Button("Rescan") { model.refreshMilkdrop() }
+                        Button("Remove") { model.removeMilkFolder() }
+                    }
+                }
+                .buttonStyle(RaisedKeyStyle(look: .normal, height: 26))
+                .font(.caption)
+                if model.milkFolder != nil {
+                    let count = model.milkCatalog.userCount
+                    if model.milkScanning {
+                        Text("Looking for presets…").font(.caption).foregroundStyle(.secondary)
+                    } else if count == 0 {
+                        Text("No .milk files found in this folder.").font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        Toggle("Include these \(count) presets in auto-cycle\(model.milkCatalog.userTruncated ? " (first \(count))" : "")",
+                               isOn: $settings.cycleUserPresets)
+                            .toggleStyle(.checkbox).font(.caption)
+                        TextField("Search presets", text: $milkFilter)
+                            .textFieldStyle(.roundedBorder).font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 6)
+            if model.milkFolder != nil, !model.milkScanning, start < scenes.count {
+                let needle = milkFilter.trimmingCharacters(in: .whitespaces).lowercased()
+                let shown = (start..<scenes.count).filter { needle.isEmpty || scenes[$0].name.lowercased().contains(needle) }
+                ForEach(shown, id: \.self) { index in
+                    styleRow(scenes[index], index: index, current: current, checkbox: false)
+                        .help(index - VisualScene.builtInCount < model.milkCatalog.presets.count
+                              ? model.milkCatalog.presets[index - VisualScene.builtInCount].url.path : "")
+                }
+                if shown.isEmpty {
+                    Text("No presets match.").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+                }
+            }
         }
     }
 

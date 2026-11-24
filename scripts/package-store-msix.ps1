@@ -27,7 +27,7 @@ $disp = if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $env:STORE_PUBLISHER_DISPLAY_NA
 
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
 Copy-Item -LiteralPath $ExePath -Destination (Join-Path $Stage "Dropocalypse.exe")
-# The MilkDrop engine (projectM-4.dll and glew32.dll) sits beside the exe.
+# The MilkDrop engine (projectM-4.dll) sits beside the exe.
 Get-ChildItem -LiteralPath (Split-Path -Parent $ExePath) -Filter *.dll | Copy-Item -Destination $Stage
 Copy-Item -Recurse -Force windows/store/Assets (Join-Path $Stage "Assets")
 Copy-Item LICENSE (Join-Path $Stage "LICENSE.txt")

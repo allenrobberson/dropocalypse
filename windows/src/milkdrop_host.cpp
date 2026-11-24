@@ -139,13 +139,7 @@ bool MilkdropHost::init(ID3D11Device* device, ID3D11DeviceContext* ctx, const st
         release();
         return false;
     }
-    // projectM reaches OpenGL through GLEW, which has to be set up in this context first.
-    if (HMODULE glew = GetModuleHandleW(L"glew32.dll")) {
-        if (auto* experimental = reinterpret_cast<unsigned char*>(GetProcAddress(glew, "glewExperimental")))
-            *experimental = 1;
-        using GlewInit = unsigned(__stdcall*)();
-        if (auto init = reinterpret_cast<GlewInit>(GetProcAddress(glew, "glewInit"))) init();
-    }
+    // projectM finds the OpenGL functions it needs in the context that is current now.
     while (glGetError() != GL_NO_ERROR) {
     }
 

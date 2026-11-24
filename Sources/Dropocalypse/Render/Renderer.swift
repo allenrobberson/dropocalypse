@@ -19,7 +19,7 @@ private struct WarpUniforms {
 }
 
 private struct PresentUniforms {
-    var flash: Float = 0, vignette: Float = 0.3, brightness: Float = 1, pad: Float = 0
+    var flash: Float = 0, vignette: Float = 0.3, brightness: Float = 1, milkMix: Float = 0
 }
 
 private struct LogoUniforms {
@@ -83,13 +83,19 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var lastFlashBeat = 0
 
     // VisualScene blending: crossfade warp/draw parameters when the scene changes.
-    private var currentScene: VisualScene = VisualScene.builtIn[0]
-    private var previousScene: VisualScene = VisualScene.builtIn[0]
+    private var currentScene: VisualScene = VisualScene.all[0]
+    private var previousScene: VisualScene = VisualScene.all[0]
     private var sceneBlend: Float = 1
     private var activeSceneIndex = -1
     private var sceneStartTime = CACurrentMediaTime()
 
     private var shaderError: String?
+
+    // MilkDrop presets (Milkdrop.swift): the engine, and which preset it has loaded.
+    private lazy var milk = MilkdropHost(device: device)
+    private var milkLoaded = -1
+    private var milkGeneration = -1
+    private var milkSamples = [Float](repeating: 0, count: 2048)
 
     init?(view: MTKView, capture: AudioCapture, settings: AppSettings, model: VisualizerModel) {
         guard let device = view.device ?? MTLCreateSystemDefaultDevice(),
@@ -288,6 +294,39 @@ final class Renderer: NSObject, MTKViewDelegate {
         updateScene(now: now, dt: dt, audio: audio)
         let scene = blendedScene()
 
+        // ---- MilkDrop: fade its picture in and out with the style blend; projectM itself blends
+        // from one preset to the next.
+        var milkMix: Float = 0
+        var milkTexture: MTLTexture?
+        if model.milkCatalog.presets.count > 0 || currentScene.milk >= 0 {
+            if milkGeneration != model.milkGeneration {
+                milkGeneration = model.milkGeneration
+                milkLoaded = -1 // the list changed: load the current preset again
+            }
+            let k = sceneBlend * sceneBlend * (3 - 2 * sceneBlend)
+            let a: Float = previousScene.milk >= 0 ? 1 : 0, b: Float = currentScene.milk >= 0 ? 1 : 0
+            milkMix = a + (b - a) * k
+            let catalog = model.milkCatalog
+            if milk.available, currentScene.milk >= 0, currentScene.milk != milkLoaded,
+               currentScene.milk < catalog.presets.count {
+                milk.setPreset(catalog.presets[currentScene.milk], userFolder: model.milkFolder, smooth: milkLoaded >= 0)
+                milkLoaded = currentScene.milk
+            }
+            if milk.available, milkMix > 0.001, let fb = feedback.first {
+                let count = max(64, min(2048, Int(Double(capture.sampleRate) * Double(max(dt, 0)))))
+                milkSamples.withUnsafeMutableBufferPointer { buf in
+                    analysis.copyRecentSamples(into: buf.baseAddress!, count: count)
+                }
+                let scale = min(1, 1280 / Float(max(fb.width, fb.height)))
+                milkTexture = milkSamples.withUnsafeBufferPointer { buf in
+                    milk.render(width: max(16, Int(Float(fb.width) * scale)), height: max(16, Int(Float(fb.height) * scale)),
+                                samples: buf.baseAddress!, count: count)
+                }
+            }
+            if milkTexture == nil { milkMix = 0 }
+            if currentScene.milk < 0, milkMix <= 0 { milkLoaded = -1 }
+        }
+
         // Beat flash.
         if audio.beatCount != lastFlashBeat {
             if lastFlashBeat != 0 { flash = max(flash, audio.beatStrength) }
@@ -424,9 +463,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         func composite(_ enc: MTLRenderCommandEncoder) {
             var pu = PresentUniforms(flash: flash * Float(settings.beatFlash),
                                      vignette: scene.vignette,
-                                     brightness: Float(settings.brightness), pad: 0)
+                                     brightness: Float(settings.brightness), milkMix: milkMix)
             enc.setRenderPipelineState(presentPipeline)
             enc.setFragmentTexture(dst, index: 0)
+            enc.setFragmentTexture(milkTexture ?? dst, index: 1)
             enc.setFragmentBytes(&pu, length: MemoryLayout<PresentUniforms>.stride, index: 0)
             enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
 
@@ -628,7 +668,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     // MARK: Scenes
 
     private func updateScene(now: CFTimeInterval, dt: Float, audio: AudioAnalysis.Snapshot) {
-        let scenes = VisualScene.builtIn
+        let scenes = VisualScene.all
         var requested = ((settings.sceneIndex % scenes.count) + scenes.count) % scenes.count
 
         if settings.autoCycle, now - sceneStartTime > max(5, settings.cycleSeconds) {

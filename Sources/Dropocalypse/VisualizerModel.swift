@@ -37,6 +37,17 @@ final class VisualizerModel: NSObject, ObservableObject {
     static let hideDelay: TimeInterval = 2.5
     static let revealZone: CGFloat = 90          // points from the top edge that reveal the bar
     @Published var currentSceneName = VisualScene.builtIn[0].name
+
+    // MilkDrop presets (Milkdrop.swift): bundled ones, then the user's folder.
+    @Published private(set) var milkCatalog = MilkCatalog()
+    /// Changes whenever the list is rebuilt, so the renderer loads the current preset again.
+    @Published private(set) var milkGeneration = 0
+    @Published private(set) var milkFolder: URL?
+    @Published private(set) var milkScanning = false
+    private var milkFolderAccess: URL?
+    /// Nil when presets can be played; otherwise why not.
+    let milkEngineError: String? = MilkdropHost.engineAvailable ? nil
+        : "The MilkDrop engine (projectM) isn't included in this build."
     @Published var errorMessage: String?
     /// Logos and text items, left to right (top to bottom in portrait). Up to OverlayLayout.maxItems.
     @Published private(set) var items: [OverlayItem] = []
@@ -65,6 +76,7 @@ final class VisualizerModel: NSObject, ObservableObject {
     override init() {
         super.init()
         items = Self.loadSavedItems()
+        refreshMilkdrop()
         installKeyMonitor()
         startHideTimer()
         updates.presentPanel = { [weak self] in
@@ -411,8 +423,68 @@ final class VisualizerModel: NSObject, ObservableObject {
     // MARK: Scenes
 
     func nextScene(_ delta: Int = 1) {
-        let n = VisualScene.builtIn.count
+        let n = VisualScene.all.count
         settings.sceneIndex = ((settings.sceneIndex + delta) % n + n) % n
+    }
+
+    // MARK: MilkDrop presets
+
+    /// Looks through the bundled presets and the user's folder (in the background) and rebuilds
+    /// the MilkDrop part of the style list.
+    func refreshMilkdrop() {
+        guard milkEngineError == nil else { return }
+        milkFolderAccess?.stopAccessingSecurityScopedResource()
+        milkFolderAccess = nil
+        var folder: URL?
+        if !settings.milkFolderBookmark.isEmpty {
+            var stale = false
+            if let url = try? URL(resolvingBookmarkData: settings.milkFolderBookmark, options: [.withSecurityScope],
+                                  relativeTo: nil, bookmarkDataIsStale: &stale) {
+                // Kept open: presets are read whenever one is shown.
+                if url.startAccessingSecurityScopedResource() { milkFolderAccess = url }
+                folder = url
+            }
+        }
+        milkFolder = folder
+        milkScanning = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let catalog = MilkCatalog.scan(bundled: MilkCatalog.bundledFolder, user: folder)
+            DispatchQueue.main.async {
+                self.milkCatalog = catalog
+                VisualScene.setMilkdrop(names: catalog.presets.map(\.name))
+                self.settings.userPresetStart = catalog.userCount > 0
+                    ? VisualScene.builtInCount + catalog.bundledCount : nil
+                self.milkGeneration += 1
+                self.milkScanning = false
+            }
+        }
+    }
+
+    func chooseMilkFolder() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose the folder with your MilkDrop presets (.milk files)"
+        panel.message = "Subfolders are searched too. A \"Textures\" folder next to the presets is used as well."
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = milkFolder
+        panel.prompt = "Use Folder"
+        if panel.runModal() == .OK, let url = panel.url,
+           let data = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil,
+                                             relativeTo: nil) {
+            settings.milkFolderBookmark = data
+            refreshMilkdrop()
+        }
+    }
+
+    func removeMilkFolder() {
+        settings.milkFolderBookmark = Data()
+        if settings.sceneIndex >= VisualScene.builtInCount + milkCatalog.bundledCount { settings.sceneIndex = 0 }
+        refreshMilkdrop()
+    }
+
+    func openMilkFolder() {
+        if let milkFolder { NSWorkspace.shared.open(milkFolder) }
     }
 
     // MARK: Logo
