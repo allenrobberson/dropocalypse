@@ -167,6 +167,7 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
 - [The 31 styles](#the-31-styles)
+- [MilkDrop presets](#milkdrop-presets)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -241,6 +242,8 @@ The **Logo menu** in the toolbar lists your items:
 **Text items:** type the words (up to 60 characters), pick a font (**Bold**, **Heavy**, **Serif** or **Mono**) and a color (white, pink, cyan, gold, lime or purple). Text gets a dark outline so it stays readable over bright visuals, and glows, tints and trails like a logo. Edit text and reorder items in the **Logo** menu, or in the detached controls window.
 
 You can also **drag images** from Finder, File Explorer, your file manager or a web browser onto the window at any time. Drop several to add them all. When all 4 spaces are used, a dropped image replaces the last item.
+
+**Logo layers:** turn on **Logo layers** in the [Motion panel](#motion-panel) and each logo is split into its separate shapes, which jump on the beat on their own (**Wave**, **Explode**, **Bands** or **Scatter**). A shape is any part that doesn't touch another, so a logo with spaced-out letters, or a text item, splits letter by letter; a solid badge stays in one piece. Tiny specks join the nearest shape, and a logo is split into at most 24 layers.
 
 ### Style controls
 
@@ -441,6 +444,9 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **Recording has black bars** | The video is 16:9. Go full screen on a 16:9 display, or make the window 16:9, to fill the frame. |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
 | **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
+| **The MilkDrop styles are missing** | The style list says the MilkDrop engine isn't available. Download the full app again from the [latest release](../../releases/latest): the engine ships beside the app (in the app bundle on Mac, next to the `.exe` on Windows, next to the program on Linux). Copying only the `.exe` or program file leaves it behind. |
+| **My own MilkDrop presets don't show up** | Check the folder actually holds `.milk` files, then click **Rescan**. Presets that use pictures need their collection's `Textures` folder next to the presets folder. A few very old presets don't work in projectM and show a plain picture. |
+| **Logo layers does nothing** | Your logo is one connected shape (for example a badge with a solid background), so there is nothing to split. Try a PNG with a transparent background and separate letters, or a text item. |
 | **The toolbar won't appear** | Move the mouse to the very top of the window, click anywhere, or press **T** |
 | **Settings or logo reset after updating from "Logo Visualizer"** | The app was renamed. Your saved logo is copied over automatically, but slider settings start fresh, and macOS asks for microphone permission again. |
 
@@ -466,7 +472,7 @@ swift run -c release            # quick run
 ./scripts/build-app.sh          # builds dist/Dropocalypse.app, .zip and .dmg
 ```
 
-You need Xcode 15 or later (or the Command Line Tools) on macOS 13 or later. There are no third-party dependencies.
+You need Xcode 15 or later (or the Command Line Tools) on macOS 13 or later. The app itself has no third-party dependencies. The MilkDrop styles need the projectM engine: run `scripts/build-projectm.sh` (needs CMake) once and `build-app.sh` copies it into the app. Without it the app still runs, just without the MilkDrop styles.
 
 **Windows** (Visual Studio 2022 with the "Desktop development with C++" workload, plus CMake):
 
@@ -476,7 +482,7 @@ cmake --build build --config Release
 build\Release\Dropocalypse.exe
 ```
 
-The Windows build downloads [Dear ImGui](https://github.com/ocornut/imgui) (MIT) for the toolbar and links the C runtime statically, so the `.exe` runs without installing anything.
+The Windows build downloads [Dear ImGui](https://github.com/ocornut/imgui) (MIT) for the toolbar and links the C runtime statically, so the `.exe` runs without installing anything. For the MilkDrop styles, run `scripts\build-projectm.ps1` and copy the projectM DLL next to `Dropocalypse.exe`.
 
 **Linux** (GCC or Clang, CMake, and the development packages for OpenGL, PulseAudio, libcurl, X11 and Wayland):
 
@@ -488,7 +494,7 @@ cmake --build build-linux
 ./build-linux/dropocalypse
 ```
 
-The Linux build downloads Dear ImGui, [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb) (public domain). It shares the styles, the update rules and the toolbar with the Windows version: after changing the Windows toolbar code, run `python3 linux/port/generate.py` to bring the Linux toolbar up to date.
+The Linux build downloads Dear ImGui, [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb) (public domain). For the MilkDrop styles, run `scripts/build-projectm.sh` and copy `build/projectm/lib/libprojectM-4.so*` next to the program. It shares the styles, the update rules and the toolbar with the Windows version: after changing the Windows toolbar code, run `python3 linux/port/generate.py` to bring the Linux toolbar up to date.
 
 **Releases are automatic.** GitHub Actions builds every push to `main`. To publish a new downloadable version, do either of these:
 - On GitHub, go to **Actions → Build → Run workflow**, type a version such as `0.2.0`, and click **Run workflow**.
@@ -509,17 +515,22 @@ Sources/Dropocalypse/
   UpdateChecker.swift         update check, download, verify and one-click install
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 26 built-in styles (add your own here!)
+  Render/Scenes.swift         the 31 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
+Sources/DropocalypseCore/
+  LogoLayers.swift            splits a logo into shapes, layer motion, Kinetic Text rows
   Render/Milkdrop.swift       MilkDrop presets through projectM (loaded at run time)
   Views/                      SwiftUI window, auto-hiding toolbar, detached controls
 
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
-  src/scenes.h                the 31 styles (Windows copy)
+  src/scenes.h                the 31 styles (shared by Windows and Linux)
+  src/logo_layers.h           splits a logo into shapes, layer motion, Kinetic Text rows
+  src/milkdrop.h              MilkDrop preset list, bundled presets, projectM loader
+  src/milkdrop_host.cpp       plays a preset through projectM (OpenGL) into Direct3D
   src/shaders.h               HLSL port of the Metal shaders
   src/logo.cpp                logo loading (PNG, JPG, …)
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
@@ -530,9 +541,12 @@ linux/
   src/audio.cpp               PulseAudio / PipeWire capture (outputs and inputs) + the same DSP
   src/renderer.cpp            OpenGL 3.3 pipeline (shared style code from windows/src/renderer.cpp)
   src/shaders.h               GLSL port of the shaders
+  src/milkdrop_host.cpp       plays a preset through projectM in a shared OpenGL context
   src/recorder.cpp            MP4 recording through ffmpeg
   src/main.cpp                generated by port/generate.py from the Windows toolbar + port/*.inc
   port/*.inc                  Linux parts: GLFW windows, file dialogs, AppImage updater, main loop
+
+milkdrop/                     the 9 bundled presets, their texture, credits and a downloadable zip
 ```
 
 ### Adding a style
@@ -574,4 +588,4 @@ Dropocalypse is free and always will be. If it livens up your shows or streams, 
 
 [MIT](LICENSE): free to use, modify and share, including commercially.
 
-Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals in this app are original code; no MilkDrop presets or Shadertoy shaders are bundled. The Windows and Linux toolbars use [Dear ImGui](https://github.com/ocornut/imgui) (MIT); the Linux version also uses [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb).
+Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. The 31 built-in styles are original code. The MilkDrop styles play through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL 2.1), shipped as a separate library beside the app that you can replace with your own build; the 9 bundled presets belong to their authors, listed in [milkdrop/CREDITS.md](milkdrop/CREDITS.md). No Shadertoy shaders are bundled. The Windows and Linux toolbars use [Dear ImGui](https://github.com/ocornut/imgui) (MIT); the Linux version also uses [GLFW](https://www.glfw.org) (zlib) and [stb](https://github.com/nothings/stb).
