@@ -1062,6 +1062,139 @@ final class StyleFX {
         }
     }
 
+    // MARK: - 27. Monstercat Bars
+
+    private var monster: [Float] = []
+
+    func monstercatBars(_ f: FXFrame, _ over: inout GeometryBuilder) {
+        let count = 63
+        if monster.count != count { monster = [Float](repeating: 0, count: count) }
+        let n = f.bands.count
+        let total = 1.62 * f.aspect, slot = total / Float(count), left = -total / 2
+        let base: Float = -0.36, s = f.scene.waveScale
+        let c = hsv(f.scene.baseHue + f.t * f.scene.hueSpeed, f.scene.saturation * 0.35, 1)
+        for i in 0..<count {
+            let x = pow(Float(i) / Float(count - 1), 1.35) * Float(n - 1)
+            let a = min(n - 1, Int(x)), b = min(n - 1, a + 1)
+            let fr = x - Float(a)
+            let v = f.bands[a] * (1 - fr) + f.bands[b] * fr
+            let target = pow(v, 1.3) * 0.5 * s
+            let m = monster[i]
+            monster[i] = m + (target - m) * min(1, f.dt * (target > m ? 30 : 7))
+        }
+        for i in 0..<count {
+            let sm = (monster[max(0, i - 1)] + 2 * monster[i] + monster[min(count - 1, i + 1)]) / 4
+            let x0 = left + Float(i) * slot + slot * 0.14, x1 = x0 + slot * 0.72
+            over.rect(x0: x0, y0: base, x1: x1, y1: base + 0.008 + sm, (c.0, c.1, c.2, 1))
+        }
+    }
+
+    // MARK: - 28. Lo-fi Chill
+
+    private struct Flake { var x: Float; var y: Float; var speed: Float; var size: Float; var phase: Float }
+    private var snow: [Flake] = []
+
+    private static func hash01(_ v: UInt32) -> Float {
+        var x = v
+        x ^= x >> 16; x = x &* 0x7feb_352d; x ^= x >> 15; x = x &* 0x846c_a68b; x ^= x >> 16
+        return Float(x & 0xff_ffff) / 16_777_216
+    }
+
+    func lofiChill(_ f: FXFrame, _ g: inout GeometryBuilder, _ over: inout GeometryBuilder) {
+        func rgba(_ c: (Float, Float, Float), _ a: Float) -> GeometryBuilder.RGBA { (c.0, c.1, c.2, a) }
+        let w = f.aspect + 0.02
+        let top = hsv(0.70, 0.55, 0.16), mid = hsv(0.78, 0.45, 0.30), low = hsv(0.95, 0.40, 0.52)
+        over.quad(SIMD2(-w, 1.02), rgba(top, 1), SIMD2(w, 1.02), rgba(top, 1),
+                  SIMD2(w, 0.1), rgba(mid, 1), SIMD2(-w, 0.1), rgba(mid, 1))
+        over.quad(SIMD2(-w, 0.1), rgba(mid, 1), SIMD2(w, 0.1), rgba(mid, 1),
+                  SIMD2(w, -0.35), rgba(low, 1), SIMD2(-w, -0.35), rgba(low, 1))
+        over.rect(x0: -w, y0: -1.02, x1: w, y1: -0.35, rgba(low, 1))
+        let bass = f.bass, mids = min(f.audio.mid, 1.4)
+        // Moon with a soft halo that breathes with the bass.
+        let moon = SIMD2<Float>(f.aspect * 0.6, 0.56)
+        g.softDot(moon, radius: 0.24 + 0.05 * bass, (1.0, 0.72, 0.62, 0.16 + 0.08 * bass), segments: 28)
+        over.dot(moon, radius: 0.085, (1.0, 0.94, 0.84, 1))
+        // Hills, then the town, then the near hill.
+        func hills(_ y: Float, _ amp: Float, _ freq: Float, _ phase: Float, _ col: (Float, Float, Float)) {
+            let segs = 48
+            func h(_ x: Float) -> Float { y + amp * (0.6 * sin(x * freq + phase) + 0.4 * sin(x * freq * 2.3 + phase * 1.7)) }
+            for i in 0..<segs {
+                let xa = -w + 2 * w * Float(i) / Float(segs), xb = -w + 2 * w * Float(i + 1) / Float(segs)
+                over.quad(SIMD2(xa, -1.02), rgba(col, 1), SIMD2(xb, -1.02), rgba(col, 1),
+                          SIMD2(xb, h(xb)), rgba(col, 1), SIMD2(xa, h(xa)), rgba(col, 1))
+            }
+        }
+        hills(-0.18, 0.08, 1.6, 0.4, hsv(0.74, 0.45, 0.20))
+        let city = hsv(0.72, 0.5, 0.11)
+        let buildings = 24
+        let bw = 2 * w / Float(buildings)
+        for k in 0..<buildings {
+            let hgt = 0.1 + Self.hash01(UInt32(k) &* 97 &+ 5) * 0.26
+            let x0 = -w + Float(k) * bw + bw * 0.06, x1 = x0 + bw * 0.88, y1 = -0.5 + hgt
+            over.rect(x0: x0, y0: -1.02, x1: x1, y1: y1, rgba(city, 1))
+            for r in 0..<6 {
+                for c in 0..<2 {
+                    let wy = y1 - 0.04 - Float(r) * 0.05
+                    if wy < -0.6 { continue }
+                    let hh = UInt32(k * 131 + r * 17 + c * 7) &+ UInt32(f.t * 0.25) &* 977
+                    if Self.hash01(hh) > 0.3 { continue }
+                    let wx = x0 + bw * (0.22 + Float(c) * 0.36)
+                    over.rect(x0: wx, y0: wy, x1: wx + bw * 0.16, y1: wy + 0.022, (1.0, 0.78, 0.45, 0.9))
+                }
+            }
+        }
+        hills(-0.62, 0.05, 2.4, 2.0, hsv(0.70, 0.5, 0.06))
+        // Drifting fog.
+        for j in 0..<3 {
+            let y = -0.42 + Float(j) * 0.13 + 0.02 * sin(f.t * 0.2 + Float(j))
+            let clear: GeometryBuilder.RGBA = (0.9, 0.85, 1.0, 0)
+            let haze: GeometryBuilder.RGBA = (0.9, 0.85, 1.0, 0.05 + 0.02 * mids)
+            g.quad(SIMD2(-w, y - 0.07), clear, SIMD2(w, y - 0.07), clear, SIMD2(w, y), haze, SIMD2(-w, y), haze)
+            g.quad(SIMD2(-w, y), haze, SIMD2(w, y), haze, SIMD2(w, y + 0.07), clear, SIMD2(-w, y + 0.07), clear)
+        }
+        // Snow.
+        if snow.isEmpty {
+            for _ in 0..<160 {
+                snow.append(Flake(x: rng.range(-w, w), y: rng.range(-1, 1), speed: rng.range(0.05, 0.14),
+                                  size: rng.range(0.0035, 0.009), phase: rng.range(0, 6.28)))
+            }
+        }
+        for i in snow.indices {
+            var s = snow[i]
+            s.y -= s.speed * (1 + 0.6 * mids) * f.dt
+            s.x += sin(f.t * 0.7 + s.phase) * 0.03 * f.dt
+            if s.y < -1.05 { s.y = 1.05; s.x = rng.range(-w, w) }
+            snow[i] = s
+            g.softDot(SIMD2(s.x, s.y), radius: s.size * 2.2, (1, 1, 1, 0.5), segments: 8)
+        }
+        // A small, soft visualizer along the bottom.
+        let count = 32, n = f.bands.count
+        let total = 0.8 * f.aspect, slot = total / Float(count), left = -total / 2, base: Float = -0.9
+        for i in 0..<count {
+            let v = f.bands[min(n - 1, i * n / count)]
+            let h = 0.01 + pow(v, 1.2) * 0.16 * f.scene.waveScale
+            let c = hsv(0.88 + 0.12 * Float(i) / Float(count), 0.35, 1)
+            g.rect(x0: left + Float(i) * slot + slot * 0.25, y0: base,
+                   x1: left + Float(i) * slot + slot * 0.75, y1: base + h, rgba(c, 0.5))
+        }
+    }
+
+    // MARK: - 29. Glitch VHS (the tape damage itself is in fs_present)
+
+    func glitchVHS(_ f: FXFrame, _ g: inout GeometryBuilder) {
+        let n = f.bands.count
+        let total = 1.9 * f.aspect, slot = total / Float(n), left = -total / 2, s = f.scene.waveScale
+        for i in 0..<n {
+            let v = (f.bands[max(0, i - 1)] + 2 * f.bands[i] + f.bands[min(n - 1, i + 1)]) / 4
+            let h = 0.01 + pow(v, 1.2) * 0.5 * s
+            let c = hsv(0.5 + 0.33 * Float(i % 3), 0.75, 1)
+            g.rect(x0: left + Float(i) * slot + slot * 0.15, y0: -h,
+                   x1: left + Float(i) * slot + slot * 0.85, y1: h, (c.0, c.1, c.2, 0.85))
+        }
+        let y = 1 - fmod(f.t * 0.22, 2)
+        g.rect(x0: -f.aspect, y0: y - 0.006, x1: f.aspect, y1: y + 0.006, (1, 1, 1, 0.18 + 0.2 * f.bass))
+    }
+
     // MARK: - Shared particle update
 
     private func updateAndDraw(_ list: inout [Particle], _ f: FXFrame, _ g: inout GeometryBuilder,

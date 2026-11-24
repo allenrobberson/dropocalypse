@@ -16,10 +16,12 @@ private struct WarpUniforms {
     var mirror: Int32 = 0
     var generative: Float = 0
     var rotSin: Float = 0, hueSin: Float = 0
+    var chrome: Float = 0, chromeHue: Float = 0
 }
 
 private struct PresentUniforms {
     var flash: Float = 0, vignette: Float = 0.3, brightness: Float = 1, milkMix: Float = 0
+    var glitch: Float = 0, glitchTime: Float = 0, glitchPulse: Float = 0, pad: Float = 0
 }
 
 private struct LogoUniforms {
@@ -81,6 +83,19 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var startTime = CACurrentMediaTime()
     private var flash: Float = 0
     private var lastFlashBeat = 0
+    private var glitchPulse: Float = 0
+    private var lastGlitchBeat = 0
+
+    /// Each item split into its separate shapes (LogoLayers.swift), one texture per shape.
+    private final class ItemLayers {
+        var textures: [MTLTexture] = []
+        var uv: [(u0: Float, v0: Float, u1: Float, v1: Float)] = []
+        var nx: [Float] = [], ny: [Float] = []
+        var motion = LayerMotion()
+    }
+    /// Parallel to itemTextures; nil when an item is a single shape.
+    private var itemLayers: [ItemLayers?] = []
+    private var layerCache: [String: ItemLayers] = [:]
 
     // VisualScene blending: crossfade warp/draw parameters when the scene changes.
     private var currentScene: VisualScene = VisualScene.all[0]
@@ -171,8 +186,64 @@ final class Renderer: NSObject, MTKViewDelegate {
             }
         }
         textureCache = cache
-        if textures.isEmpty, let placeholder = placeholderTexture { textures = [placeholder] }
+        // Split each item into its shapes once, reusing the split while the item is unchanged.
+        var layers: [ItemLayers?] = []
+        var newLayerCache: [String: ItemLayers] = [:]
+        for source in sources.prefix(OverlayLayout.maxItems) {
+            let key = source.cacheKey
+            guard let tex = cache[key] else { continue }
+            if let known = layerCache[key] ?? newLayerCache[key] {
+                newLayerCache[key] = known
+                layers.append(known.textures.count > 1 ? known : nil)
+                continue
+            }
+            let made = makeLayers(tex)
+            newLayerCache[key] = made
+            layers.append(made.textures.count > 1 ? made : nil)
+        }
+        layerCache = newLayerCache
+        if textures.isEmpty, let placeholder = placeholderTexture {
+            textures = [placeholder]
+            layers = [nil]
+        }
         itemTextures = textures
+        itemLayers = layers
+    }
+
+    /// Reads an item's pixels back (its texture is CPU-visible) and makes a texture per shape.
+    private func makeLayers(_ tex: MTLTexture) -> ItemLayers {
+        let result = ItemLayers()
+        let w = tex.width, h = tex.height
+        guard w > 0, h > 0, w * h <= 4096 * 4096, tex.storageMode != .private else { return result }
+        var rgba = [UInt8](repeating: 0, count: w * h * 4)
+        rgba.withUnsafeMutableBytes { buf in
+            tex.getBytes(buf.baseAddress!, bytesPerRow: w * 4, from: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0)
+        }
+        let split = LogoLayers.split(rgba, width: w, height: h)
+        guard split.layers.count > 1 else { return result }
+        for l in 0..<split.layers.count {
+            let piece = split.extractLayer(rgba, l)
+            let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: piece.width,
+                                                             height: piece.height, mipmapped: true)
+            d.usage = [.shaderRead]
+            d.storageMode = .managed
+            guard let lt = device.makeTexture(descriptor: d) else { return ItemLayers() }
+            piece.pixels.withUnsafeBytes { buf in
+                lt.replace(region: MTLRegionMake2D(0, 0, piece.width, piece.height), mipmapLevel: 0,
+                           withBytes: buf.baseAddress!, bytesPerRow: piece.width * 4)
+            }
+            result.textures.append(lt)
+            result.uv.append(split.uv(l))
+            result.nx.append(split.layers[l].cx / Float(w) * 2 - 1)
+            result.ny.append(1 - split.layers[l].cy / Float(h) * 2)
+        }
+        if let cb = queue.makeCommandBuffer(), let blit = cb.makeBlitCommandEncoder() {
+            for lt in result.textures { blit.generateMipmaps(for: lt) }
+            blit.endEncoding()
+            cb.commit()
+            cb.waitUntilCompleted()
+        }
+        return result
     }
 
     // MARK: Pipelines
@@ -333,6 +404,19 @@ final class Renderer: NSObject, MTKViewDelegate {
             lastFlashBeat = audio.beatCount
         }
         flash *= pow(0.02, dt) // fast fade
+        if audio.beatCount != lastGlitchBeat {
+            if lastGlitchBeat != 0 { glitchPulse = max(glitchPulse, min(audio.beatStrength, 1)) }
+            lastGlitchBeat = audio.beatCount
+        }
+        glitchPulse *= pow(0.004, max(dt, 0))
+
+        // Kinetic Text fades in and out with the style blend, like MilkDrop.
+        let kineticMix: Float = {
+            let k = sceneBlend * sceneBlend * (3 - 2 * sceneBlend)
+            let a: Float = previousScene.wave == .kineticText ? 1 : 0
+            let b: Float = currentScene.wave == .kineticText ? 1 : 0
+            return sceneBlend >= 1 ? b : a + (b - a) * k
+        }()
 
         let aspect = Float(content.aspect)
         let src = feedback[feedbackIndex]
@@ -362,6 +446,36 @@ final class Renderer: NSObject, MTKViewDelegate {
             lu.r = color.0; lu.g = color.1; lu.b = color.2
             items.append(lu)
             if i == 0 { firstRadius = max(ext.halfW, ext.halfH) * 0.9 }
+            if i < itemLayers.count, let layers = itemLayers[i] {
+                layers.motion.update(dt: dt, mode: LayerMode(rawValue: settings.layerMode) ?? .off,
+                                     amount: Float(settings.layerAmount), nx: layers.nx, ny: layers.ny,
+                                     bass: audio.bass, mid: audio.mid, treble: audio.treble,
+                                     beatCount: audio.beatCount, beatStrength: audio.beatStrength)
+            }
+        }
+        let layersOn = settings.layerMode != 0
+        let itemLayersNow = itemLayers
+        /// Draws one item: whole, or shape by shape when logo layers are on.
+        func drawItem(_ enc: MTLRenderCommandEncoder, _ i: Int, _ u: LogoUniforms, _ logo: MTLTexture) {
+            if layersOn, i < itemLayersNow.count, let layers = itemLayersNow[i] {
+                for l in 0..<layers.textures.count {
+                    let uv = layers.uv[l]
+                    let q = LayerQuad(itemCx: u.cx, itemCy: u.cy, itemHx: u.hx, itemHy: u.hy, itemRotation: u.rotation,
+                                      u0: uv.u0, v0: uv.v0, u1: uv.u1, v1: uv.v1, pose: layers.motion.pose(l))
+                    var lu = u
+                    lu.cx = q.cx; lu.cy = q.cy; lu.hx = q.hx; lu.hy = q.hy; lu.rotation = q.rotation
+                    enc.setVertexBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                    enc.setFragmentBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                    enc.setFragmentTexture(layers.textures[l], index: 0)
+                    enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                }
+                return
+            }
+            var lu = u
+            enc.setVertexBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+            enc.setFragmentBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+            enc.setFragmentTexture(logo, index: 0)
+            enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         }
         let firstCenter = items.first.map { SIMD2($0.cx, $0.cy) } ?? SIMD2<Float>(0, 0)
 
@@ -394,6 +508,8 @@ final class Renderer: NSObject, MTKViewDelegate {
             wu.kaleido = scene.kaleido
             wu.mirror = scene.mirror
             wu.generative = scene.generative
+            wu.chrome = scene.chrome
+            wu.chromeHue = scene.baseHue + t * scene.hueSpeed
             let hueShift = scene.hueShift * frames
             wu.hueCos = cos(hueShift)
             wu.hueSin = sin(hueShift)
@@ -439,10 +555,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                     var tu = items[i]
                     tu.opacity = 0.18
                     tu.tintAmount = 0.6
-                    enc.setVertexBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                    enc.setFragmentBytes(&tu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                    enc.setFragmentTexture(logo, index: 0)
-                    enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                    drawItem(enc, i, tu, logo)
                 }
             }
             enc.endEncoding()
@@ -463,12 +576,40 @@ final class Renderer: NSObject, MTKViewDelegate {
         func composite(_ enc: MTLRenderCommandEncoder) {
             var pu = PresentUniforms(flash: flash * Float(settings.beatFlash),
                                      vignette: scene.vignette,
-                                     brightness: Float(settings.brightness), milkMix: milkMix)
+                                     brightness: Float(settings.brightness), milkMix: milkMix,
+                                     glitch: scene.glitch, glitchTime: fmod(t, 1000), glitchPulse: glitchPulse)
             enc.setRenderPipelineState(presentPipeline)
             enc.setFragmentTexture(dst, index: 0)
             enc.setFragmentTexture(milkTexture ?? dst, index: 1)
             enc.setFragmentBytes(&pu, length: MemoryLayout<PresentUniforms>.stride, index: 0)
             enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+
+            // Kinetic Text: rows of the first logo or text item sliding across, the beat lighting a row.
+            if kineticMix > 0.001, let first = textures.first {
+                let rows = KineticText.layout(time: t, aspect: aspect,
+                                              itemAspect: Float(first.width) / Float(max(first.height, 1)),
+                                              beatCount: audio.beatCount, pulse: glitchPulse, bass: audio.bass)
+                enc.setRenderPipelineState(logoGlowPipeline)
+                enc.setFragmentTexture(first, index: 0)
+                for (r, row) in rows.enumerated() {
+                    let rc = hsv(scene.baseHue + t * scene.hueSpeed + Float(r) * 0.07, 0.75, 1)
+                    for c in 0..<row.copies {
+                        var kc = LogoUniforms()
+                        kc.cx = row.x0 + Float(c) * row.spacing
+                        kc.cy = row.y
+                        kc.hx = row.hx
+                        kc.hy = row.hy
+                        kc.aspect = aspect
+                        kc.r = rc.0; kc.g = rc.1; kc.b = rc.2
+                        kc.tintAmount = 0.85
+                        kc.mipBias = 0.5
+                        kc.opacity = row.opacity * kineticMix
+                        enc.setVertexBytes(&kc, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                        enc.setFragmentBytes(&kc, length: MemoryLayout<LogoUniforms>.stride, index: 0)
+                        enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                    }
+                }
+            }
 
             guard settings.showLogo else { return }
             for (i, logo) in textures.enumerated() {
@@ -482,20 +623,14 @@ final class Renderer: NSObject, MTKViewDelegate {
                     gu.tintAmount = 1
                     gu.opacity = glow * (0.35 + min(audio.bass, 1.2) * 0.9)
                     enc.setRenderPipelineState(logoGlowPipeline)
-                    enc.setVertexBytes(&gu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                    enc.setFragmentBytes(&gu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                    enc.setFragmentTexture(logo, index: 0)
-                    enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                    drawItem(enc, i, gu, logo)
                 }
 
                 var lu = items[i]
                 lu.opacity = 1
                 lu.tintAmount = Float(settings.logoTint)
                 enc.setRenderPipelineState(logoPipeline)
-                enc.setVertexBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                enc.setFragmentBytes(&lu, length: MemoryLayout<LogoUniforms>.stride, index: 0)
-                enc.setFragmentTexture(logo, index: 0)
-                enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                drawItem(enc, i, lu, logo)
             }
         }
         if let enc = cb.makeRenderCommandEncoder(descriptor: srp) {
@@ -707,6 +842,8 @@ final class Renderer: NSObject, MTKViewDelegate {
         s.hueShift = mix(a.hueShift, b.hueShift)
         s.plasma = mix(a.plasma, b.plasma)
         s.generative = mix(a.generative, b.generative)
+        s.chrome = mix(a.chrome, b.chrome)
+        s.glitch = mix(a.glitch, b.glitch)
         s.vignette = mix(a.vignette, b.vignette)
         s.saturation = mix(a.saturation, b.saturation)
         s.centerRadius = mix(a.centerRadius, b.centerRadius)

@@ -39,7 +39,38 @@ layout(std140) uniform WarpCB {
     float texelY;
     int   mirror;
     float generative; // 0 off, 1 = Full Kaleidoscope field mixed over the feedback
+    float chrome;     // 0 off, 1 = Liquid Chrome field replaces the feedback
+    float chromeHue;
+    float warpPad0;
+    float warpPad1;
 };
+
+// Liquid Chrome: a flowing height field shaded like polished metal reflecting a studio sky.
+float chromeHeight(vec2 p, float t) {
+    vec2 q = p + 0.35 * vec2(sin(p.y * 1.7 + t * 1.3), cos(p.x * 1.4 - t * 1.1));
+    float h = sin(q.x * 2.1 + t) * cos(q.y * 1.8 - t * 0.8)
+            + 0.5 * sin(length(q) * 3.2 - t * 2.0 - bass * 1.5)
+            + 0.25 * sin((q.x - q.y) * 4.0 + t * 1.7 + mid * 2.0);
+    return h * (0.55 + bass * 0.6);
+}
+
+vec3 chromeField(vec2 uv) {
+    vec2 p = (uv - 0.5) * vec2(max(aspect, 0.05), 1.0) * 2.2;
+    float t = time * 0.35;
+    const float e = 0.01;
+    float h = chromeHeight(p, t);
+    float hx = chromeHeight(p + vec2(e, 0.0), t);
+    float hy = chromeHeight(p + vec2(0.0, e), t);
+    vec3 n = normalize(vec3((h - hx) / e * 0.35, (h - hy) / e * 0.35, 1.0));
+    vec3 r = reflect(vec3(0.0, 0.0, -1.0), n);
+    vec3 tint = 0.5 + 0.5 * cos(6.2831853 * (chromeHue + vec3(0.0, 0.33, 0.67)));
+    vec3 sky = mix(vec3(0.03, 0.03, 0.05), vec3(0.92, 0.95, 1.0), smoothstep(-0.15, 0.7, r.y));
+    float horizon = exp(-pow((r.y - 0.08) * 8.0, 2.0));
+    vec3 col = sky * mix(vec3(1.0), tint, 0.35) + horizon * mix(vec3(1.0), tint, 0.6) * 1.2;
+    col += pow(1.0 - clamp(n.z, 0.0, 1.0), 1.5) * tint * 0.8;
+    col += pow(clamp(r.x * 0.5 + r.y * 0.8, 0.0, 1.0), 24.0) * 1.5;
+    return col * (0.85 + bass * 0.3);
+}
 
 vec3 fbTex(vec2 t) { return texture(tex0, vec2(t.x, 1.0 - t.y)).rgb; }
 
@@ -191,6 +222,9 @@ void main() {
         vec3 gen = kaleidoField(uv);
         c = mix(c, max(c, vec3(0.0)) * 0.42 + gen, clamp(generative, 0.0, 1.0));
     }
+
+    // uv runs top to bottom; flip so the chrome's sky is up.
+    if (chrome > 0.001) c = mix(c, chromeField(vec2(uv.x, 1.0 - uv.y)), clamp(chrome, 0.0, 1.0));
 
     fragColor = vec4(max(c, vec3(0.0)), 1.0);
 }
@@ -382,11 +416,34 @@ layout(std140) uniform PresentCB {
     float flash;
     float vignette;
     float brightness;
-    float milkMix;   // 0 = our picture, 1 = the MilkDrop preset
+    float milkMix;     // 0 = our picture, 1 = the MilkDrop preset
+    float glitch;      // 0 off, 1 = VHS tape damage (Glitch VHS)
+    float glitchTime;
+    float glitchPulse; // jumps on the beat, then fades
+    float presentPad;
 };
+vec3 presentBase(vec2 q) {
+    vec2 st = vec2(q.x, 1.0 - q.y);
+    return mix(texture(tex0, st).rgb, texture(tex1, st).rgb, milkMix);
+}
+float glitchHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 void main() {
-    vec2 st = vec2(uv.x, 1.0 - uv.y);
-    vec3 c = mix(texture(tex0, st).rgb, texture(tex1, st).rgb, milkMix) * brightness;
+    vec3 base;
+    if (glitch > 0.001) {
+        // Tape wobble, torn bands that jump sideways on the beat, colour fringes, scanlines, grain.
+        vec2 q = uv;
+        q.x += sin(q.y * 28.0 + glitchTime * 5.0) * 0.0022 * glitch;
+        float band = floor(q.y * 36.0), tick = floor(glitchTime * 14.0);
+        if (glitchHash(vec2(band, tick)) > 1.0 - glitch * (0.05 + 0.35 * glitchPulse))
+            q.x += (glitchHash(vec2(tick, band)) - 0.5) * 0.12 * (0.3 + glitchPulse) * glitch;
+        float off = (0.0025 + 0.018 * glitchPulse) * glitch;
+        base = vec3(presentBase(q + vec2(off, 0.0)).r, presentBase(q).g, presentBase(q - vec2(off, 0.0)).b);
+        base *= 1.0 - 0.16 * glitch * (0.5 + 0.5 * sin(uv.y * 1100.0));
+        base = max(base + (glitchHash(uv * 917.0 + glitchTime) - 0.5) * 0.07 * glitch, 0.0);
+    } else {
+        base = presentBase(uv);
+    }
+    vec3 c = base * brightness;
     vec2 p = uv - 0.5;
     c *= 1.0 - vignette * dot(p, p) * 2.0;
     c += flash * 0.18;

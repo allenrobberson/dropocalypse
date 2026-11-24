@@ -187,6 +187,10 @@ enum WaveDrawer {
         case .tesseract: fx.tesseract(frame, &g)
         case .fullKaleidoscope: fx.fullKaleidoscope(frame, &g)
         case .mainStage: fx.mainStage(frame, &g, &over)
+        case .monstercatBars: fx.monstercatBars(frame, &over)
+        case .lofiChill: fx.lofiChill(frame, &g, &over)
+        case .glitchVHS: fx.glitchVHS(frame, &g)
+        case .liquidChrome, .kineticText: break // drawn by the shaders and the renderer
         case .milkdrop: break // drawn by projectM (Milkdrop.swift)
 
         case .circle:

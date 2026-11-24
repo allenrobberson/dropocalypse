@@ -50,7 +50,36 @@ struct WarpUniforms {
     float generative; // 0 off, 1 = Full Kaleidoscope field mixed over the feedback
     float rotSin;
     float hueSin;
+    float chrome;     // 0 off, 1 = Liquid Chrome field replaces the feedback
+    float chromeHue;
 };
+
+// Liquid Chrome: a flowing height field shaded like polished metal reflecting a studio sky.
+static float chromeHeight(float2 p, float t, float bass, float mid) {
+    float2 q = p + 0.35 * float2(sin(p.y * 1.7 + t * 1.3), cos(p.x * 1.4 - t * 1.1));
+    float h = sin(q.x * 2.1 + t) * cos(q.y * 1.8 - t * 0.8)
+            + 0.5 * sin(length(q) * 3.2 - t * 2.0 - bass * 1.5)
+            + 0.25 * sin((q.x - q.y) * 4.0 + t * 1.7 + mid * 2.0);
+    return h * (0.55 + bass * 0.6);
+}
+
+static float3 chromeField(float2 uv, float time, float bass, float mid, float aspect, float hue) {
+    float2 p = (uv - 0.5) * float2(max(aspect, 0.05), 1.0) * 2.2;
+    float t = time * 0.35;
+    const float e = 0.01;
+    float h = chromeHeight(p, t, bass, mid);
+    float hx = chromeHeight(p + float2(e, 0.0), t, bass, mid);
+    float hy = chromeHeight(p + float2(0.0, e), t, bass, mid);
+    float3 n = normalize(float3((h - hx) / e * 0.35, (h - hy) / e * 0.35, 1.0));
+    float3 r = reflect(float3(0.0, 0.0, -1.0), n);
+    float3 tint = 0.5 + 0.5 * cos(6.2831853 * (hue + float3(0.0, 0.33, 0.67)));
+    float3 sky = mix(float3(0.03, 0.03, 0.05), float3(0.92, 0.95, 1.0), smoothstep(-0.15, 0.7, r.y));
+    float horizon = exp(-pow((r.y - 0.08) * 8.0, 2.0));
+    float3 col = sky * mix(float3(1.0), tint, 0.35) + horizon * mix(float3(1.0), tint, 0.6) * 1.2;
+    col += pow(1.0 - saturate(n.z), 1.5) * tint * 0.8;
+    col += pow(saturate(r.x * 0.5 + r.y * 0.8), 24.0) * 1.5;
+    return col * (0.85 + bass * 0.3);
+}
 
 // Full Kaleidoscope: a mandala that fills the frame. Four-way mirror always;
 // a diagonal fold fades in and out so the same picture sometimes reads as eight-way.
@@ -205,6 +234,12 @@ fragment float4 fs_warp(FSOut in [[stage_in]],
     if (u.generative > 0.001) {
         float3 gen = kaleidoField(in.uv, u.time, u.bass, u.mid, u.treble, u.aspect);
         c = mix(c, max(c, float3(0.0)) * 0.42 + gen, saturate(u.generative));
+    }
+
+    if (u.chrome > 0.001) {
+        // The feedback's uv runs top to bottom; flip so the chrome's sky is up.
+        float2 cu = float2(in.uv.x, 1.0 - in.uv.y);
+        c = mix(c, chromeField(cu, u.time, u.bass, u.mid, u.aspect, u.chromeHue), saturate(u.chrome));
     }
 
     return float4(max(c, float3(0.0)), 1.0);
@@ -392,7 +427,23 @@ struct PresentUniforms {
     float vignette;
     float brightness;
     float milkMix;   // 0 = our picture, 1 = the MilkDrop preset (milk)
+    float glitch;      // 0 off, 1 = VHS tape damage (Glitch VHS)
+    float glitchTime;
+    float glitchPulse; // jumps on the beat, then fades
+    float pad;
 };
+
+static half3 presentBase(texture2d<half> tex, texture2d<half> milk, sampler s, float2 uv, float milkMix) {
+    half3 base = tex.sample(s, uv).rgb;
+    if (milkMix > 0.0) {
+        // projectM draws with OpenGL, whose rows run bottom to top.
+        half3 m = milk.sample(s, float2(uv.x, 1.0 - uv.y)).rgb;
+        base = mix(base, m, half(milkMix));
+    }
+    return base;
+}
+
+static float glitchHash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
 
 // Color math in half precision: the source is a 16-bit texture and the screen is 8-bit.
 fragment half4 fs_present(FSOut in [[stage_in]],
@@ -400,11 +451,23 @@ fragment half4 fs_present(FSOut in [[stage_in]],
                           texture2d<half> milk [[texture(1)]],
                           constant PresentUniforms& u [[buffer(0)]]) {
     constexpr sampler s(filter::linear, address::clamp_to_edge);
-    half3 base = tex.sample(s, in.uv).rgb;
-    if (u.milkMix > 0.0) {
-        // projectM draws with OpenGL, whose rows run bottom to top.
-        half3 m = milk.sample(s, float2(in.uv.x, 1.0 - in.uv.y)).rgb;
-        base = mix(base, m, half(u.milkMix));
+    half3 base;
+    if (u.glitch > 0.001) {
+        // Tape wobble, torn bands that jump sideways on the beat, colour fringes, scanlines, grain.
+        float g = u.glitch;
+        float2 uv = in.uv;
+        uv.x += sin(uv.y * 28.0 + u.glitchTime * 5.0) * 0.0022 * g;
+        float band = floor(uv.y * 36.0), tick = floor(u.glitchTime * 14.0);
+        if (glitchHash(float2(band, tick)) > 1.0 - g * (0.05 + 0.35 * u.glitchPulse))
+            uv.x += (glitchHash(float2(tick, band)) - 0.5) * 0.12 * (0.3 + u.glitchPulse) * g;
+        float off = (0.0025 + 0.018 * u.glitchPulse) * g;
+        base = half3(presentBase(tex, milk, s, uv + float2(off, 0.0), u.milkMix).r,
+                     presentBase(tex, milk, s, uv, u.milkMix).g,
+                     presentBase(tex, milk, s, uv - float2(off, 0.0), u.milkMix).b);
+        base *= half(1.0 - 0.16 * g * (0.5 + 0.5 * sin(in.uv.y * 1100.0)));
+        base = max(base + half((glitchHash(in.uv * 917.0 + u.glitchTime) - 0.5) * 0.07 * g), half3(0.0h));
+    } else {
+        base = presentBase(tex, milk, s, in.uv, u.milkMix);
     }
     // The clamp keeps a very bright pixel from overflowing half; anything above about 1.4
     // already ends up pure white after the tone curve, so the picture is unchanged.

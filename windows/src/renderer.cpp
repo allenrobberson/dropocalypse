@@ -30,12 +30,15 @@ struct WarpCB {
     float texelX, texelY;
     int32_t mirror;
     float generative;
+    float chrome, chromeHue, pad0, pad1;
 };
-static_assert(sizeof(WarpCB) == 80, "WarpCB layout");
+static_assert(sizeof(WarpCB) == 96, "WarpCB layout");
 
 struct PresentCB {
     float flash, vignette, brightness, milkMix;
+    float glitch, glitchTime, glitchPulse, pad;
 };
+static_assert(sizeof(PresentCB) == 32, "PresentCB layout");
 
 struct LogoCB {
     float cx, cy, hx, hy;
@@ -1127,7 +1130,122 @@ public:
         }
     }
 
+    // ---- 27. Monstercat Bars: bold flat bars on a line below the logo, quick to rise, slow to fall
+    void monstercatBars(const FXFrame& f, GeometryBuilder& over) {
+        constexpr int N = 63;
+        if ((int)monster_.size() != N) monster_.assign(N, 0.0f);
+        const int n = f.bandCount;
+        const float total = 1.62f * f.aspect, slot = total / N, left = -total / 2;
+        const float base = -0.36f, s = f.scene.waveScale;
+        const Rgb c = hsv(f.scene.baseHue + f.t * f.scene.hueSpeed, f.scene.saturation * 0.35f, 1);
+        for (int i = 0; i < N; ++i) {
+            const float x = std::pow((float)i / (N - 1), 1.35f) * (n - 1);
+            const int a = std::min(n - 1, (int)x), b = std::min(n - 1, a + 1);
+            const float fr = x - (float)a;
+            const float v = f.bands[a] * (1 - fr) + f.bands[b] * fr;
+            const float target = std::pow(v, 1.3f) * 0.5f * s;
+            float& m = monster_[i];
+            m += (target - m) * std::min(1.0f, f.dt * (target > m ? 30.0f : 7.0f));
+        }
+        for (int i = 0; i < N; ++i) {
+            const float sm = (monster_[std::max(0, i - 1)] + 2 * monster_[i] + monster_[std::min(N - 1, i + 1)]) / 4;
+            const float x0 = left + i * slot + slot * 0.14f, x1 = x0 + slot * 0.72f;
+            over.rect(x0, base, x1, base + 0.008f + sm, RGBA{c.r, c.g, c.b, 1});
+        }
+    }
+
+    // ---- 28. Lo-fi Chill: a quiet night town under a big moon, with snow, fog and small soft bars
+    void lofiChill(const FXFrame& f, GeometryBuilder& g, GeometryBuilder& over) {
+        const float w = f.aspect + 0.02f;
+        const Rgb top = hsv(0.70f, 0.55f, 0.16f), mid = hsv(0.78f, 0.45f, 0.30f), low = hsv(0.95f, 0.40f, 0.52f);
+        over.quad({-w, 1.02f}, rgba(top, 1), {w, 1.02f}, rgba(top, 1), {w, 0.1f}, rgba(mid, 1), {-w, 0.1f}, rgba(mid, 1));
+        over.quad({-w, 0.1f}, rgba(mid, 1), {w, 0.1f}, rgba(mid, 1), {w, -0.35f}, rgba(low, 1), {-w, -0.35f}, rgba(low, 1));
+        over.rect(-w, -1.02f, w, -0.35f, rgba(low, 1));
+        const float bass = f.bass(), mids = std::min(f.audio.mid, 1.4f);
+        // Moon with a soft halo that breathes with the bass.
+        const V2 moon{f.aspect * 0.6f, 0.56f};
+        g.softDot(moon, 0.24f + 0.05f * bass, RGBA{1.0f, 0.72f, 0.62f, 0.16f + 0.08f * bass}, 28);
+        over.dot(moon, 0.085f, RGBA{1.0f, 0.94f, 0.84f, 1});
+        // Hills, then the town, then the near hill.
+        auto hills = [&](float y, float amp, float freq, float phase, Rgb col) {
+            const int segs = 48;
+            auto h = [&](float x) { return y + amp * (0.6f * std::sin(x * freq + phase) + 0.4f * std::sin(x * freq * 2.3f + phase * 1.7f)); };
+            for (int i = 0; i < segs; ++i) {
+                const float xa = -w + 2 * w * i / segs, xb = -w + 2 * w * (i + 1) / segs;
+                over.quad({xa, -1.02f}, rgba(col, 1), {xb, -1.02f}, rgba(col, 1), {xb, h(xb)}, rgba(col, 1), {xa, h(xa)}, rgba(col, 1));
+            }
+        };
+        hills(-0.18f, 0.08f, 1.6f, 0.4f, hsv(0.74f, 0.45f, 0.20f));
+        const Rgb city = hsv(0.72f, 0.5f, 0.11f);
+        const int buildings = 24;
+        const float bw = 2 * w / buildings;
+        for (int k = 0; k < buildings; ++k) {
+            const float hgt = 0.1f + hash01((uint32_t)k * 97u + 5u) * 0.26f;
+            const float x0 = -w + k * bw + bw * 0.06f, x1 = x0 + bw * 0.88f, y1 = -0.5f + hgt;
+            over.rect(x0, -1.02f, x1, y1, rgba(city, 1));
+            for (int r = 0; r < 6; ++r)
+                for (int c = 0; c < 2; ++c) {
+                    const float wy = y1 - 0.04f - r * 0.05f;
+                    if (wy < -0.6f) continue;
+                    const uint32_t hh = (uint32_t)(k * 131 + r * 17 + c * 7) + (uint32_t)(f.t * 0.25f) * 977u;
+                    if (hash01(hh) > 0.3f) continue;
+                    const float wx = x0 + bw * (0.22f + c * 0.36f);
+                    over.rect(wx, wy, wx + bw * 0.16f, wy + 0.022f, RGBA{1.0f, 0.78f, 0.45f, 0.9f});
+                }
+        }
+        hills(-0.62f, 0.05f, 2.4f, 2.0f, hsv(0.70f, 0.5f, 0.06f));
+        // Drifting fog.
+        for (int j = 0; j < 3; ++j) {
+            const float y = -0.42f + j * 0.13f + 0.02f * std::sin(f.t * 0.2f + j);
+            const RGBA clear{0.9f, 0.85f, 1.0f, 0}, haze{0.9f, 0.85f, 1.0f, 0.05f + 0.02f * mids};
+            g.quad({-w, y - 0.07f}, clear, {w, y - 0.07f}, clear, {w, y}, haze, {-w, y}, haze);
+            g.quad({-w, y}, haze, {w, y}, haze, {w, y + 0.07f}, clear, {-w, y + 0.07f}, clear);
+        }
+        // Snow.
+        if (snow_.empty())
+            for (int i = 0; i < 160; ++i)
+                snow_.push_back(Flake{rng_.range(-w, w), rng_.range(-1, 1), rng_.range(0.05f, 0.14f),
+                                      rng_.range(0.0035f, 0.009f), rng_.range(0, 6.28f)});
+        for (Flake& s : snow_) {
+            s.y -= s.speed * (1 + 0.6f * mids) * f.dt;
+            s.x += std::sin(f.t * 0.7f + s.phase) * 0.03f * f.dt;
+            if (s.y < -1.05f) { s.y = 1.05f; s.x = rng_.range(-w, w); }
+            g.softDot({s.x, s.y}, s.size * 2.2f, RGBA{1, 1, 1, 0.5f}, 8);
+        }
+        // A small, soft visualizer along the bottom.
+        const int N = 32, n = f.bandCount;
+        const float total = 0.8f * f.aspect, slot = total / N, left = -total / 2, base = -0.9f;
+        for (int i = 0; i < N; ++i) {
+            const float v = f.bands[std::min(n - 1, i * n / N)];
+            const float h = 0.01f + std::pow(v, 1.2f) * 0.16f * f.scene.waveScale;
+            const Rgb c = hsv(0.88f + 0.12f * i / N, 0.35f, 1);
+            g.rect(left + i * slot + slot * 0.25f, base, left + i * slot + slot * 0.75f, base + h, rgba(c, 0.5f));
+        }
+    }
+
+    // ---- 29. Glitch VHS: a mirrored spectrum and a sweep line; the tape damage comes from the
+    // final pass (fs_present), which tears, splits and grains the picture on the beat.
+    void glitchVHS(const FXFrame& f, GeometryBuilder& g) {
+        const int n = f.bandCount;
+        const float total = 1.9f * f.aspect, slot = total / n, left = -total / 2, s = f.scene.waveScale;
+        for (int i = 0; i < n; ++i) {
+            const float v = (f.bands[std::max(0, i - 1)] + 2 * f.bands[i] + f.bands[std::min(n - 1, i + 1)]) / 4;
+            const float h = 0.01f + std::pow(v, 1.2f) * 0.5f * s;
+            const Rgb c = hsv(0.5f + 0.33f * (i % 3), 0.75f, 1);
+            g.rect(left + i * slot + slot * 0.15f, -h, left + i * slot + slot * 0.85f, h, rgba(c, 0.85f));
+        }
+        const float y = 1 - std::fmod(f.t * 0.22f, 2.0f);
+        g.rect(-f.aspect, y - 0.006f, f.aspect, y + 0.006f, RGBA{1, 1, 1, 0.18f + 0.2f * f.bass()});
+    }
+
 private:
+    struct Flake { float x, y, speed, size, phase; };
+    std::vector<float> monster_;
+    std::vector<Flake> snow_;
+    static float hash01(uint32_t x) {
+        x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16;
+        return (float)(x & 0xffffffu) / 16777216.0f;
+    }
     struct Rng {
         uint32_t s = 0x12345678u;
         float next() {
@@ -1274,6 +1392,9 @@ static void drawWave(const VisualScene& scene, const AudioSnapshot& audio, const
     case WaveStyle::Tesseract: fx.tesseract(frame, g); break;
     case WaveStyle::FullKaleidoscope: fx.fullKaleidoscope(frame, g); break;
     case WaveStyle::MainStage: fx.mainStage(frame, g, over); break;
+    case WaveStyle::MonstercatBars: fx.monstercatBars(frame, over); break;
+    case WaveStyle::LofiChill: fx.lofiChill(frame, g, over); break;
+    case WaveStyle::GlitchVHS: fx.glitchVHS(frame, g); break;
     default: break;
     }
 }
@@ -1442,11 +1563,37 @@ void Renderer::setItems(const std::vector<LogoImage>& images) {
         logoTex_[count] = tex;
         logoSRV_[count] = srv;
         logoAspect_[count] = (float)img.width / (float)img.height;
+
+        // Split the item into its separate shapes so they can jump on their own.
+        ItemLayers& il = layers_[count];
+        il = ItemLayers();
+        LayerSplit split = splitLogoLayers(img.rgba.data(), img.width, img.height);
+        for (int l = 0; split.layers.size() > 1 && l < (int)split.layers.size(); ++l) {
+            int lw = 0, lh = 0;
+            std::vector<uint8_t> px = extractLogoLayer(img.rgba.data(), split, l, lw, lh);
+            D3D11_TEXTURE2D_DESC ld = d;
+            ld.Width = lw;
+            ld.Height = lh;
+            ComPtr<ID3D11Texture2D> ltex;
+            ComPtr<ID3D11ShaderResourceView> lsrv;
+            if (FAILED(device_->CreateTexture2D(&ld, nullptr, &ltex))) break;
+            ctx_->UpdateSubresource(ltex.Get(), 0, nullptr, px.data(), lw * 4, 0);
+            if (FAILED(device_->CreateShaderResourceView(ltex.Get(), nullptr, &lsrv))) break;
+            ctx_->GenerateMips(lsrv.Get());
+            float u0, v0, u1, v1;
+            logoLayerUV(split, l, u0, v0, u1, v1);
+            il.srv.push_back(lsrv);
+            il.u0.push_back(u0); il.v0.push_back(v0); il.u1.push_back(u1); il.v1.push_back(v1);
+            il.nx.push_back(split.layers[l].cx / img.width * 2 - 1);
+            il.ny.push_back(1 - split.layers[l].cy / img.height * 2);
+        }
+        if (il.srv.size() < 2) il = ItemLayers();
         ++count;
     }
     for (int i = count; i < kMaxOverlayItems; ++i) {
         logoTex_[i].Reset();
         logoSRV_[i].Reset();
+        layers_[i] = ItemLayers();
     }
     itemCount_ = count;
 }
@@ -1501,6 +1648,8 @@ VisualScene Renderer::blendedScene() const {
     s.hueShift = mix(a.hueShift, b.hueShift);
     s.plasma = mix(a.plasma, b.plasma);
     s.generative = mix(a.generative, b.generative);
+    s.chrome = mix(a.chrome, b.chrome);
+    s.glitch = mix(a.glitch, b.glitch);
     s.vignette = mix(a.vignette, b.vignette);
     s.saturation = mix(a.saturation, b.saturation);
     s.centerRadius = mix(a.centerRadius, b.centerRadius);
@@ -1704,6 +1853,20 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         lastFlashBeat_ = audio.beatCount;
     }
     flash_ *= std::pow(0.02f, dt);
+    if (audio.beatCount != lastGlitchBeat_) {
+        if (lastGlitchBeat_ != 0) glitchPulse_ = std::max(glitchPulse_, std::min(audio.beatStrength, 1.0f));
+        lastGlitchBeat_ = audio.beatCount;
+    }
+    glitchPulse_ *= std::pow(0.004f, std::max(dt, 0.0f));
+
+    // Kinetic Text fades in and out with the style blend, like MilkDrop.
+    float kineticMix = 0;
+    {
+        const float k = sceneBlend_ * sceneBlend_ * (3 - 2 * sceneBlend_);
+        const float a = previous_.wave == WaveStyle::KineticText ? 1.0f : 0.0f;
+        const float b = current_.wave == WaveStyle::KineticText ? 1.0f : 0.0f;
+        kineticMix = sceneBlend_ >= 1 ? b : a + (b - a) * k;
+    }
 
     const float aspect = frame.height > 0.5f ? frame.width / frame.height : 1.0f;
     Target& src = feedback_[feedbackIndex_];
@@ -1744,6 +1907,8 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     wu.texelY = 1.0f / fbHeight_;
     wu.mirror = scene.mirror;
     wu.generative = scene.generative;
+    wu.chrome = scene.chrome;
+    wu.chromeHue = scene.baseHue + t * scene.hueSpeed;
     updateCB(ctx_, warpCB_.Get(), wu);
 
     ctx_->IASetInputLayout(nullptr);
@@ -1775,6 +1940,10 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         lu.aspect = aspect;
         lu.r = col.r; lu.g = col.g; lu.b = col.b;
         if (i == 0) firstRadius = std::max(ext.halfW, ext.halfH) * 0.9f;
+        ItemLayers& il = layers_[i];
+        if (!il.srv.empty())
+            il.motion.update(dt, st.layerMode, st.layerAmount, il.nx, il.ny, audio.bass, audio.mid, audio.treble,
+                             audio.beatCount, audio.beatStrength);
     }
 
     // ---- Pass 2: shapes (solid "over" shapes first, then glowing additive ones) ----
@@ -1824,6 +1993,23 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         ctx_->Draw(4, 0);
         ctx_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     };
+    // One item: whole, or shape by shape when logo layers are on.
+    auto drawItem = [&](int i, const LogoCB& data, ID3D11BlendState* blend) {
+        const ItemLayers& il = layers_[i];
+        if (st.layerMode <= kLayersOff || il.srv.size() < 2) {
+            logoSRV = logoSRV_[i].Get();
+            drawLogo(data, blend);
+            return;
+        }
+        for (size_t l = 0; l < il.srv.size(); ++l) {
+            LayerQuad q = layerQuad(data.cx, data.cy, data.hx, data.hy, data.rotation, il.u0[l], il.v0[l], il.u1[l],
+                                    il.v1[l], il.motion.pose(l));
+            LogoCB lc = data;
+            lc.cx = q.cx; lc.cy = q.cy; lc.hx = q.hx; lc.hy = q.hy; lc.rotation = q.rotation;
+            logoSRV = il.srv[l].Get();
+            drawLogo(lc, blend);
+        }
+    };
 
     if (st.showLogo && st.logoTrails) {
         for (int i = 0; i < items; ++i) {
@@ -1832,7 +2018,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
             LogoCB tu = lus[i];
             tu.opacity = 0.18f;
             tu.tintAmount = 0.6f;
-            drawLogo(tu, blendPremul_.Get());
+            drawItem(i, tu, blendPremul_.Get());
         }
     }
 
@@ -1843,7 +2029,8 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ctx_->RSSetViewports(1, &svp);
     ctx_->OMSetRenderTargets(1, &target, nullptr);
     ctx_->OMSetBlendState(blendNone_.Get(), nullptr, 0xffffffff);
-    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, milkMix};
+    PresentCB pu{flash_ * st.beatFlash, scene.vignette, st.brightness, milkMix,
+                 scene.glitch, std::fmod(t, 1000.0f), glitchPulse_, 0};
     updateCB(ctx_, presentCB_.Get(), pu);
     ID3D11Buffer* cb1 = presentCB_.Get();
     ctx_->IASetInputLayout(nullptr);
@@ -1857,6 +2044,30 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     ID3D11ShaderResourceView* nullPair[2] = {nullptr, nullptr};
     ctx_->PSSetShaderResources(0, 2, nullPair);
 
+    // ---- Kinetic Text: rows of the first logo or text item sliding across, the beat lighting a row ----
+    if (kineticMix > 0.001f && logoSRV_[0]) {
+        logoSRV = logoSRV_[0].Get();
+        KineticRow rows[kKineticRows];
+        const int rowCount = kineticRows(rows, t, aspect, logoAspect_[0], audio.beatCount, glitchPulse_, audio.bass);
+        for (int r = 0; r < rowCount; ++r) {
+            const KineticRow& row = rows[r];
+            Rgb rc = hsv(scene.baseHue + t * scene.hueSpeed + r * 0.07f, 0.75f, 1);
+            for (int c = 0; c < row.copies; ++c) {
+                LogoCB kc{};
+                kc.cx = row.x0 + c * row.spacing;
+                kc.cy = row.y;
+                kc.hx = row.hx;
+                kc.hy = row.hy;
+                kc.aspect = aspect;
+                kc.r = rc.r; kc.g = rc.g; kc.b = rc.b;
+                kc.tintAmount = 0.85f;
+                kc.mipBias = 0.5f;
+                kc.opacity = row.opacity * kineticMix;
+                drawLogo(kc, blendAdd_.Get());
+            }
+        }
+    }
+
     for (int i = 0; st.showLogo && i < items; ++i) {
         logoSRV = logoSRV_[i].Get();
         if (!logoSRV) continue;
@@ -1868,11 +2079,11 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
             gu.mipBias = 5;
             gu.tintAmount = 1;
             gu.opacity = st.glow * (0.35f + std::min(audio.bass, 1.2f) * 0.9f);
-            drawLogo(gu, blendAdd_.Get());
+            drawItem(i, gu, blendAdd_.Get());
         }
         lu.opacity = 1;
         lu.tintAmount = st.logoTint;
-        drawLogo(lu, blendPremul_.Get());
+        drawItem(i, lu, blendPremul_.Get());
     }
 
     ctx_->PSSetShaderResources(0, 1, nullSRV);

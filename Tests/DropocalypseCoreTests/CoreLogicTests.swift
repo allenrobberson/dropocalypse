@@ -52,6 +52,59 @@ final class CoreLogicTests: XCTestCase {
         XCTAssertEqual(Checksums.sha256(for: "only.txt", in: "deadbeef  only.txt\n"), "deadbeef")
     }
 
+    func testLogoLayersSplitIntoShapes() {
+        let w = 60, h = 20
+        var img = [UInt8](repeating: 0, count: w * h * 4)
+        func put(_ x: Int, _ y: Int, _ a: UInt8) { img[(y * w + x) * 4 + 3] = a }
+        for y in 5..<15 {
+            for x in 40..<50 { put(x, y, 255) }
+            for x in 3..<12 { put(x, y, 255) }
+            for x in 22..<30 { put(x, y, 255) }
+            put(12, y, 40)
+        }
+        put(56, 2, 255)
+        let split = LogoLayers.split(img, width: w, height: h)
+        XCTAssertEqual(split.layers.count, 3)
+        XCTAssertEqual(split.layers[0].x0, 3)
+        XCTAssertEqual(split.layers[0].x1, 13)
+        XCTAssertEqual(split.layers[1].x0, 22)
+        XCTAssertEqual(split.layers[2].x1, 57)
+        let one = split.extractLayer(img, 1)
+        XCTAssertEqual(one.width, 10)
+        XCTAssertEqual(one.height, 12)
+        XCTAssertEqual(one.pixels[(1 * one.width + 1) * 4 + 3], 255)
+        XCTAssertEqual(LogoLayers.split([UInt8](repeating: 255, count: 256), width: 8, height: 8).layers.count, 1)
+        XCTAssertEqual(LogoLayers.split([UInt8](repeating: 0, count: 256), width: 8, height: 8).layers.count, 1)
+        var dots = [UInt8](repeating: 0, count: 200 * 10 * 4)
+        for d in 0..<40 { for y in 2..<6 { for x in (d * 5)..<(d * 5 + 3) { dots[(y * 200 + x) * 4 + 3] = 255 } } }
+        XCTAssertEqual(LogoLayers.split(dots, width: 200, height: 10).layers.count, LogoLayers.maxLayers)
+    }
+
+    func testLayerMotionKicksAndSettles() {
+        let nx: [Float] = [-1, 0, 1], ny: [Float] = [0, 0, 0]
+        for mode in LayerMode.allCases where mode != .off {
+            var m = LayerMotion()
+            m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 1, beatStrength: 0)
+            var peak: Float = 0
+            for f in 0..<40 {
+                m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: f < 20 ? 1 : 0, mid: 0.5, treble: 0.3,
+                         beatCount: 2, beatStrength: 1)
+                for i in 0..<3 { let p = m.pose(i); peak = max(peak, abs(p.x) + abs(p.y) + abs(p.scale - 1)) }
+            }
+            XCTAssertGreaterThan(peak, 0.05, mode.name)
+            for _ in 0..<400 {
+                m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 2, beatStrength: 0)
+            }
+            for i in 0..<3 {
+                let p = m.pose(i)
+                XCTAssertLessThan(abs(p.x) + abs(p.y) + abs(p.scale - 1), 0.03, mode.name)
+            }
+        }
+        let q = LayerQuad(itemCx: 0, itemCy: 0, itemHx: 1, itemHy: 1, itemRotation: 0, u0: 0, v0: 0, u1: 0.5, v1: 1, pose: LayerPose())
+        XCTAssertEqual(q.cx, -0.5, accuracy: 1e-5)
+        XCTAssertEqual(q.hx, 0.5, accuracy: 1e-5)
+    }
+
     func testSceneCycleLeavesOutUserPresets() {
         let names = (0..<40).map { "s\($0)" }
         XCTAssertEqual(SceneCycle.nextIndex(after: 34, names: names, skipped: [], cycleable: 35), 0)
@@ -229,5 +282,21 @@ final class CoreLogicTests: XCTestCase {
             developerID: developerID,
             teamID: teamID,
             gatekeeperAccepted: gatekeeperAccepted)
+    }
+
+    func testKineticTextRowsCoverTheScreen() {
+        let aspect: Float = 16.0 / 9.0
+        for time: Float in [0, 3.7, 120.25] {
+            let rows = KineticText.layout(time: time, aspect: aspect, itemAspect: 3, beatCount: 9, pulse: 1, bass: 0.5)
+            XCTAssertEqual(rows.count, KineticText.rows)
+            for row in rows {
+                XCTAssertTrue(row.copies > 1 && row.copies <= 40)
+                XCTAssertLessThanOrEqual(row.x0 - row.hx, -aspect)
+                XCTAssertGreaterThanOrEqual(row.x0 + Float(row.copies - 1) * row.spacing + row.hx, aspect)
+            }
+            XCTAssertGreaterThan(rows[9 % 7].opacity, rows[10 % 7].opacity)
+        }
+        let wide = KineticText.layout(time: 0, aspect: 1, itemAspect: 40, beatCount: 0, pulse: 0, bass: 0)
+        XCTAssertLessThanOrEqual(wide[0].hx, 0.9 + 1e-5)
     }
 }

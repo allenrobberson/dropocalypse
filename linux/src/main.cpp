@@ -171,6 +171,8 @@ static std::string serialize(const AppSettings& s) {
                   r.brightness, s.sensitivity, s.beatThreshold);
     std::string out = buf;
     out += "cycleSkip=" + std::to_string(r.cycleSkip) + "\n";
+    out += "layerMode=" + std::to_string(r.layerMode) + "\n";
+    out += "layerAmount=" + std::to_string(r.layerAmount) + "\n";
     out += std::string("cycleUserPresets=") + (r.cycleUserPresets ? "1" : "0") + "\n";
     out += "milkFolder=" + narrow(s.milkFolder) + "\n";
     out += "audioSource=" + s.audioSource + "\n";
@@ -229,6 +231,8 @@ static bool loadSettings(const std::wstring& path, AppSettings& s) {
     num("glow", r.glow, 0, 1.5f);
     num("logoTint", r.logoTint, 0, 1);
     flag("logoTrails", r.logoTrails);
+    if (kv.count("layerMode")) r.layerMode = std::clamp(std::atoi(kv["layerMode"].c_str()), 0, kLayerModeCount - 1);
+    num("layerAmount", r.layerAmount, 0, 1.5f);
     num("beatFlash", r.beatFlash, 0, 1);
     num("brightness", r.brightness, 0.4f, 1.6f);
     num("sensitivity", s.sensitivity, 0.2f, 4);
@@ -273,6 +277,7 @@ static void resetMotion(RenderSettings& r) {
     RenderSettings d;
     r.logoSize = d.logoSize; r.pulse = d.pulse; r.squash = d.squash; r.bounce = d.bounce; r.slide = d.slide;
     r.wobble = d.wobble; r.glow = d.glow; r.logoTrails = d.logoTrails; r.logoTint = d.logoTint;
+    r.layerMode = d.layerMode; r.layerAmount = d.layerAmount;
     r.beatFlash = d.beatFlash; r.brightness = d.brightness;
 }
 
@@ -1534,6 +1539,21 @@ static void motionPanelBody(RenderSettings& r) {
     slider("Slide", &r.slide, 0, 1.5f);
     slider("Wobble", &r.wobble, 0, 1.5f);
     ui3d::endWell();
+    ImGui::TextUnformatted("Logo layers");
+    {
+        const char* modes[kLayerModeCount];
+        for (int m = 0; m < kLayerModeCount; ++m) modes[m] = layerModeName(m);
+        ui3d::segmented("layers", modes, kLayerModeCount, &r.layerMode);
+    }
+    ImGui::BeginDisabled(r.layerMode == kLayersOff);
+    ui3d::beginWell();
+    slider("Layer jump", &r.layerAmount, 0, 1.5f);
+    ui3d::endWell();
+    ImGui::EndDisabled();
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Each separate shape in your logo (a letter, an icon) jumps on its own: "
+                        "a wave across, bursting out, riding the bass/mid/treble, or scattering.");
+    ImGui::PopTextWrapPos();
     if (ui3d::button("Reset to defaults")) resetMotion(r);
 }
 

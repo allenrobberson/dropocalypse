@@ -302,9 +302,21 @@ jobs:
             grep -q "items 3" items$frame.log || { echo "expected 3 items on screen"; exit 1; }
             convert items$frame.ppm -resize 50% selftest/items-$([ $frame = 1 ] && echo portrait || echo landscape).png
           done
-          # A bundled MilkDrop preset (style 27, Acid Mandala) through projectM.
+          # The five newest built-in styles, with the logo split into layers.
+          i=26
+          for name in "Monstercat Bars" "Lo-fi Chill" "Glitch VHS" "Liquid Chrome" "Kinetic Text"; do
+            rm -rf /tmp/dropocalypse-selftest && mkdir -p /tmp/dropocalypse-selftest/dropocalypse
+            printf 'sceneIndex=%s\nautoCycle=0\nlayerMode=3\nitems=1\nitem0.kind=text\nitem0.text=DROP\nitem0.font=1\nitem0.color=1\n' \
+              "$i" > /tmp/dropocalypse-selftest/dropocalypse/settings.ini
+            xvfb-run -a -s "-screen 0 1280x720x24" ./build-linux/dropocalypse --self-test=style$i.ppm | tee style$i.log
+            grep -q "style $name" style$i.log || { echo "expected the $name style"; exit 1; }
+            convert style$i.ppm -resize 50% "selftest/style-$i.png"
+            convert style$i.ppm -format "$name frame mean brightness %[fx:mean]\n" info:
+            i=$((i+1))
+          done
+          # A bundled MilkDrop preset (style 32, Acid Mandala) through projectM.
           rm -rf /tmp/dropocalypse-selftest && mkdir -p /tmp/dropocalypse-selftest/dropocalypse
-          printf 'sceneIndex=26\nautoCycle=0\n' > /tmp/dropocalypse-selftest/dropocalypse/settings.ini
+          printf 'sceneIndex=31\nautoCycle=0\n' > /tmp/dropocalypse-selftest/dropocalypse/settings.ini
           xvfb-run -a -s "-screen 0 1280x720x24" ./build-linux/dropocalypse --self-test=milk.ppm | tee milk.log
           grep -q "milkdrop on (9 presets)" milk.log || { echo "MilkDrop presets did not load"; exit 1; }
           grep -q "style Acid Mandala" milk.log || { echo "expected the Acid Mandala style"; exit 1; }

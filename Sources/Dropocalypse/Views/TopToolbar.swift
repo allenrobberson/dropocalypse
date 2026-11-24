@@ -642,6 +642,17 @@ struct TopToolbar: View {
                 slider("Slide", $settings.slide, 0...1.5)
                 slider("Wobble", $settings.wobble, 0...1.5)
             }
+            Text("Logo layers").font(.caption)
+            Segmented3D(selection: $settings.layerMode,
+                        options: LayerMode.allCases.map { (label: $0.name, value: $0.rawValue) })
+            Well {
+                slider("Layer jump", $settings.layerAmount, 0...1.5)
+            }
+            .disabled(settings.layerMode == 0)
+            Text("Each separate shape in your logo (a letter, an icon) jumps on its own: a wave across, "
+                 + "bursting out, riding the bass/mid/treble, or scattering.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Button("Reset to defaults") { settings.resetMotion() }
         }
     }

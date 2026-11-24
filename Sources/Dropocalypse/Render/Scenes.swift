@@ -28,6 +28,11 @@ enum WaveStyle: Int, CaseIterable {
     case tesseract       // a 4D hypercube rotating through the fourth dimension
     case fullKaleidoscope // full-frame 4-way / 8-way mandala
     case mainStage       // arena floor: cathedral beam vaults, lasers, crowd
+    case monstercatBars  // a row of tidy white-ish spectrum bars above the logo
+    case lofiChill       // a night town under a big moon, snow and fog
+    case glitchVHS       // a spectrum and sweep line; tape damage comes from fs_present
+    case liquidChrome    // polished flowing metal (the warp shader's chrome field)
+    case kineticText     // rows of the first item sliding across (drawn by the renderer)
     case milkdrop        // a MilkDrop preset played by projectM (Milkdrop.swift); `milk` says which
 }
 
@@ -52,6 +57,10 @@ struct VisualScene {
     var plasma: Float = 0
     /// 0 = ordinary feedback. 1 = the Full Kaleidoscope field (see the warp shader).
     var generative: Float = 0
+    /// 0 = off. 1 = the Liquid Chrome field replaces the feedback (warp shader).
+    var chrome: Float = 0
+    /// 0 = off. 1 = VHS tape damage in the final pass (Glitch VHS).
+    var glitch: Float = 0
 
     // Foreground drawing.
     var wave: WaveStyle = .circle
@@ -70,9 +79,9 @@ struct VisualScene {
 }
 
 extension VisualScene {
-    static let builtInCount = 26
+    static let builtInCount = 31
 
-    /// Every style: the 26 built-ins, then one per MilkDrop preset. Main thread only.
+    /// Every style: the 31 built-ins, then one per MilkDrop preset. Main thread only.
     private(set) static var all: [VisualScene] = builtIn
 
     /// Replaces the MilkDrop styles with one per name (bundled presets first, then the user's folder).
@@ -211,5 +220,25 @@ extension VisualScene {
         VisualScene(name: "Main Stage",
                     zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.84, hueShift: 0,
                     wave: .mainStage, baseHue: 0.08, hueSpeed: 0, vignette: 0.4),
+
+        VisualScene(name: "Monstercat Bars",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.3, hueShift: 0,
+                    wave: .monstercatBars, baseHue: 0.55, hueSpeed: 0.01, vignette: 0.3),
+
+        VisualScene(name: "Lo-fi Chill",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.5, hueShift: 0,
+                    wave: .lofiChill, baseHue: 0.75, hueSpeed: 0, vignette: 0.45),
+
+        VisualScene(name: "Glitch VHS",
+                    zoom: 1.006, zoomBass: 0.02, warpAmount: 0.001, decay: 0.72, hueShift: 0.003, glitch: 1,
+                    wave: .glitchVHS, baseHue: 0.5, vignette: 0.5),
+
+        VisualScene(name: "Liquid Chrome",
+                    zoom: 1.0, zoomBass: 0, warpAmount: 0, decay: 0.9, hueShift: 0, chrome: 1,
+                    wave: .liquidChrome, baseHue: 0.58, hueSpeed: 0.01, vignette: 0.4),
+
+        VisualScene(name: "Kinetic Text",
+                    zoom: 1.004, zoomBass: 0.01, warpAmount: 0.0015, decay: 0.86, hueShift: 0.004,
+                    wave: .kineticText, baseHue: 0.9, hueSpeed: 0.02, vignette: 0.35),
     ]
 }

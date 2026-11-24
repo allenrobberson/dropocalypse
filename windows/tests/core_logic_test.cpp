@@ -1,4 +1,5 @@
 #include "core_logic.h"
+#include "logo_layers.h"
 
 #include <cmath>
 #include <cstdio>
@@ -429,6 +430,83 @@ int main() {
         std::fprintf(stderr, "%d check(s) failed\n", gFailures);
         return 1;
     }
+    {   // Logo layers: three shapes (plus a speck and soft edges) become three layers, left to right.
+        const int w = 60, h = 20;
+        std::vector<std::uint8_t> img((size_t)w * h * 4, 0);
+        auto put = [&](int x, int y, int a) { img[((size_t)y * w + x) * 4 + 3] = (std::uint8_t)a; };
+        for (int y = 5; y < 15; ++y) {
+            for (int x = 40; x < 50; ++x) put(x, y, 255);   // right
+            for (int x = 3; x < 12; ++x) put(x, y, 255);    // left
+            for (int x = 22; x < 30; ++x) put(x, y, 255);   // middle
+            put(12, y, 40);                                  // soft edge of the left shape
+        }
+        put(56, 2, 255);                                     // a speck: joins the nearest layer
+        LayerSplit split = splitLogoLayers(img.data(), w, h);
+        CHECK(split.layers.size() == 3);
+        CHECK(split.layers[0].x0 == 3 && split.layers[0].x1 == 13);   // includes the soft edge
+        CHECK(split.layers[1].x0 == 22);
+        CHECK(split.layers[2].x1 == 57);                              // the speck went right
+        int lw = 0, lh = 0;
+        auto one = extractLogoLayer(img.data(), split, 1, lw, lh);
+        CHECK(lw == 10 && lh == 12 && one.size() == (size_t)lw * lh * 4);
+        CHECK(one[((size_t)1 * lw + 1) * 4 + 3] == 255);
+        CHECK(one[3] == 0);
+        // A single shape stays one layer; an empty image gives one full-size layer.
+        std::vector<std::uint8_t> solid((size_t)8 * 8 * 4, 255);
+        CHECK(splitLogoLayers(solid.data(), 8, 8).layers.size() == 1);
+        std::vector<std::uint8_t> clear((size_t)8 * 8 * 4, 0);
+        CHECK(splitLogoLayers(clear.data(), 8, 8).layers.size() == 1);
+        // Many pieces: only the largest kLogoLayers survive.
+        std::vector<std::uint8_t> dots((size_t)200 * 10 * 4, 0);
+        for (int d = 0; d < 40; ++d)
+            for (int y = 2; y < 6; ++y)
+                for (int x = d * 5; x < d * 5 + 3; ++x) dots[((size_t)y * 200 + x) * 4 + 3] = 255;
+        CHECK((int)splitLogoLayers(dots.data(), 200, 10).layers.size() == kMaxLogoLayers);
+    }
+    {   // Layer motion: a beat kicks the layers, and they settle back into place.
+        LayerMotion m;
+        std::vector<float> nx = {-1, 0, 1}, ny = {0, 0, 0};
+        for (int mode = kLayersWave; mode < kLayerModeCount; ++mode) {
+            LayerMotion lm;
+            lm.update(0.016f, mode, 1, nx, ny, 0, 0, 0, 1, 0);
+            float peak = 0;
+            for (int f = 0; f < 40; ++f) {
+                lm.update(0.016f, mode, 1, nx, ny, f < 20 ? 1.0f : 0.0f, 0.5f, 0.3f, 2, 1.0f);
+                for (size_t i = 0; i < 3; ++i) {
+                    LayerPose p = lm.pose(i);
+                    peak = std::max(peak, std::fabs(p.x) + std::fabs(p.y) + std::fabs(p.scale - 1));
+                }
+            }
+            CHECK(peak > 0.05f);
+            for (int f = 0; f < 400; ++f) lm.update(0.016f, mode, 1, nx, ny, 0, 0, 0, 2, 0);
+            for (size_t i = 0; i < 3; ++i) {
+                LayerPose p = lm.pose(i);
+                CHECK(std::fabs(p.x) < 0.01f && std::fabs(p.y) < 0.01f && std::fabs(p.scale - 1) < 0.01f);
+            }
+        }
+        m.update(0.016f, kLayersOff, 1, nx, ny, 1, 1, 1, 5, 1);
+        CHECK(m.pose(0).y == 0 && m.pose(2).scale == 1);
+        LayerQuad q = layerQuad(0, 0, 1, 1, 0, 0, 0, 0.5f, 1, LayerPose());
+        CHECK(std::fabs(q.cx + 0.5f) < 1e-5f && std::fabs(q.cy) < 1e-5f && std::fabs(q.hx - 0.5f) < 1e-5f);
+    }
+    {   // Kinetic Text rows cover the screen edge to edge and the beat lights one row.
+        KineticRow rows[kKineticRows];
+        for (float t : {0.0f, 3.7f, 120.25f}) {
+            int n = kineticRows(rows, t, 16.0f / 9.0f, 3.0f, 9, 1.0f, 0.5f);
+            CHECK(n == kKineticRows);
+            for (int r = 0; r < n; ++r) {
+                const KineticRow& row = rows[r];
+                CHECK(row.copies > 1 && row.copies <= 40);
+                CHECK(row.x0 - row.hx <= -16.0f / 9.0f);
+                CHECK(row.x0 + (row.copies - 1) * row.spacing + row.hx >= 16.0f / 9.0f);
+                CHECK(row.y > -1 && row.y < 1);
+            }
+            CHECK(rows[9 % kKineticRows].opacity > rows[(9 + 1) % kKineticRows].opacity);
+        }
+        kineticRows(rows, 0, 1, 40.0f, 0, 0, 0); // a very wide item still fits
+        CHECK(rows[0].hx <= 0.9f + 1e-5f);
+    }
+
     std::printf("core_logic tests passed\n");
     return 0;
 }

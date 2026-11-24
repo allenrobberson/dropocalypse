@@ -64,6 +64,9 @@ final class AppSettings: ObservableObject {
     @AppStorage("glow") var glow: Double = 0.6
     @AppStorage("logoTrails") var logoTrails: Bool = false
     @AppStorage("logoTint") var logoTint: Double = 0.0
+    /// Logo layers (LogoLayers.swift): 0 off, 1 wave, 2 explode, 3 bands, 4 scatter.
+    @AppStorage("layerMode") var layerMode: Int = 0
+    @AppStorage("layerAmount") var layerAmount: Double = 0.7
 
     // Look
     @AppStorage("beatFlash") var beatFlash: Double = 0.4
@@ -75,6 +78,7 @@ final class AppSettings: ObservableObject {
     func resetMotion() {
         logoSize = 0.32; pulse = 0.7; squash = 0.6; bounce = 0.5; slide = 0.4
         wobble = 0.35; glow = 0.6; logoTrails = false; logoTint = 0
+        layerMode = 0; layerAmount = 0.7
         beatFlash = 0.4; brightness = 1.0
     }
 }

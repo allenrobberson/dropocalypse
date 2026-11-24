@@ -1,4 +1,4 @@
-// Dropocalypse for Windows - the 26 built-in styles (same values as the macOS Scenes.swift),
+// Dropocalypse for Windows - the 31 built-in styles (same values as the macOS Scenes.swift),
 // plus MilkDrop presets added at run time (see allScenes()).
 #pragma once
 
@@ -17,6 +17,7 @@ enum class WaveStyle {
     Tesseract,
     FullKaleidoscope,
     MainStage,
+    MonstercatBars, LofiChill, GlitchVHS, LiquidChrome, KineticText,
     // A MilkDrop preset played by projectM (milkdrop.h); VisualScene::milk says which.
     Milkdrop
 };
@@ -33,16 +34,18 @@ struct VisualScene {
     WaveStyle wave = WaveStyle::Circle;
     float centerRadius = 0.32f, waveScale = 1, thickness = 1;
     float baseHue = 0, hueSpeed = 0.03f, saturation = 0.9f, vignette = 0.35f;
+    float chrome = 0;   // 1 = the Liquid Chrome field replaces the feedback picture
+    float glitch = 0;   // 1 = the final pass adds VHS tape damage (RGB split, tears, scanlines)
     /// For WaveStyle::Milkdrop: index into the MilkDrop preset list (bundled first, then the
     /// user's folder). -1 for every built-in style.
     int milk = -1;
 };
 
-constexpr int kBuiltInSceneCount = 26;
+constexpr int kBuiltInSceneCount = 31;
 
-inline const std::array<VisualScene, 26>& builtInScenes() {
-    static const std::array<VisualScene, 26> scenes = [] {
-        std::array<VisualScene, 26> s{};
+inline const std::array<VisualScene, 31>& builtInScenes() {
+    static const std::array<VisualScene, 31> scenes = [] {
+        std::array<VisualScene, 31> s{};
         VisualScene* c;
 
         c = &s[0]; c->name = "Classic Tunnel";
@@ -171,12 +174,32 @@ inline const std::array<VisualScene, 26>& builtInScenes() {
         c = &s[25]; c->name = "Main Stage";
         c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.84f; c->hueShift = 0;
         c->wave = WaveStyle::MainStage; c->baseHue = 0.08f; c->hueSpeed = 0; c->vignette = 0.4f;
+
+        c = &s[26]; c->name = "Monstercat Bars";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.3f; c->hueShift = 0;
+        c->wave = WaveStyle::MonstercatBars; c->baseHue = 0.55f; c->hueSpeed = 0.01f; c->vignette = 0.3f;
+
+        c = &s[27]; c->name = "Lo-fi Chill";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.5f; c->hueShift = 0;
+        c->wave = WaveStyle::LofiChill; c->baseHue = 0.75f; c->hueSpeed = 0; c->vignette = 0.45f;
+
+        c = &s[28]; c->name = "Glitch VHS";
+        c->zoom = 1.006f; c->zoomBass = 0.02f; c->warpAmount = 0.001f; c->decay = 0.72f; c->hueShift = 0.003f;
+        c->wave = WaveStyle::GlitchVHS; c->glitch = 1; c->baseHue = 0.5f; c->vignette = 0.5f;
+
+        c = &s[29]; c->name = "Liquid Chrome";
+        c->zoom = 1.0f; c->zoomBass = 0; c->warpAmount = 0; c->decay = 0.9f; c->hueShift = 0;
+        c->wave = WaveStyle::LiquidChrome; c->chrome = 1; c->baseHue = 0.58f; c->hueSpeed = 0.01f; c->vignette = 0.4f;
+
+        c = &s[30]; c->name = "Kinetic Text";
+        c->zoom = 1.004f; c->zoomBass = 0.01f; c->warpAmount = 0.0015f; c->decay = 0.86f; c->hueShift = 0.004f;
+        c->wave = WaveStyle::KineticText; c->baseHue = 0.9f; c->hueSpeed = 0.02f; c->vignette = 0.35f;
         return s;
     }();
     return scenes;
 }
 
-/// Every style: the 26 built-ins, then one per MilkDrop preset (setMilkdropScenes).
+/// Every style: the 31 built-ins, then one per MilkDrop preset (setMilkdropScenes).
 inline std::vector<VisualScene>& sceneRegistry() {
     static std::vector<VisualScene> list(builtInScenes().begin(), builtInScenes().end());
     return list;

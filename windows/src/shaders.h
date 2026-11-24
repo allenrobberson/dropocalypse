@@ -47,7 +47,38 @@ cbuffer WarpCB : register(b0) {
     float texelY;
     int   mirror;
     float generative; // 0 off, 1 = Full Kaleidoscope field mixed over the feedback
+    float chrome;     // 0 off, 1 = Liquid Chrome field replaces the feedback
+    float chromeHue;
+    float warpPad0;
+    float warpPad1;
 };
+
+// Liquid Chrome: a flowing height field shaded like polished metal reflecting a studio sky.
+float chromeHeight(float2 p, float t) {
+    float2 q = p + 0.35 * float2(sin(p.y * 1.7 + t * 1.3), cos(p.x * 1.4 - t * 1.1));
+    float h = sin(q.x * 2.1 + t) * cos(q.y * 1.8 - t * 0.8)
+            + 0.5 * sin(length(q) * 3.2 - t * 2.0 - bass * 1.5)
+            + 0.25 * sin((q.x - q.y) * 4.0 + t * 1.7 + mid * 2.0);
+    return h * (0.55 + bass * 0.6);
+}
+
+float3 chromeField(float2 uv) {
+    float2 p = (uv - 0.5) * float2(max(aspect, 0.05), 1.0) * 2.2;
+    float t = time * 0.35;
+    const float e = 0.01;
+    float h = chromeHeight(p, t);
+    float hx = chromeHeight(p + float2(e, 0.0), t);
+    float hy = chromeHeight(p + float2(0.0, e), t);
+    float3 n = normalize(float3((h - hx) / e * 0.35, (h - hy) / e * 0.35, 1.0));
+    float3 r = reflect(float3(0.0, 0.0, -1.0), n);
+    float3 tint = 0.5 + 0.5 * cos(6.2831853 * (chromeHue + float3(0.0, 0.33, 0.67)));
+    float3 sky = lerp(float3(0.03, 0.03, 0.05), float3(0.92, 0.95, 1.0), smoothstep(-0.15, 0.7, r.y));
+    float horizon = exp(-pow((r.y - 0.08) * 8.0, 2.0));
+    float3 col = sky * lerp(float3(1.0, 1.0, 1.0), tint, 0.35) + horizon * lerp(float3(1.0, 1.0, 1.0), tint, 0.6) * 1.2;
+    col += pow(1.0 - saturate(n.z), 1.5) * tint * 0.8;
+    col += pow(saturate(r.x * 0.5 + r.y * 0.8), 24.0) * 1.5;
+    return col * (0.85 + bass * 0.3);
+}
 
 // Full Kaleidoscope: a mandala that fills the frame. Four-way mirror always;
 // a diagonal fold fades in and out so the same picture sometimes reads as eight-way.
@@ -197,6 +228,9 @@ float4 fs_warp(FSOut i) : SV_Target {
         float3 gen = kaleidoField(i.uv);
         c = lerp(c, max(c, float3(0.0, 0.0, 0.0)) * 0.42 + gen, saturate(generative));
     }
+
+    // uv runs top to bottom; flip so the chrome's sky is up.
+    if (chrome > 0.001) c = lerp(c, chromeField(float2(i.uv.x, 1.0 - i.uv.y)), saturate(chrome));
 
     return float4(max(c, float3(0.0, 0.0, 0.0)), 1.0);
 }
@@ -388,11 +422,36 @@ cbuffer PresentCB : register(b1) {
     float flash;
     float vignette;
     float brightness;
-    float milkMix;   // 0 = our picture, 1 = the MilkDrop preset (tex1)
+    float milkMix;     // 0 = our picture, 1 = the MilkDrop preset (tex1)
+    float glitch;      // 0 off, 1 = VHS tape damage (Glitch VHS)
+    float glitchTime;
+    float glitchPulse; // jumps on the beat, then fades
+    float presentPad;
 };
 
+float3 presentBase(float2 uv) {
+    return lerp(tex0.Sample(sampClamp, uv).rgb, tex1.Sample(sampClamp, uv).rgb, milkMix);
+}
+
+float glitchHash(float2 p) { return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+
 float4 fs_present(FSOut i) : SV_Target {
-    float3 c = lerp(tex0.Sample(sampClamp, i.uv).rgb, tex1.Sample(sampClamp, i.uv).rgb, milkMix) * brightness;
+    float3 base;
+    if (glitch > 0.001) {
+        // Tape wobble, torn bands that jump sideways on the beat, colour fringes, scanlines, grain.
+        float2 uv = i.uv;
+        uv.x += sin(uv.y * 28.0 + glitchTime * 5.0) * 0.0022 * glitch;
+        float band = floor(uv.y * 36.0), tick = floor(glitchTime * 14.0);
+        if (glitchHash(float2(band, tick)) > 1.0 - glitch * (0.05 + 0.35 * glitchPulse))
+            uv.x += (glitchHash(float2(tick, band)) - 0.5) * 0.12 * (0.3 + glitchPulse) * glitch;
+        float off = (0.0025 + 0.018 * glitchPulse) * glitch;
+        base = float3(presentBase(uv + float2(off, 0.0)).r, presentBase(uv).g, presentBase(uv - float2(off, 0.0)).b);
+        base *= 1.0 - 0.16 * glitch * (0.5 + 0.5 * sin(i.uv.y * 1100.0));
+        base = max(base + (glitchHash(i.uv * 917.0 + glitchTime) - 0.5) * 0.07 * glitch, 0.0);
+    } else {
+        base = presentBase(i.uv);
+    }
+    float3 c = base * brightness;
     float2 p = i.uv - 0.5;
     c *= 1.0 - vignette * dot(p, p) * 2.0;
     c += flash * 0.18;

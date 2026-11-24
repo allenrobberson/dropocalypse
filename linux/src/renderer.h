@@ -4,6 +4,7 @@
 #include "audio.h"
 #include "core_logic.h"
 #include "scenes.h"
+#include "logo_layers.h"
 
 #include "gl.h"
 #include "milkdrop_host.h"
@@ -41,6 +42,9 @@ struct RenderSettings {
     float pulse = 0.7f, squash = 0.6f, bounce = 0.5f, slide = 0.4f, wobble = 0.35f;
     float glow = 0.6f, logoTint = 0.0f;
     bool logoTrails = false;
+    /// Logo layers (logo_layers.h): 0 off, 1 wave, 2 explode, 3 bands, 4 scatter.
+    int layerMode = 0;
+    float layerAmount = 0.7f;
     float beatFlash = 0.4f, brightness = 1.0f;
     /// False fills the window. True draws a centered 9:16 frame (and recordings match it).
     bool portrait = false;
@@ -162,6 +166,17 @@ private:
     GLuint logoTex_[kMaxOverlayItems] = {0, 0, 0, 0};
     float logoAspect_[kMaxOverlayItems] = {1, 1, 1, 1};
     int itemCount_ = 0;
+
+    /// Each item split into its separate shapes, one texture per shape.
+    struct ItemLayers {
+        std::vector<GLuint> tex;
+        std::vector<float> u0, v0, u1, v1, nx, ny;
+        LayerMotion motion;
+    };
+    ItemLayers layers_[kMaxOverlayItems];
+    void clearLayers(int item);
+    float glitchPulse_ = 0;
+    int lastGlitchBeat_ = 0;
 
     Spectrum spectrum_;
     LogoMotion motion_[kMaxOverlayItems];
