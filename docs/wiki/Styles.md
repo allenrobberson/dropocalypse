@@ -51,6 +51,22 @@ See every style moving in the [animated gallery on the GitHub page](https://gith
 | 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
 | 26 | **Main Stage** | Stand on an arena floor. Truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick. Lasers spray from the stage on the beat and scan the crowd, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue. |
 
+**Trending looks:** five styles that are everywhere on music channels and socials right now.
+
+| # | Style | What it looks like |
+|---|---|---|
+| 27 | **Monstercat Bars** | A tidy row of smooth, pale spectrum bars above the logo that leap up on the bass and glide back down: the look of electronic music channels on YouTube |
+| 28 | **Lo-fi Chill** | A quiet night town under a big glowing moon, with lit windows, drifting fog, falling snow and a small soft equalizer along the bottom. The moon's halo breathes with the bass. |
+| 29 | **Glitch VHS** | A neon spectrum and a sweeping scan line on worn videotape. On every beat the picture tears into sideways bands, splits into colour fringes and wobbles, with scanlines and grain throughout. |
+| 30 | **Liquid Chrome** | Flowing, polished liquid metal reflecting a bright studio sky. It swells and ripples with the bass and slowly shifts colour. |
+| 31 | **Kinetic Text** | Rows of your first logo or text item slide across the screen in alternating directions, faster with the bass. The row the beat lands on lights up and grows. Add your DJ name as a text item for a lyric-video look. |
+
+## MilkDrop presets
+
+After the built-in styles comes a **MilkDrop** section with 9 classic presets, played by the open-source [projectM](https://github.com/projectM-visualizer/projectm) engine: **Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks** and **Lorenz Chaser**. They crossfade in and out like every other style and can be checked for auto-cycle.
+
+**Add your own:** open the style list and, under **Your MilkDrop presets**, click **Choose folder** and pick a folder of `.milk` files (subfolders are searched too). Each preset becomes a style you can search for and click. **Rescan** picks up new files, **Open** shows the folder and **Remove** forgets it. Your own presets stay out of auto-cycle unless you turn on **Include these presets in auto-cycle**, so a pack of thousands won't take over a show. Download the 9 bundled presets as a zip from the [milkdrop folder](https://github.com/allenrobberson/dropocalypse/tree/main/milkdrop) on GitHub.
+
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
 > **Tip:** **Bass Ring** and **Particle Storm** are built around a centered logo, so try turning **Bounce** and **Slide** down so the logo stays put. For **Pulsar Ridges** and **Outrun Grid**, a smaller **Size** (around 0.2) keeps the logo from covering the scene.

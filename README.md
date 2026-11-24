@@ -62,13 +62,14 @@
   </tr>
 </table>
 
-<p align="center"><sub>All 26 styles. The first 25 were recorded in the Mac app with real music playing; Main Stage is rendered from the same drawing code. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
+<p align="center"><sub>26 of the 31 styles, plus 9 MilkDrop presets in the app. The first 25 were recorded in the Mac app with real music playing; Main Stage is rendered from the same drawing code. The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 
 Play music and the visuals swirl, zoom and pulse. It listens straight to what your computer is playing (Spotify, Apple Music, YouTube, DJ software: no mic needed), or through a microphone or line-in. Your logo sits on top and **pulses, squashes and stretches, bounces, slides and wobbles** on every kick drum.
 
-- 🎛 **26 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, **Full Kaleidoscope** (a full-frame neon mandala) and **Main Stage** (the view from an arena floor, with cathedral-style beam vaults, lasers and a crowd). Pick one or let them auto-cycle with smooth crossfades.
+- 🎛 **26 built-in visual styles**: 10 Winamp/MilkDrop-style originals, 10 takes on the most-loved visualizer looks (a bass ring around your logo, neon equalizer bars, ridgelines, a synthwave grid, hyperspace, a particle storm, lightning, digital rain, a lava lamp and flames), plus 3 more equalizers (mirrored, LED meter and rainbow peaks), a 4D Tesseract, **Full Kaleidoscope** (a full-frame neon mandala), **Main Stage** (the view from an arena floor, with cathedral-style beam vaults, lasers and a crowd) and five trending looks: **Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome** and **Kinetic Text**. Pick one or let them auto-cycle with smooth crossfades.
+- 🌀 **MilkDrop presets**: 9 classic presets built in, played by the open-source projectM engine, and you can **point it at your own folder of `.milk` files** to add thousands more.
 - 🖼 **Your logos and text**: up to 4 at once, side by side (or stacked in Portrait). Drag images onto the window, or add text in your choice of font and color. Transparent PNGs look best. Everything is remembered between launches.
 - 🥁 **Bass-driven motion**: separate sliders for pulse, squash & stretch, bounce, slide and wobble, plus glow, tint and "logo trails" that feed the logo into the visuals.
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
@@ -91,12 +92,13 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.0: MilkDrop, five new styles and logo layers
+- 🌀 **MilkDrop presets**: 9 classic presets built in, and you can add your own folder of `.milk` files.
+- 🎨 **Five new styles**: Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text.
+- 🧩 **Logo layers**: every separate shape in your logo can jump on its own: Wave, Explode, Bands or Scatter (in the **Motion** menu).
+
 ### 1.5.3: taller Mirror Equalizer
 - 📊 **Mirror Equalizer fills the screen**: the bars now reach almost the top and bottom edges when the music is loud.
-
-### 1.5.2: smoother on Mac
-- ⚡ **Less work per frame** on the CPU and the graphics card, so Dropocalypse uses less power and runs cooler on busy styles. Everything looks the same.
-- 🛠️ **Steadier waveforms**: each frame keeps its own copy of the audio it draws.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 
@@ -164,7 +166,7 @@ Settings and your logo are saved in `~/.config/dropocalypse`. **Update now** in 
 - [Logo panel](#logo-panel)
 - [Audio panel](#audio-panel)
 - [Look panel](#look-panel)
-- [The 26 styles](#the-26-styles)
+- [The 31 styles](#the-31-styles)
 - [Keyboard shortcuts and menus](#keyboard-shortcuts-and-menus)
 - [Setting up for a live show](#setting-up-for-a-live-show)
 - [Troubleshooting](#troubleshooting)
@@ -245,7 +247,7 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 | Control | What it does |
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
-| **Style name** | Opens the style list. Click a name to jump straight to any of the [26 styles](#the-26-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
+| **Style name** | Opens the style list. Click a name to jump straight to any of the [31 styles](#the-31-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes: right-click the **Auto** key), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
@@ -259,6 +261,8 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Bounce** | 0.50 | Kicks launch the logo upward and it falls back with gravity. A small squash happens when it lands. |
 | **Slide** | 0.40 | Each beat pushes the logo left or right, alternating sides, and a spring pulls it back to center. Adds a slow side-to-side drift too. |
 | **Wobble** | 0.35 | Each beat tips the logo into a quick rotation that settles back to level |
+| **Logo layers** | Off | Splits your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and makes them jump on their own. **Wave**: the shapes hop one after another from left to right. **Explode**: they burst outward on the bigger hits and spring back. **Bands**: each shape rides the bass, mids or treble. **Scatter**: each one flies off in its own direction and spins. Works on images and text items. |
+| **Layer jump** | 0.70 | How far the shapes jump when **Logo layers** is on (0 to 1.5) |
 | **Reset to defaults** | | Puts the Motion, Logo and Look sliders back to their defaults |
 
 > **Tip:** for a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "everything goes off" look, push Squash, Bounce and Wobble to 1.2 or higher.
@@ -299,7 +303,7 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 | **Frame** | Landscape | **Landscape** fills the window. **Portrait** centers a 9:16 frame (pillarboxed on a wide screen) so what you see is what a Reel or TikTok recording captures. It can't be changed while a recording is in progress. |
 | **Frame rate** | Display | **Display** matches the monitor. **60** and **30** use less CPU. |
 
-### The 26 styles
+### The 31 styles
 
 | # | Style | What it looks like |
 |---|---|---|
@@ -349,6 +353,22 @@ The app adjusts its own levels to the loudness of the input (automatic gain), so
 |---|---|---|
 | 25 | **Full Kaleidoscope** | A mandala that fills the whole frame. Strong 4-way mirroring that sometimes tightens into an 8-way radial pattern, in saturated neon cyan, magenta, electric blue, gold and acid green, with glowing midtones and darker edges. Bass zooms, pulses and turns it; mids and highs change the color and detail. |
 | 26 | **Main Stage** | Stand on an arena floor. Truss columns run back to a stage of glowing LED frames, and fans of moving-head beams meet overhead like a cathedral ceiling, blooming open on every kick. Lasers spray from the stage on the beat and scan the crowd, blinders flash, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats: amber, teal, lavender lasers and deep blue. |
+
+**Trending looks:** five styles that are everywhere on music channels and socials right now.
+
+| # | Style | What it looks like |
+|---|---|---|
+| 27 | **Monstercat Bars** | A tidy row of smooth, pale spectrum bars above the logo that leap up on the bass and glide back down: the look of electronic music channels on YouTube |
+| 28 | **Lo-fi Chill** | A quiet night town under a big glowing moon, with lit windows, drifting fog, falling snow and a small soft equalizer along the bottom. The moon's halo breathes with the bass. |
+| 29 | **Glitch VHS** | A neon spectrum and a sweeping scan line on worn videotape. On every beat the picture tears into sideways bands, splits into colour fringes and wobbles, with scanlines and grain throughout. |
+| 30 | **Liquid Chrome** | Flowing, polished liquid metal reflecting a bright studio sky. It swells and ripples with the bass and slowly shifts colour. |
+| 31 | **Kinetic Text** | Rows of your first logo or text item slide across the screen in alternating directions, faster with the bass. The row the beat lands on lights up and grows. Add your DJ name as a text item for a lyric-video look. |
+
+### MilkDrop presets
+
+After the built-in styles comes a **MilkDrop** section with 9 classic presets, played by the open-source [projectM](https://github.com/projectM-visualizer/projectm) engine: **Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks** and **Lorenz Chaser**. They crossfade in and out like every other style and can be checked for auto-cycle.
+
+**Add your own:** open the style list and, under **Your MilkDrop presets**, click **Choose folder** and pick a folder of `.milk` files (subfolders are searched too). Each preset becomes a style you can search for and click. **Rescan** picks up new files, **Open** shows the folder and **Remove** forgets it. Your own presets stay out of auto-cycle unless you turn on **Include these presets in auto-cycle**, so a pack of thousands won't take over a show. Download the 9 bundled presets as a zip from the [milkdrop folder](https://github.com/allenrobberson/dropocalypse/tree/main/milkdrop) on GitHub.
 
 All styles react to the bass. Most also zoom, spin or ripple harder as it builds, and the mids add extra warp.
 
@@ -493,12 +513,13 @@ Sources/Dropocalypse/
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
+  Render/Milkdrop.swift       MilkDrop presets through projectM (loaded at run time)
   Views/                      SwiftUI window, auto-hiding toolbar, detached controls
 
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
-  src/scenes.h                the 26 styles (Windows copy)
+  src/scenes.h                the 31 styles (Windows copy)
   src/shaders.h               HLSL port of the Metal shaders
   src/logo.cpp                logo loading (PNG, JPG, …)
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
@@ -520,7 +541,7 @@ Add a `VisualScene(...)` entry to `VisualScene.builtIn` in `Scenes.swift` (Mac) 
 
 ## Roadmap
 
-- [ ] Load MilkDrop `.milk` presets through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL), including the ~10,000-preset "Cream of the Crop" pack
+- [x] Load MilkDrop `.milk` presets through [projectM](https://github.com/projectM-visualizer/projectm) (LGPL), including your own folder of presets
 - [x] Windows version (portable, no admin rights)
 - [x] Capture the PC's own audio output without a microphone (Windows)
 - [x] Linux version (AppImage), including listening to what the computer plays

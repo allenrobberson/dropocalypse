@@ -50,7 +50,7 @@ Sources/Dropocalypse/
   UpdateChecker.swift         update check, download, verify and one-click install
   Render/Renderer.swift       Metal pipeline: feedback warp → shapes → composite + logo
   Render/ShaderSource.swift   all Metal shaders
-  Render/Scenes.swift         the 26 built-in styles (add your own here!)
+  Render/Scenes.swift         the 31 built-in styles (add your own here!)
   Render/StyleFX.swift        particles, stars, lightning, ridges, rain for styles 11-20
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
@@ -59,7 +59,7 @@ Sources/Dropocalypse/
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
   src/renderer.cpp            Direct3D 11 pipeline, styles, logo physics
-  src/scenes.h                the 26 styles (Windows copy)
+  src/scenes.h                the 31 styles (Windows copy)
   src/shaders.h               HLSL port of the Metal shaders
   src/logo.cpp                logo loading (PNG, JPG, …)
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)

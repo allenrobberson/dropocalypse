@@ -2,6 +2,12 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.0
+- 🌀 **MilkDrop presets, through projectM.** Nine classic presets are built in as styles 32 to 40: Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks and Lorenz Chaser. They crossfade like every other style. The open-source [projectM](https://github.com/projectM-visualizer/projectm) engine (LGPL) ships beside the app and is loaded at run time. Mac, Windows and Linux.
+- 📂 **Your own MilkDrop folder.** In the style list, under **Your MilkDrop presets**, choose a folder of `.milk` files (subfolders too, up to 20,000 presets). Search them, rescan, open or remove the folder. A `Textures` folder next to it is used for presets that need pictures. Your own presets stay out of auto-cycle unless you include them. The 9 bundled presets can be downloaded as a zip from the [milkdrop folder](https://github.com/allenrobberson/dropocalypse/tree/main/milkdrop).
+- 🎨 **Five new styles** (27 to 31): **Monstercat Bars**, **Lo-fi Chill**, **Glitch VHS** (tape tears, colour fringes, scanlines and grain on the beat), **Liquid Chrome** (flowing polished metal) and **Kinetic Text** (rows of your first logo or text item sliding across, the beat lighting a row).
+- 🧩 **Logo layers.** Logos are split into their separate shapes, which jump on the beat in four ways: **Wave**, **Explode**, **Bands** and **Scatter**, with a **Layer jump** amount. In the **Motion** menu; off by default.
+
 ## 1.5.3
 - 📊 **Mirror Equalizer fills the screen.** The bars grow nearly twice as tall, reaching almost the top and bottom edges at full volume (capped just short so they're never cut off). Mac, Windows and Linux.
 

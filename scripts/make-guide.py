@@ -287,7 +287,8 @@ def later_pages(canvas, doc):
 # Signature color of each style (its base hue in the app), used for the swatches in section 7.
 STYLE_HUES = [0.55, 0.75, 0.08, 0.33, 0.9, 0.6, 0.15, 0.45, 0.8, 0.02,
               0.55, 0.8, 0.0, 0.86, 0.6, 0.5, 0.66, 0.33, 0.95, 0.05,
-              0.97, 0.25, 0.7, 0.55, 0.52, 0.08]
+              0.97, 0.25, 0.7, 0.55, 0.52, 0.08,
+              0.55, 0.75, 0.5, 0.58, 0.9]
 
 
 IMAGES = os.path.join(ROOT, "docs", "guide-images")
@@ -355,7 +356,7 @@ def build():
     # ---- Contents
     s.append(P("Contents", h1))
     items = ["Install on Mac", "Install on Windows", "Install on Linux", "Quick start", "The toolbar",
-             "Logo, Motion, Audio and Look settings", "The 26 visual styles", "Keyboard shortcuts",
+             "Logo, Motion, Audio and Look settings", "The 31 visual styles", "Keyboard shortcuts",
              "Setting up for a live show", "Troubleshooting", "Where your settings are saved, and how to remove the app"]
     rows = []
     for i, name in enumerate(items, 1):
@@ -559,6 +560,10 @@ def build():
         ["<b>Bounce</b>", "0.50", "Kicks launch the logo upward and it falls back with gravity"],
         ["<b>Slide</b>", "0.40", "Each beat pushes the logo left or right, then a spring pulls it back"],
         ["<b>Wobble</b>", "0.35", "Each beat tips the logo into a quick rotation that settles back"],
+        ["<b>Logo layers</b>", "Off", "Splits the logo into its separate shapes, which jump on their own: <b>Wave</b> "
+         "(one after another, left to right), <b>Explode</b> (outward on big hits), <b>Bands</b> (each rides the bass, "
+         "mids or treble) or <b>Scatter</b> (every shape its own way, spinning)"],
+        ["<b>Layer jump</b>", "0.70", "How far the shapes jump when Logo layers is on"],
         ["<b>Reset to defaults</b>", "", "Resets the Motion, Logo and Look sliders"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
     s.append(Spacer(1, 6))
@@ -630,7 +635,7 @@ def build():
                           widths=[3.0 * inch, 3.5 * inch]))
 
     # ---- Styles
-    s += section(7, "The 26 visual styles")
+    s += section(7, "The 31 visual styles")
     s.append(P("Pick a style from the toolbar, use the arrow keys, or turn on auto-cycle. Every style reacts to "
                "the bass.", body))
     s.append(Spacer(1, 6))
@@ -674,11 +679,26 @@ def build():
          "A full-frame mandala: 4-way mirroring that sometimes reads as 8-way, in neon cyan, magenta, blue, gold and green. Bass zooms and turns it."],
         ["26", "<b>Main Stage</b>",
          "The view from an arena floor: beam fans meet overhead like a cathedral ceiling, lasers fire on the beat and a crowd bounces with phones up"],
+        ["27", "<b>Monstercat Bars</b>", "A tidy row of smooth, pale spectrum bars above the logo"],
+        ["28", "<b>Lo-fi Chill</b>", "A snowy night town under a big moon, with fog and a small soft equalizer"],
+        ["29", "<b>Glitch VHS</b>", "Worn videotape: the picture tears, splits into colour fringes and wobbles on the beat"],
+        ["30", "<b>Liquid Chrome</b>", "Flowing polished liquid metal that swells and ripples with the bass"],
+        ["31", "<b>Kinetic Text</b>", "Rows of your first logo or text item sliding across; the beat lights a row"],
     ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "
                      "down to keep it in place. For Pulsar Ridges and Outrun Grid, a smaller logo Size (about 0.2) "
                      "keeps it from covering the scene."))
+    s.append(Spacer(1, 8))
+    s.append(KeepTogether([
+        sub("MilkDrop presets"),
+        P("After the built-in styles come 9 classic MilkDrop presets, played by the open-source projectM engine: "
+          "Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks "
+          "and Lorenz Chaser.", body),
+        Spacer(1, 4),
+        P("<b>Add your own:</b> in the style list, under <b>Your MilkDrop presets</b>, click <b>Choose folder</b> and "
+          "pick a folder of .milk files (subfolders too). Each preset becomes a style you can search for and pick. "
+          "They stay out of auto-cycle unless you turn on <b>Include these presets in auto-cycle</b>.", body)]))
 
     # ---- Shortcuts
     s += section(8, "Keyboard shortcuts")
@@ -803,7 +823,8 @@ def build():
         P("Dropocalypse is free and open-source software under the MIT License: free to use, modify and share, "
           "including commercially. The full source code, the latest downloads and the online version of this "
           "guide are at <b>github.com/allenrobberson/dropocalypse</b>.", body),
-        P("Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. All visuals are original code.", small),
+        P("Inspired by Ryan Geiss's MilkDrop and Nullsoft's Winamp. The built-in styles are original code; MilkDrop "
+          "presets play through projectM (LGPL) and belong to their authors.", small),
         sub("Questions, ideas and bug reports"),
         P("Ask questions, suggest new styles or show off your setup in <b>Discussions</b> at "
           "<b>github.com/allenrobberson/dropocalypse/discussions</b>. Found a bug? Open an issue at "

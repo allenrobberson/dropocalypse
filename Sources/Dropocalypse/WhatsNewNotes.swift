@@ -3,6 +3,12 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.6.0", [
+            "**MilkDrop presets.** Nine classic MilkDrop presets are now styles, after the built-in ones: Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks and Lorenz Chaser.",
+            "**Add your own presets.** Open the style list and, under **Your MilkDrop presets**, choose a folder of .milk files. Every preset in it becomes a style you can search for and pick.",
+            "**Five new styles.** **Monstercat Bars**, **Lo-fi Chill** (a snowy night town under the moon), **Glitch VHS** (the picture tears and glitches on the beat), **Liquid Chrome** and **Kinetic Text** (rows of your logo or text sliding across the screen).",
+            "**Logo layers.** In the **Motion** menu, turn on **Logo layers** and every separate shape in your logo jumps on its own: **Wave**, **Explode**, **Bands** or **Scatter**. **Layer jump** sets how far they go.",
+        ]),
         ("1.5.3", [
             "**Taller Mirror Equalizer.** The bars now stretch almost to the top and bottom of the screen when the music is loud.",
         ]),

@@ -12,7 +12,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 
 | Feature | What you get |
 |---|---|
-| 🎛 **26 styles** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers, a 4D Tesseract, Full Kaleidoscope and Main Stage. See [[Styles]]. |
+| 🎛 **31 styles + MilkDrop** | Winamp/MilkDrop-style originals, fan-favorite looks (bass ring, neon equalizer, synthwave grid, hyperspace…), three more equalizers, a 4D Tesseract, Full Kaleidoscope, Main Stage, five trending looks (Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome, Kinetic Text), 9 MilkDrop presets and your own `.milk` folder. See [[Styles]]. |
 | 🖼 **Your logos and text** | Up to 4 at once, side by side or stacked. Drag images onto the window or add text in your font and color. They react to the bass with five separate motions plus glow, tint and trails. See [[Your Logo and Motion]]. |
 | 🎧 **No mic needed** | Listen straight to Spotify or any app on a Mac (macOS 14.2+), or to whatever your computer is playing on Windows and Linux. Mics and line-in work too. See [[Audio Sources]]. |
 | ⚡ **Low latency** | About 10–20 ms from sound to screen, so drops land on the beat. See [[How It Works]]. |
@@ -25,7 +25,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 1. [[Installation]]: download and open it on Mac, Windows or Linux
 2. [[Quick Start]]: from first launch to full-screen visuals in a minute
 3. [[Audio Sources]]: choose what Dropocalypse listens to
-4. [[Styles]]: all 26 looks, and how auto-cycle picks between them
+4. [[Styles]]: all 31 looks, MilkDrop presets, and how auto-cycle picks between them
 
 ## All pages
 
@@ -34,4 +34,4 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 - **For developers:** [[How It Works]] · [[Building from Source]] · [[Adding a Style]]
 - **Project:** [[Changelog]] · [[Support the Project]]
 
-Current version: **1.5.3**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.
+Current version: **1.6.0**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.
