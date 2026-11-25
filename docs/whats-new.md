@@ -11,6 +11,9 @@ Write for people who aren't technical: short, friendly bullets, no file names or
   CI fails if you forget, and the release fails if the version being released has no section here.
 -->
 
+## 1.6.3
+- **Linux AppImage updates.** The AppImage is now named Dropocalypse-<version>-x86_64.AppImage and carries update information, so AppImageUpdate and similar tools can update it. Mac and Windows are unchanged.
+
 ## 1.6.2
 - **A picture for every style.** The printable PDF guide in each download now shows each of the 31 styles and 9 MilkDrop presets, how each logo layers move looks, and the Motion menu with its Logo layers sliders.
 

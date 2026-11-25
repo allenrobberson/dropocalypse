@@ -118,12 +118,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.3: AppImage updates
+- 🐧 **Linux AppImage**: now named `Dropocalypse-<version>-x86_64.AppImage` and carries update information, so AppImageUpdate and similar tools can update it. On Linux 1.6.2 or older, download 1.6.3 once from the [latest release](../../releases/latest); after that, Update now works again.
+
 ### 1.6.2: a picture for every style in the guide
 - 🖼 **The user guide shows every style**: each of the 31 styles and 9 MilkDrop presets has a preview, plus one for each logo layers move (Wave, Explode, Bands, Scatter) and the new Motion menu.
-
-### 1.6.1: logo layers sliders
-- 🎚 **Logo layers are four sliders now**: Wave, Explode, Bands and Scatter each go from 0 (still) to 100 (super wild), and you can mix them.
-- 🧩 **Bigger moves**: the shapes now really fly apart, even on wide logos and text, where 1.6.0 barely moved them.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 

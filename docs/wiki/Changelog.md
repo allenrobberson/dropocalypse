@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.3
+- 🐧 **AppImage name and update information.** The Linux AppImage is now `Dropocalypse-<version>-x86_64.AppImage` (no "Linux", as the AppImage catalog asks) and embeds `gh-releases-zsync` update information; each release publishes the matching `.zsync` file, so AppImageUpdate and similar tools can update it. The in-app updater accepts both names.
+- ⚠️ **One manual step on Linux:** 1.6.2 and older look for the old file name, so their **Update now** can't find 1.6.3. Download 1.6.3 once from the [latest release](https://github.com/allenrobberson/dropocalypse/releases/latest); updates work in one click again after that.
+
 ## 1.6.2
 - 🖼 **User guide with pictures.** The PDF guide, the README and the wiki now show a preview of all 31 styles and the 9 MilkDrop presets, a demo of each logo layers move (Wave, Explode, Bands, Scatter) and the current Motion menu. The new style, logo layers and MilkDrop previews were recorded in the Mac app with real music. The guide bundled in the downloads is the new one.
 - 🔗 Every "PDF guide" link points to the guide on the latest release, the same file as the download list, and that file is kept up to date automatically.
