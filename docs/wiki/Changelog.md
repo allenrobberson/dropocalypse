@@ -2,6 +2,10 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.2
+- 🖼 **User guide with pictures.** The PDF guide, the README and the wiki now show a preview of all 31 styles and the 9 MilkDrop presets, a demo of each logo layers move (Wave, Explode, Bands, Scatter) and the current Motion menu. The new style, logo layers and MilkDrop previews were recorded in the Mac app with real music. The guide bundled in the downloads is the new one.
+- 🔗 Every "PDF guide" link points to the guide on the latest release, the same file as the download list, and that file is kept up to date automatically.
+
 ## 1.6.1
 - 🎚 **Logo layers sliders.** The single Off/Wave/Explode/Bands/Scatter choice and the Layer jump slider are replaced by four sliders, **Wave**, **Explode**, **Bands** and **Scatter**, each 0 (no movement) to 100 (super wild). They mix: turn up several at once. A move picked in 1.6.0 starts at 50. Mac, Windows and Linux.
 - 🧩 **Logo layers move far more.** Moves now scale with the logo's longer side and kick harder, so letters in a wide logo or text item visibly fly apart (in 1.6.0 they moved only a few pixels). At high values Explode also fires on softer beats and Wave flips the shapes.

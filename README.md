@@ -118,14 +118,12 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.2: a picture for every style in the guide
+- 🖼 **The user guide shows every style**: each of the 31 styles and 9 MilkDrop presets has a preview, plus one for each logo layers move (Wave, Explode, Bands, Scatter) and the new Motion menu.
+
 ### 1.6.1: logo layers sliders
 - 🎚 **Logo layers are four sliders now**: Wave, Explode, Bands and Scatter each go from 0 (still) to 100 (super wild), and you can mix them.
 - 🧩 **Bigger moves**: the shapes now really fly apart, even on wide logos and text, where 1.6.0 barely moved them.
-
-### 1.6.0: MilkDrop, five new styles and logo layers
-- 🌀 **MilkDrop presets**: 9 classic presets built in, and you can add your own folder of `.milk` files.
-- 🎨 **Five new styles**: Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text.
-- 🧩 **Logo layers**: every separate shape in your logo can jump on its own: Wave, Explode, Bands or Scatter (in the **Motion** menu).
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 

@@ -21,6 +21,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag=$(gh release view --json tagName --jq .tagName)
+          guide=$(tr -d '[:space:]' < docs/guide-version.txt)
+          if [ "v$guide" != "$tag" ]; then
+            echo "The guide is for $guide but the latest release is $tag; its release build attaches it."
+            exit 0
+          fi
           gh release upload "$tag" docs/Dropocalypse-User-Guide.pdf --clobber
           # Keep the release's checksum list right for the new guide.
           mkdir -p sums && cd sums

@@ -3,6 +3,9 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.6.2", [
+            "**A picture for every style.** The printable PDF guide in each download now shows each of the 31 styles and 9 MilkDrop presets, how each logo layers move looks, and the Motion menu with its Logo layers sliders.",
+        ]),
         ("1.6.1", [
             "**Logo layers are sliders now.** In the **Motion** menu, **Wave**, **Explode**, **Bands** and **Scatter** each go from 0 (no movement) to 100 (super wild), and you can mix them. If you used logo layers in 1.6.0, your move starts at 50.",
             "**The shapes really move.** Letters and pieces now fly well apart, even on wide logos and text, where 1.6.0 barely moved them.",
