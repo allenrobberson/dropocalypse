@@ -106,7 +106,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - ⬇ **One-click updates**: the **Updates** menu tells you when a new version is out, checks the download, and installs it for you.
 - 🔏 **Signed and notarized Mac app** that opens without a security warning, and a **[Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)** signed by Microsoft.
 
-**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](docs/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
+**→ [What's new](#-whats-new) · [Download](#download) · [User guide](#user-guide) · [Printable PDF guide](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf) · [Wiki](../../wiki) · [Discussions](../../discussions) · [Privacy](PRIVACY.md) · [Code signing policy](CODE_SIGNING_POLICY.md) · [Build from source](#building-from-source)**
 
 <p align="center">
   <a href="https://github.com/sponsors/allenrobberson"><img src="https://img.shields.io/badge/Sponsor-Support%20Dropocalypse-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Dropocalypse on GitHub"></a>
@@ -140,7 +140,7 @@ Get every version from the **[latest release](../../releases/latest)**. Each rel
 | `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
 | `Dropocalypse-…-Linux-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub |
 | `Dropocalypse-…-Linux-x86_64.tar.gz` | Linux, the same app as a plain folder |
-| `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for Mac, Windows and Linux |
+| [`Dropocalypse-User-Guide.pdf`](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf) | A printable, full-color guide for Mac, Windows and Linux |
 
 On Windows you can also **[get it from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. From 1.0 on, the app updates itself in one click when a newer version is out. Want an email for each release? Click **Watch → Custom → Releases** at the top of this page.
 

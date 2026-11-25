@@ -24,5 +24,5 @@
 **Project**
 - [Changelog](Changelog)
 - [Support the Project](Support-the-Project)
-- [PDF guide](https://github.com/allenrobberson/dropocalypse/blob/main/docs/Dropocalypse-User-Guide.pdf)
+- [PDF guide](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf)
 - [Discussions](https://github.com/allenrobberson/dropocalypse/discussions)

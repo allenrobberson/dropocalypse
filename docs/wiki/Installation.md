@@ -9,7 +9,7 @@ Get every version from the **[latest release](https://github.com/allenrobberson/
 | `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
 | `Dropocalypse-…-Linux-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub |
 | `Dropocalypse-…-Linux-x86_64.tar.gz` | Linux, the same app as a plain folder |
-| `Dropocalypse-User-Guide.pdf` | A printable, full-color guide for Mac, Windows and Linux |
+| [`Dropocalypse-User-Guide.pdf`](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf) | A printable, full-color guide for Mac, Windows and Linux |
 
 On Windows you can also **[get Dropocalypse from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8)**. That copy is already signed by Microsoft, so it opens without a security warning, and it is updated by the Store, so it has no **Update now** and does not check GitHub. Your logo and settings still live in `%APPDATA%\Dropocalypse`.
 

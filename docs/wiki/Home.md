@@ -6,7 +6,7 @@ Make your logo dance to the beat. **Free music visualizer** for DJs, streamers &
 
 Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that makes **your logo dance to the bass**. Play music and the visuals swirl, zoom and pulse while your logo pulses, squashes and stretches, bounces, slides and wobbles on every kick drum.
 
-**[⬇️ Download the latest version](https://github.com/allenrobberson/dropocalypse/releases/latest)** · [🪟 Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) · [📖 Printable PDF guide](https://github.com/allenrobberson/dropocalypse/blob/main/docs/Dropocalypse-User-Guide.pdf) · [💬 Discussions](https://github.com/allenrobberson/dropocalypse/discussions) · [❤️ Sponsor](https://github.com/sponsors/allenrobberson)
+**[⬇️ Download the latest version](https://github.com/allenrobberson/dropocalypse/releases/latest)** · [🪟 Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) · [📖 Printable PDF guide](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf) · [💬 Discussions](https://github.com/allenrobberson/dropocalypse/discussions) · [❤️ Sponsor](https://github.com/sponsors/allenrobberson)
 
 ## Highlights
 
