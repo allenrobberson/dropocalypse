@@ -282,7 +282,9 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 
 ### Motion panel
 
-These sliders control how your logo reacts to the bass. **0 turns a motion off completely**; the highest setting is 1.5.
+These sliders control how your logo reacts to the bass. **0 turns a motion off completely**; the highest setting is 1.5. The four **Logo layers** sliders at the bottom go from 0 to 100.
+
+<p align="center"><img src="docs/guide-images/motion.jpg" width="300" alt="The Motion menu: Pulse, Squash and stretch, Bounce, Slide and Wobble, then the Logo layers sliders Wave, Explode, Bands and Scatter"><br><sub>The Motion menu, with the Logo layers sliders at the bottom</sub></p>
 
 | Slider | Default | What it does |
 |---|---|---|

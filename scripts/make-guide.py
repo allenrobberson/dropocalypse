@@ -587,7 +587,7 @@ def build():
     s.append(tip_box("For a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "
                      "look, push Squash, Bounce and Wobble to 1.2 or higher."))
     s.append(Spacer(1, 8))
-    s.append(KeepTogether(side_by_side(shot("motion.jpg", 2.9 * inch, "The Motion menu"),
+    s.append(KeepTogether(side_by_side(shot("motion.jpg", 2.4 * inch, "The Motion menu, with the four Logo layers sliders under the logo moves"),
                                        shot("audio.jpg", 2.75 * inch, "The Audio menu"),
                                        widths=[3.25 * inch, 3.25 * inch])))
 
