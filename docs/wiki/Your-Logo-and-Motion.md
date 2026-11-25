@@ -46,6 +46,17 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 
 The four **logo layers** sliders split your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and move them on their own. They go from 0 (still) to 100 (super wild), and you can mix as many as you like. They work on images and text items.
 
+<table>
+  <tr>
+    <td align="center"><img src="https://github.com/allenrobberson/dropocalypse/raw/main/docs/media/styles/layers-wave.gif" width="200" alt="Logo layers: Wave"><br><sub><b>Wave</b> 75</sub></td>
+    <td align="center"><img src="https://github.com/allenrobberson/dropocalypse/raw/main/docs/media/styles/layers-explode.gif" width="200" alt="Logo layers: Explode"><br><sub><b>Explode</b> 85</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/allenrobberson/dropocalypse/raw/main/docs/media/styles/layers-bands.gif" width="200" alt="Logo layers: Bands"><br><sub><b>Bands</b> 85</sub></td>
+    <td align="center"><img src="https://github.com/allenrobberson/dropocalypse/raw/main/docs/media/styles/layers-scatter.gif" width="200" alt="Logo layers: Scatter"><br><sub><b>Scatter</b> 80</sub></td>
+  </tr>
+</table>
+
 > **Tip:** for a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "everything goes off" look, push Squash, Bounce and Wobble to 1.2 or higher.
 
 ## Logo panel

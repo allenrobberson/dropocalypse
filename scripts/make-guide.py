@@ -567,6 +567,23 @@ def build():
         ["<b>Reset to defaults</b>", "", "Resets the Motion, Logo and Look sliders"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
     s.append(Spacer(1, 6))
+    s.append(KeepTogether([
+        sub("Logo layers"),
+        P("Wave, Explode, Bands and Scatter split your logo into its separate shapes (each letter, icon or piece "
+          "that doesn't touch another) and move them on their own. Each goes from 0 (still) to 100 (super wild), "
+          "and you can mix them. Four moments of each, at a high setting:", body),
+        Spacer(1, 4),
+        shot("layers-wave.jpg", 6.2 * inch, "<b>Wave</b>: the letters hop one after another, left to right"),
+        Spacer(1, 4),
+        shot("layers-explode.jpg", 6.2 * inch, "<b>Explode</b>: the letters burst outward on the beat and spring back"),
+    ]))
+    s.append(Spacer(1, 4))
+    s.append(KeepTogether([
+        shot("layers-bands.jpg", 6.2 * inch, "<b>Bands</b>: each letter rides the bass, mids or treble"),
+        Spacer(1, 4),
+        shot("layers-scatter.jpg", 6.2 * inch, "<b>Scatter</b>: every letter flies off its own way and spins"),
+    ]))
+    s.append(Spacer(1, 6))
     s.append(tip_box("For a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "
                      "look, push Squash, Bounce and Wobble to 1.2 or higher."))
     s.append(Spacer(1, 8))
