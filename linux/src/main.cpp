@@ -612,9 +612,11 @@ static void installWorker() {
     std::string version = (!tag.empty() && tag[0] == 'v') ? tag.substr(1) : tag;
     if (!versionIsNewer(version, APP_VERSION_STR)) return failInstall("You already have the latest version.");
     std::string fileUrl, sumsUrl;
-    const std::string suffix = "-Linux-x86_64.AppImage";
+    // "-x86_64.AppImage" since 1.6.3; older releases named it "-Linux-x86_64.AppImage".
+    const std::string suffix = "-x86_64.AppImage";
     for (const auto& u : assetUrls(json)) {
-        if (u.size() > suffix.size() && u.compare(u.size() - suffix.size(), suffix.size(), suffix) == 0) fileUrl = u;
+        const bool appImage = u.size() > suffix.size() && u.compare(u.size() - suffix.size(), suffix.size(), suffix) == 0;
+        if (appImage && (fileUrl.empty() || u.find("-Linux-x86_64.AppImage") == std::string::npos)) fileUrl = u;
         if (u.size() > 15 && u.compare(u.size() - 15, 15, "/SHA256SUMS.txt") == 0) sumsUrl = u;
     }
     if (fileUrl.empty()) return failInstall("This release has no Linux AppImage. Use the download page.");

@@ -336,11 +336,15 @@ jobs:
           sha256sum linuxdeploy-x86_64.AppImage   # logged so the packaging tool used is on record
           chmod +x linuxdeploy-x86_64.AppImage
           mkdir -p dist
-          export LDAI_OUTPUT="dist/Dropocalypse-$APP_VERSION-Linux-x86_64.AppImage"
+          export LDAI_OUTPUT="dist/Dropocalypse-$APP_VERSION-x86_64.AppImage"
+          # Update information for AppImageUpdate and similar tools; also makes a .zsync file.
+          export LDAI_UPDATE_INFORMATION="gh-releases-zsync|allenrobberson|dropocalypse|latest|Dropocalypse-*-x86_64.AppImage.zsync"
           export APPIMAGE_EXTRACT_AND_RUN=1
           mkdir -p AppDir/usr/lib && cp -P build/projectm/lib/libprojectM-4.so* AppDir/usr/lib/
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
             --desktop-file linux/dropocalypse.desktop --icon-file linux/dropocalypse.png --output appimage
+          for z in *.AppImage.zsync; do [ -e "$z" ] && mv "$z" dist/; done
+          ls dist/*.zsync || { echo "::error::No .zsync update file was made."; exit 1; }
           # Plain archive for people who prefer not to use AppImages.
           mkdir -p "pkg/Dropocalypse-$APP_VERSION-Linux"
           cp build-linux/dropocalypse linux/dropocalypse.desktop linux/dropocalypse.png LICENSE "pkg/Dropocalypse-$APP_VERSION-Linux/"
@@ -357,6 +361,7 @@ jobs:
           name: Dropocalypse-Linux
           path: |
             dist/*.AppImage
+            dist/*.zsync
             dist/*.tar.gz
 
   release:
@@ -382,7 +387,7 @@ jobs:
         run: |
           cd dist
           shopt -s nullglob
-          files=(*.zip *.dmg *.AppImage *.tar.gz *.pdf *.msix *.pkg)
+          files=(*.zip *.dmg *.AppImage *.zsync *.tar.gz *.pdf *.msix *.pkg)
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::No release files were produced."
             exit 1
@@ -400,6 +405,7 @@ jobs:
             dist/*.zip
             dist/*.dmg
             dist/*.AppImage
+            dist/*.zsync
             dist/*.tar.gz
             dist/*.pdf
             dist/*.msix
@@ -434,7 +440,7 @@ jobs:
             Switch to a mic or line-in under **Audio** in the toolbar.
 
             ### 🐧 Linux (AppImage, 64-bit)
-            Download the **Linux-x86_64.AppImage** below, make it executable (right-click → Properties → Allow executing, or
+            Download the **x86_64.AppImage** below, make it executable (right-click → Properties → Allow executing, or
             `chmod +x Dropocalypse-*.AppImage`) and open it. Runs on current Ubuntu, Debian, Fedora, Mint, Arch and others with
             X11 or Wayland and PulseAudio or PipeWire. Prefer a plain folder? Use the **Linux-x86_64.tar.gz**.
 

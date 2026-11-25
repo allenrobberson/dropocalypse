@@ -467,7 +467,7 @@ def build():
                "with X11 or Wayland, PulseAudio or PipeWire, and OpenGL 3.3 graphics.", small))
     s.append(Spacer(1, 6))
     s += steps([
-        "Download the <b>Linux-x86_64.AppImage</b> file from the Releases page.",
+        "Download the <b>x86_64.AppImage</b> file from the Releases page.",
         f"Make it executable: right-click it {ARROW} <b>Properties</b> {ARROW} <b>Allow executing file as program</b> "
         "(or run <b>chmod +x Dropocalypse-*.AppImage</b> in a terminal).",
         "Double-click it. Nothing is installed: the AppImage is the whole app, and it can live anywhere.",

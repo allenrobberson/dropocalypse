@@ -4,8 +4,8 @@ https://github.com/allenrobberson/dropocalypse
 
 RUN IT
   AppImage (recommended): make it executable and double-click it, or in a terminal:
-    chmod +x Dropocalypse-*-Linux-x86_64.AppImage
-    ./Dropocalypse-*-Linux-x86_64.AppImage
+    chmod +x Dropocalypse-*-x86_64.AppImage
+    ./Dropocalypse-*-x86_64.AppImage
   This folder (the .tar.gz): run ./dropocalypse. It needs these common libraries:
   libcurl, libpulse (PulseAudio or PipeWire) and OpenGL 3.3 graphics.
 

@@ -136,7 +136,7 @@ Get every version from the **[latest release](../../releases/latest)**. Each rel
 | `Dropocalypse-…-macOS.dmg` | Mac (drag-to-Applications installer) |
 | `Dropocalypse-…-macOS.zip` | Mac (the app in a zip, same thing) |
 | `Dropocalypse-…-Windows-portable.zip` | Windows 10/11, 64-bit, no install, updates from GitHub |
-| `Dropocalypse-…-Linux-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub |
+| `Dropocalypse-…-x86_64.AppImage` | Linux, 64-bit, one file, updates from GitHub or with AppImageUpdate |
 | `Dropocalypse-…-Linux-x86_64.tar.gz` | Linux, the same app as a plain folder |
 | [`Dropocalypse-User-Guide.pdf`](https://github.com/allenrobberson/dropocalypse/releases/latest/download/Dropocalypse-User-Guide.pdf) | A printable, full-color guide for Mac, Windows and Linux |
 
@@ -168,7 +168,7 @@ Requires Windows 10 or 11 (64-bit). Settings and your logo are saved in `%APPDAT
 
 ### 🐧 Linux (AppImage: one file, nothing to install)
 
-1. Download the `Linux-x86_64.AppImage`.
+1. Download the `x86_64.AppImage`.
 2. Make it executable: right-click it → **Properties** → **Allow executing file as program**, or run `chmod +x Dropocalypse-*.AppImage` in a terminal.
 3. Double-click it (or run `./Dropocalypse-*.AppImage`).
 4. By default it listens to **what the computer is playing**, so you don't need a microphone. Pick a specific output, a mic or a line-in under **Audio** in the toolbar.
