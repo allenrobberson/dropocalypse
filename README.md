@@ -277,6 +277,8 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [31 styles](#the-31-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes with **Change style every** at the top of the style list), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
+<p align="center"><img src="docs/guide-images/styles.jpg" width="300" alt="The style list: Change style every at the top, then the Auto-cycle switch, All and None, and the checkboxes for each style"><br><sub>The style list (click the style name). <b>Change style every</b> is at the very top.</sub></p>
+
 ### Motion panel
 
 These sliders control how your logo reacts to the bass. **0 turns a motion off completely**; the highest setting is 1.5. The four **Logo layers** sliders at the bottom go from 0 to 100.

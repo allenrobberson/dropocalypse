@@ -671,7 +671,7 @@ def build():
                "the bass.", body))
     s.append(Spacer(1, 6))
     s.append(side_by_side(
-        shot("styles.jpg", 2.2 * inch, "The style list"),
+        shot("styles.jpg", 2.2 * inch, "The style list, with Change style every at the very top"),
         [P("Click the style name in the toolbar to open the list. Click any name to jump to it.", body),
          Spacer(1, 4),
          P("The <b>checkbox</b> beside each style decides whether <b>auto-cycle</b> includes it. "

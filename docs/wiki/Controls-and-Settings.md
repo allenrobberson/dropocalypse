@@ -58,6 +58,8 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [31 styles](Styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
 | ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes with **Change style every** at the top of the style list), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
+<p align="center"><img src="https://github.com/allenrobberson/dropocalypse/raw/main/docs/guide-images/styles.jpg" width="300" alt="The style list: Change style every at the top, then the Auto-cycle switch, All and None, and the checkboxes for each style"><br><sub>The style list (click the style name). <b>Change style every</b> is at the very top.</sub></p>
+
 ## Look panel
 
 | Control | Default | What it does |
