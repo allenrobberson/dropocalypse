@@ -173,9 +173,19 @@ public enum LogoLayers {
 
 // MARK: - Layer motion
 
-public enum LayerMode: Int, CaseIterable {
-    case off = 0, wave, explode, bands, scatter
-    public var name: String { ["Off", "Wave", "Explode", "Bands", "Scatter"][rawValue] }
+/// How hard each kind of layer move is, 0 (none) to 100 (super wild). They mix freely.
+public struct LayerAmounts: Equatable {
+    public var wave: Float = 0, explode: Float = 0, bands: Float = 0, scatter: Float = 0
+    public init(wave: Float = 0, explode: Float = 0, bands: Float = 0, scatter: Float = 0) {
+        self.wave = wave; self.explode = explode; self.bands = bands; self.scatter = scatter
+    }
+    public var any: Bool { wave > 0.5 || explode > 0.5 || bands > 0.5 || scatter > 0.5 }
+
+    /// 0...100 slider to a strength: gentle at the bottom, about 3x the old default at 100.
+    public static func strength(_ slider: Float) -> Float {
+        let v = min(max(slider, 0), 100) / 100
+        return 3.2 * pow(v, 1.3)
+    }
 }
 
 /// Offset of one layer from where it sits in the logo. x and y are in units of the logo's longer half
@@ -209,53 +219,55 @@ public struct LayerMotion {
     }
 
     /// `nx`/`ny`: each layer's centre relative to the logo's centre, -1..1 (y up).
-    public mutating func update(dt: Float, mode: LayerMode, amount: Float, nx: [Float], ny: [Float],
+    public mutating func update(dt: Float, amounts: LayerAmounts, nx: [Float], ny: [Float],
                                 bass: Float, mid: Float, treble: Float, beatCount: Int, beatStrength: Float) {
         let count = nx.count
         if state.count != count { state = [State](repeating: State(), count: count) }
         let dt = min(max(dt, 0), 0.05)
         time += dt
-        guard mode != .off, count > 0 else {
+        guard amounts.any, count > 0 else {
             state = [State](repeating: State(), count: count)
             lastBeat = beatCount
             return
         }
-        let amount = max(0, amount)
+        let wave = LayerAmounts.strength(amounts.wave), explode = LayerAmounts.strength(amounts.explode)
+        let bands = LayerAmounts.strength(amounts.bands), scatter = LayerAmounts.strength(amounts.scatter)
         let beat = beatCount != lastBeat && lastBeat != 0
         lastBeat = beatCount
         let punch = 0.6 + 0.6 * min(beatStrength, 1)
+        // Wilder explode settings fire on softer beats too.
+        let explodeGate: Float = 0.35 * (1 - 0.7 * min(amounts.explode, 100) / 100)
 
         for i in 0..<count {
             var s = state[i]
             if beat {
-                switch mode {
-                case .wave:
+                if wave > 0 { // left to right, like a stadium wave
                     s.kickAt = time + (nx[i] + 1) * 0.5 * 0.32
-                    s.kick = LayerPose(x: 0, y: 5.0 * amount * punch, rotation: 0, scale: 0.8 * amount * punch)
+                    let spin = (Self.hash01(UInt32(i) &* 977 &+ UInt32(truncatingIfNeeded: beatCount)) - 0.5) * 2.5
+                    s.kick = LayerPose(x: 0, y: 5.0 * wave * punch, rotation: spin * max(0, wave - 1),
+                                       scale: 0.8 * wave * punch)
                     s.pending = true
-                case .explode:
-                    if beatStrength >= 0.35 {
-                        var dx = nx[i], dy = ny[i]
-                        var len = (dx * dx + dy * dy).squareRoot()
-                        if len < 0.08 {
-                            let a = Self.hash01(UInt32(i) &* 7919 &+ 13) * 6.2832
-                            dx = cos(a); dy = sin(a); len = 1
-                        }
-                        s.vx += dx / len * 7.0 * amount * punch
-                        s.vy += dy / len * 7.0 * amount * punch
-                        s.vr += (Self.hash01(UInt32(i) &* 31 &+ UInt32(truncatingIfNeeded: beatCount)) - 0.5) * 6 * amount
-                        s.vs += 1.2 * amount * punch
+                }
+                if explode > 0, beatStrength >= explodeGate { // outward from the centre
+                    var dx = nx[i], dy = ny[i]
+                    var len = (dx * dx + dy * dy).squareRoot()
+                    if len < 0.08 {
+                        let a = Self.hash01(UInt32(i) &* 7919 &+ 13) * 6.2832
+                        dx = cos(a); dy = sin(a); len = 1
                     }
-                case .scatter:
+                    s.vx += dx / len * 7.0 * explode * punch
+                    s.vy += dy / len * 7.0 * explode * punch
+                    s.vr += (Self.hash01(UInt32(i) &* 31 &+ UInt32(truncatingIfNeeded: beatCount)) - 0.5) * 6 * explode
+                    s.vs += 1.2 * explode * punch
+                }
+                if scatter > 0 { // every layer its own direction and spin
                     let seed = UInt32(truncatingIfNeeded: beatCount) &* 2_654_435_761 &+ UInt32(i) &* 40503
                     let a = Self.hash01(seed) * 6.2832
                     let sp = 3.2 + 3.2 * Self.hash01(seed ^ 0x9e37_79b9)
-                    s.vx += cos(a) * sp * amount * punch
-                    s.vy += sin(a) * sp * amount * punch
-                    s.vr += (Self.hash01(seed &* 3 &+ 1) - 0.5) * 9 * amount
-                    s.vs += (Self.hash01(seed &* 5 &+ 2) - 0.3) * 1.4 * amount
-                default:
-                    break
+                    s.vx += cos(a) * sp * scatter * punch
+                    s.vy += sin(a) * sp * scatter * punch
+                    s.vr += (Self.hash01(seed &* 3 &+ 1) - 0.5) * 9 * scatter
+                    s.vs += (Self.hash01(seed &* 5 &+ 2) - 0.3) * 1.4 * scatter
                 }
             }
             if s.pending, time >= s.kickAt {
@@ -264,10 +276,10 @@ public struct LayerMotion {
             }
             let tx: Float = 0
             var ty: Float = 0, ts: Float = 1
-            if mode == .bands {
+            if bands > 0 { // each layer rides its own part of the music
                 let level = min([bass, mid, treble][i % 3], 1.4)
-                ty = level * 0.35 * amount
-                ts = 1 + level * 0.22 * amount
+                ty = level * 0.35 * bands
+                ts = 1 + level * 0.22 * bands
             }
             let k: Float = 170, c: Float = 13, kr: Float = 120, cr: Float = 11
             s.vx += (-k * (s.p.x - tx) - c * s.vx) * dt
@@ -277,7 +289,7 @@ public struct LayerMotion {
             s.p.x += s.vx * dt
             s.p.y += s.vy * dt
             s.p.rotation += s.vr * dt
-            s.p.scale = max(0.2, s.p.scale + s.vs * dt)
+            s.p.scale = min(4, max(0.2, s.p.scale + s.vs * dt))
             state[i] = s
         }
     }

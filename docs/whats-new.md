@@ -11,11 +11,15 @@ Write for people who aren't technical: short, friendly bullets, no file names or
   CI fails if you forget, and the release fails if the version being released has no section here.
 -->
 
+## 1.6.1
+- **Logo layers are sliders now.** In the **Motion** menu, **Wave**, **Explode**, **Bands** and **Scatter** each go from 0 (no movement) to 100 (super wild), and you can mix them. If you used logo layers in 1.6.0, your move starts at 50.
+- **The shapes really move.** Letters and pieces now fly well apart, even on wide logos and text, where 1.6.0 barely moved them.
+
 ## 1.6.0
 - **MilkDrop presets.** Nine classic MilkDrop presets are now styles, after the built-in ones: Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks and Lorenz Chaser.
 - **Add your own presets.** Open the style list and, under **Your MilkDrop presets**, choose a folder of .milk files. Every preset in it becomes a style you can search for and pick.
 - **Five new styles.** **Monstercat Bars**, **Lo-fi Chill** (a snowy night town under the moon), **Glitch VHS** (the picture tears and glitches on the beat), **Liquid Chrome** and **Kinetic Text** (rows of your logo or text sliding across the screen).
-- **Logo layers.** In the **Motion** menu, turn on **Logo layers** and every separate shape in your logo jumps on its own: **Wave**, **Explode**, **Bands** or **Scatter**. **Layer jump** sets how far they go.
+- **Logo layers.** In the **Motion** menu, every separate shape in your logo can jump on its own: **Wave**, **Explode**, **Bands** or **Scatter**.
 
 ## 1.5.3
 - **Taller Mirror Equalizer.** The bars now stretch almost to the top and bottom of the screen when the music is loud.

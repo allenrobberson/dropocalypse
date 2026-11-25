@@ -204,11 +204,16 @@ inline void logoLayerUV(const LayerSplit& split, int layer, float& u0, float& v0
 // ---------------------------------------------------------------------------------------------
 // Layer motion
 
-enum LayerMode { kLayersOff = 0, kLayersWave = 1, kLayersExplode = 2, kLayersBands = 3, kLayersScatter = 4 };
-constexpr int kLayerModeCount = 5;
-inline const char* layerModeName(int m) {
-    static const char* names[kLayerModeCount] = {"Off", "Wave", "Explode", "Bands", "Scatter"};
-    return names[(m >= 0 && m < kLayerModeCount) ? m : 0];
+/// How hard each kind of layer move is, 0 (none) to 100 (super wild). They mix freely.
+struct LayerAmounts {
+    float wave = 0, explode = 0, bands = 0, scatter = 0;
+    bool any() const { return wave > 0.5f || explode > 0.5f || bands > 0.5f || scatter > 0.5f; }
+};
+
+/// 0..100 slider to a strength: gentle at the bottom, about 3x the old default at 100.
+inline float layerStrength(float slider) {
+    const float v = std::min(std::max(slider, 0.0f), 100.0f) / 100.0f;
+    return 3.2f * std::pow(v, 1.3f);
 }
 
 /// Offset of one layer from where it sits in the logo. x and y are in units of the logo's longer
@@ -221,56 +226,54 @@ struct LayerPose {
 class LayerMotion {
 public:
     /// `nx`/`ny`: each layer's centre relative to the logo's centre, -1..1 (y up).
-    void update(float dt, int mode, float amount, const std::vector<float>& nx, const std::vector<float>& ny,
+    void update(float dt, const LayerAmounts& amounts, const std::vector<float>& nx, const std::vector<float>& ny,
                 float bass, float mid, float treble, int beatCount, float beatStrength) {
         const size_t count = nx.size();
         if (state_.size() != count) state_.assign(count, State());
         dt = std::min(std::max(dt, 0.0f), 0.05f);
         time_ += dt;
-        if (mode <= kLayersOff || count == 0) {
+        if (!amounts.any() || count == 0) {
             for (auto& s : state_) s = State();
             lastBeat_ = beatCount;
             return;
         }
-        amount = std::max(0.0f, amount);
+        const float wave = layerStrength(amounts.wave), explode = layerStrength(amounts.explode);
+        const float bands = layerStrength(amounts.bands), scatter = layerStrength(amounts.scatter);
         const bool beat = beatCount != lastBeat_ && lastBeat_ != 0;
         lastBeat_ = beatCount;
         const float punch = 0.6f + 0.6f * std::min(beatStrength, 1.0f);
+        // Wilder explode settings fire on softer beats too.
+        const float explodeGate = 0.35f * (1 - 0.7f * std::min(amounts.explode, 100.0f) / 100.0f);
 
         for (size_t i = 0; i < count; ++i) {
             State& s = state_[i];
             if (beat) {
-                switch (mode) {
-                case kLayersWave: // left to right, like a stadium wave
+                if (wave > 0) { // left to right, like a stadium wave
                     s.kickAt = time_ + (nx[i] + 1) * 0.5f * 0.32f;
-                    s.kick = {0, 5.0f * amount * punch, 0, 0.8f * amount * punch};
+                    const float spin = (hash01((uint32_t)i * 977u + (uint32_t)beatCount) - 0.5f) * 2.5f;
+                    s.kick = {0, 5.0f * wave * punch, spin * std::max(0.0f, wave - 1), 0.8f * wave * punch};
                     s.pending = true;
-                    break;
-                case kLayersExplode: { // outward from the centre on bigger hits
-                    if (beatStrength < 0.35f) break;
+                }
+                if (explode > 0 && beatStrength >= explodeGate) { // outward from the centre
                     float dx = nx[i], dy = ny[i];
                     float len = std::sqrt(dx * dx + dy * dy);
                     if (len < 0.08f) {
                         const float a = hash01((uint32_t)i * 7919u + 13u) * 6.2832f;
                         dx = std::cos(a); dy = std::sin(a); len = 1;
                     }
-                    s.vx += dx / len * 7.0f * amount * punch;
-                    s.vy += dy / len * 7.0f * amount * punch;
-                    s.vr += (hash01((uint32_t)i * 31u + (uint32_t)beatCount) - 0.5f) * 6 * amount;
-                    s.vs += 1.2f * amount * punch;
-                    break;
+                    s.vx += dx / len * 7.0f * explode * punch;
+                    s.vy += dy / len * 7.0f * explode * punch;
+                    s.vr += (hash01((uint32_t)i * 31u + (uint32_t)beatCount) - 0.5f) * 6 * explode;
+                    s.vs += 1.2f * explode * punch;
                 }
-                case kLayersScatter: { // every layer its own direction and spin
+                if (scatter > 0) { // every layer its own direction and spin
                     const uint32_t seed = (uint32_t)beatCount * 2654435761u + (uint32_t)i * 40503u;
                     const float a = hash01(seed) * 6.2832f;
                     const float sp = 3.2f + 3.2f * hash01(seed ^ 0x9e3779b9u);
-                    s.vx += std::cos(a) * sp * amount * punch;
-                    s.vy += std::sin(a) * sp * amount * punch;
-                    s.vr += (hash01(seed * 3u + 1u) - 0.5f) * 9 * amount;
-                    s.vs += (hash01(seed * 5u + 2u) - 0.3f) * 1.4f * amount;
-                    break;
-                }
-                default: break;
+                    s.vx += std::cos(a) * sp * scatter * punch;
+                    s.vy += std::sin(a) * sp * scatter * punch;
+                    s.vr += (hash01(seed * 3u + 1u) - 0.5f) * 9 * scatter;
+                    s.vs += (hash01(seed * 5u + 2u) - 0.3f) * 1.4f * scatter;
                 }
             }
             if (s.pending && time_ >= s.kickAt) {
@@ -279,11 +282,11 @@ public:
             }
 
             float tx = 0, ty = 0, ts = 1;
-            if (mode == kLayersBands) { // each layer rides its own part of the music
+            if (bands > 0) { // each layer rides its own part of the music
                 const float levels[3] = {bass, mid, treble};
                 const float level = std::min(levels[i % 3], 1.4f);
-                ty = level * 0.35f * amount;
-                ts = 1 + level * 0.22f * amount;
+                ty = level * 0.35f * bands;
+                ts = 1 + level * 0.22f * bands;
             }
             // Damped springs back to the resting place (or the band's target).
             const float k = 170, c = 13, kr = 120, cr = 11;
@@ -294,7 +297,7 @@ public:
             s.p.x += s.vx * dt;
             s.p.y += s.vy * dt;
             s.p.rotation += s.vr * dt;
-            s.p.scale = std::max(0.2f, s.p.scale + s.vs * dt);
+            s.p.scale = std::min(4.0f, std::max(0.2f, s.p.scale + s.vs * dt));
         }
     }
 

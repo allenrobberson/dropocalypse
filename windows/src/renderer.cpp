@@ -1942,7 +1942,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
         if (i == 0) firstRadius = std::max(ext.halfW, ext.halfH) * 0.9f;
         ItemLayers& il = layers_[i];
         if (!il.srv.empty())
-            il.motion.update(dt, st.layerMode, st.layerAmount, il.nx, il.ny, audio.bass, audio.mid, audio.treble,
+            il.motion.update(dt, st.layers, il.nx, il.ny, audio.bass, audio.mid, audio.treble,
                              audio.beatCount, audio.beatStrength);
     }
 
@@ -1996,7 +1996,7 @@ void Renderer::render(ID3D11RenderTargetView* target, int width, int height, Aud
     // One item: whole, or shape by shape when logo layers are on.
     auto drawItem = [&](int i, const LogoCB& data, ID3D11BlendState* blend) {
         const ItemLayers& il = layers_[i];
-        if (st.layerMode <= kLayersOff || il.srv.size() < 2) {
+        if (!st.layers.any() || il.srv.size() < 2) {
             logoSRV = logoSRV_[i].Get();
             drawLogo(data, blend);
             return;

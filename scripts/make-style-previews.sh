@@ -22,7 +22,7 @@ STYLES=(
   "glitch-vhs|28|icon|"
   "liquid-chrome|29|icon|"
   "kinetic-text|30|text:DROPOCALYPSE|logoSize=0.6"
-  "logo-layers|11|text:D  R  O  P|layerMode=2 layerAmount=1.0 logoSize=0.75"
+  "logo-layers|11|text:D  R  O  P|layerExplode=55 layerWave=35 logoSize=0.75"
   "milk-acid-mandala|31|icon|"
   "milk-flame-face|32|icon|"
   "milk-mind-blob|33|icon|"

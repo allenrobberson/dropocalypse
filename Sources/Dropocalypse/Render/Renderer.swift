@@ -430,6 +430,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         let textures = itemTextures
         var items: [LogoUniforms] = []
         var firstRadius: Float = 0
+        let layerAmounts = settings.layerAmounts
         for (i, tex) in textures.enumerated() {
             let slot = OverlayLayout.slot(index: i, count: textures.count, aspect: aspect)
             let ext = OverlayLayout.extent(imageAspect: Float(tex.width) / Float(max(tex.height, 1)),
@@ -447,13 +448,12 @@ final class Renderer: NSObject, MTKViewDelegate {
             items.append(lu)
             if i == 0 { firstRadius = max(ext.halfW, ext.halfH) * 0.9 }
             if i < itemLayers.count, let layers = itemLayers[i] {
-                layers.motion.update(dt: dt, mode: LayerMode(rawValue: settings.layerMode) ?? .off,
-                                     amount: Float(settings.layerAmount), nx: layers.nx, ny: layers.ny,
+                layers.motion.update(dt: dt, amounts: layerAmounts, nx: layers.nx, ny: layers.ny,
                                      bass: audio.bass, mid: audio.mid, treble: audio.treble,
                                      beatCount: audio.beatCount, beatStrength: audio.beatStrength)
             }
         }
-        let layersOn = settings.layerMode != 0
+        let layersOn = layerAmounts.any
         let itemLayersNow = itemLayers
         /// Draws one item: whole, or shape by shape when logo layers are on.
         func drawItem(_ enc: MTLRenderCommandEncoder, _ i: Int, _ u: LogoUniforms, _ logo: MTLTexture) {

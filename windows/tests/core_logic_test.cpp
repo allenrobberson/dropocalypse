@@ -463,29 +463,42 @@ int main() {
                 for (int x = d * 5; x < d * 5 + 3; ++x) dots[((size_t)y * 200 + x) * 4 + 3] = 255;
         CHECK((int)splitLogoLayers(dots.data(), 200, 10).layers.size() == kMaxLogoLayers);
     }
-    {   // Layer motion: a beat kicks the layers, and they settle back into place.
-        LayerMotion m;
+    {   // Layer motion: a beat kicks the layers, they settle back, and 0 means no movement.
         std::vector<float> nx = {-1, 0, 1}, ny = {0, 0, 0};
-        for (int mode = kLayersWave; mode < kLayerModeCount; ++mode) {
+        auto peakFor = [&](LayerAmounts amt, bool settle) {
             LayerMotion lm;
-            lm.update(0.016f, mode, 1, nx, ny, 0, 0, 0, 1, 0);
+            lm.update(0.016f, amt, nx, ny, 0, 0, 0, 1, 0);
             float peak = 0;
             for (int f = 0; f < 40; ++f) {
-                lm.update(0.016f, mode, 1, nx, ny, f < 20 ? 1.0f : 0.0f, 0.5f, 0.3f, 2, 1.0f);
+                lm.update(0.016f, amt, nx, ny, f < 20 ? 1.0f : 0.0f, 0.5f, 0.3f, 2, 1.0f);
                 for (size_t i = 0; i < 3; ++i) {
                     LayerPose p = lm.pose(i);
                     peak = std::max(peak, std::fabs(p.x) + std::fabs(p.y) + std::fabs(p.scale - 1));
                 }
             }
-            CHECK(peak > 0.05f);
-            for (int f = 0; f < 400; ++f) lm.update(0.016f, mode, 1, nx, ny, 0, 0, 0, 2, 0);
-            for (size_t i = 0; i < 3; ++i) {
-                LayerPose p = lm.pose(i);
-                CHECK(std::fabs(p.x) < 0.01f && std::fabs(p.y) < 0.01f && std::fabs(p.scale - 1) < 0.01f);
+            if (settle) {
+                for (int f = 0; f < 400; ++f) lm.update(0.016f, amt, nx, ny, 0, 0, 0, 2, 0);
+                for (size_t i = 0; i < 3; ++i) {
+                    LayerPose p = lm.pose(i);
+                    CHECK(std::fabs(p.x) < 0.01f && std::fabs(p.y) < 0.01f && std::fabs(p.scale - 1) < 0.01f);
+                }
             }
+            return peak;
+        };
+        for (int kind = 0; kind < 4; ++kind) {
+            LayerAmounts low, high;
+            float* lp[4] = {&low.wave, &low.explode, &low.bands, &low.scatter};
+            float* hp[4] = {&high.wave, &high.explode, &high.bands, &high.scatter};
+            *lp[kind] = 20;
+            *hp[kind] = 100;
+            const float pl = peakFor(low, true), ph = peakFor(high, true);
+            CHECK(pl > 0.01f);
+            CHECK(ph > pl * 2);      // 100 is much wilder than 20
         }
-        m.update(0.016f, kLayersOff, 1, nx, ny, 1, 1, 1, 5, 1);
-        CHECK(m.pose(0).y == 0 && m.pose(2).scale == 1);
+        CHECK(peakFor(LayerAmounts(), false) == 0); // all sliders at 0: no movement
+        LayerAmounts all{100, 100, 100, 100};
+        CHECK(peakFor(all, true) > 0.5f);         // everything at once still settles
+        CHECK(layerStrength(0) == 0 && layerStrength(100) > 3 && layerStrength(50) < 1.5f);
         LayerQuad q = layerQuad(0, 0, 1, 1, 0, 0, 0, 0.5f, 1, LayerPose());
         CHECK(std::fabs(q.cx + 0.5f) < 1e-5f && std::fabs(q.cy) < 1e-5f && std::fabs(q.hx - 0.5f) < 1e-5f);
     }

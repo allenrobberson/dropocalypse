@@ -82,24 +82,38 @@ final class CoreLogicTests: XCTestCase {
 
     func testLayerMotionKicksAndSettles() {
         let nx: [Float] = [-1, 0, 1], ny: [Float] = [0, 0, 0]
-        for mode in LayerMode.allCases where mode != .off {
+        func peak(_ amounts: LayerAmounts, settle: Bool) -> Float {
             var m = LayerMotion()
-            m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 1, beatStrength: 0)
+            m.update(dt: 0.016, amounts: amounts, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 1, beatStrength: 0)
             var peak: Float = 0
             for f in 0..<40 {
-                m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: f < 20 ? 1 : 0, mid: 0.5, treble: 0.3,
+                m.update(dt: 0.016, amounts: amounts, nx: nx, ny: ny, bass: f < 20 ? 1 : 0, mid: 0.5, treble: 0.3,
                          beatCount: 2, beatStrength: 1)
                 for i in 0..<3 { let p = m.pose(i); peak = max(peak, abs(p.x) + abs(p.y) + abs(p.scale - 1)) }
             }
-            XCTAssertGreaterThan(peak, 0.05, mode.name)
-            for _ in 0..<400 {
-                m.update(dt: 0.016, mode: mode, amount: 1, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 2, beatStrength: 0)
+            if settle {
+                for _ in 0..<400 {
+                    m.update(dt: 0.016, amounts: amounts, nx: nx, ny: ny, bass: 0, mid: 0, treble: 0, beatCount: 2,
+                             beatStrength: 0)
+                }
+                for i in 0..<3 {
+                    let p = m.pose(i)
+                    XCTAssertLessThan(abs(p.x) + abs(p.y) + abs(p.scale - 1), 0.03)
+                }
             }
-            for i in 0..<3 {
-                let p = m.pose(i)
-                XCTAssertLessThan(abs(p.x) + abs(p.y) + abs(p.scale - 1), 0.03, mode.name)
-            }
+            return peak
         }
+        let kinds: [WritableKeyPath<LayerAmounts, Float>] = [\.wave, \.explode, \.bands, \.scatter]
+        for kind in kinds {
+            var low = LayerAmounts(), high = LayerAmounts()
+            low[keyPath: kind] = 20
+            high[keyPath: kind] = 100
+            let pl = peak(low, settle: true), ph = peak(high, settle: true)
+            XCTAssertGreaterThan(pl, 0.01)
+            XCTAssertGreaterThan(ph, pl * 2)
+        }
+        XCTAssertEqual(peak(LayerAmounts(), settle: false), 0)
+        XCTAssertGreaterThan(peak(LayerAmounts(wave: 100, explode: 100, bands: 100, scatter: 100), settle: true), 0.5)
         let q = LayerQuad(itemCx: 0, itemCy: 0, itemHx: 1, itemHy: 1, itemRotation: 0, u0: 0, v0: 0, u1: 0.5, v1: 1, pose: LayerPose())
         XCTAssertEqual(q.cx, -0.5, accuracy: 1e-5)
         XCTAssertEqual(q.hx, 0.5, accuracy: 1e-5)

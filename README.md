@@ -118,13 +118,14 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.1: logo layers sliders
+- 🎚 **Logo layers are four sliders now**: Wave, Explode, Bands and Scatter each go from 0 (still) to 100 (super wild), and you can mix them.
+- 🧩 **Bigger moves**: the shapes now really fly apart, even on wide logos and text, where 1.6.0 barely moved them.
+
 ### 1.6.0: MilkDrop, five new styles and logo layers
 - 🌀 **MilkDrop presets**: 9 classic presets built in, and you can add your own folder of `.milk` files.
 - 🎨 **Five new styles**: Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text.
 - 🧩 **Logo layers**: every separate shape in your logo can jump on its own: Wave, Explode, Bands or Scatter (in the **Motion** menu).
-
-### 1.5.3: taller Mirror Equalizer
-- 📊 **Mirror Equalizer fills the screen**: the bars now reach almost the top and bottom edges when the music is loud.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 
@@ -269,7 +270,7 @@ The **Logo menu** in the toolbar lists your items:
 
 You can also **drag images** from Finder, File Explorer, your file manager or a web browser onto the window at any time. Drop several to add them all. When all 4 spaces are used, a dropped image replaces the last item.
 
-**Logo layers:** turn on **Logo layers** in the [Motion panel](#motion-panel) and each logo is split into its separate shapes, which jump on the beat on their own (**Wave**, **Explode**, **Bands** or **Scatter**). A shape is any part that doesn't touch another, so a logo with spaced-out letters, or a text item, splits letter by letter; a solid badge stays in one piece. Tiny specks join the nearest shape, and a logo is split into at most 24 layers.
+**Logo layers:** raise any of the **Wave**, **Explode**, **Bands** or **Scatter** sliders in the [Motion panel](#motion-panel) (0 = still, 100 = super wild) and each logo is split into its separate shapes, which move on the beat on their own. A shape is any part that doesn't touch another, so a logo with spaced-out letters, or a text item, splits letter by letter; a solid badge stays in one piece. Tiny specks join the nearest shape, and a logo is split into at most 24 layers.
 
 ### Style controls
 
@@ -290,9 +291,13 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Bounce** | 0.50 | Kicks launch the logo upward and it falls back with gravity. A small squash happens when it lands. |
 | **Slide** | 0.40 | Each beat pushes the logo left or right, alternating sides, and a spring pulls it back to center. Adds a slow side-to-side drift too. |
 | **Wobble** | 0.35 | Each beat tips the logo into a quick rotation that settles back to level |
-| **Logo layers** | Off | Splits your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and makes them jump on their own. **Wave**: the shapes hop one after another from left to right. **Explode**: they burst outward on the bigger hits and spring back. **Bands**: each shape rides the bass, mids or treble. **Scatter**: each one flies off in its own direction and spins. Works on images and text items. |
-| **Layer jump** | 0.70 | How far the shapes jump when **Logo layers** is on (0 to 1.5) |
+| **Wave** (logo layers) | 0 | The shapes hop one after another from left to right. 0 = still, 100 = super wild (at the top they also flip). |
+| **Explode** (logo layers) | 0 | The shapes burst outward from the centre and spring back. Higher values also fire on softer beats. |
+| **Bands** (logo layers) | 0 | Each shape rides the bass, mids or treble, rising and growing with its part of the music. |
+| **Scatter** (logo layers) | 0 | Every shape flies off in its own direction and spins. |
 | **Reset to defaults** | | Puts the Motion, Logo and Look sliders back to their defaults |
+
+The four **logo layers** sliders split your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and move them on their own. They go from 0 (still) to 100 (super wild), and you can mix as many as you like. They work on images and text items.
 
 > **Tip:** for a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "everything goes off" look, push Squash, Bounce and Wobble to 1.2 or higher.
 
@@ -472,7 +477,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 | **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
 | **The MilkDrop styles are missing** | The style list says the MilkDrop engine isn't available. Download the full app again from the [latest release](../../releases/latest): the engine ships beside the app (in the app bundle on Mac, next to the `.exe` on Windows, next to the program on Linux). Copying only the `.exe` or program file leaves it behind. |
 | **My own MilkDrop presets don't show up** | Check the folder actually holds `.milk` files, then click **Rescan**. Presets that use pictures need their collection's `Textures` folder next to the presets folder. A few very old presets don't work in projectM and show a plain picture. |
-| **Logo layers does nothing** | Your logo is one connected shape (for example a badge with a solid background), so there is nothing to split. Try a PNG with a transparent background and separate letters, or a text item. |
+| **The logo layers sliders do nothing** | Your logo is one connected shape (for example a badge with a solid background), so there is nothing to split. Try a PNG with a transparent background and separate letters, or a text item. |
 | **The toolbar won't appear** | Move the mouse to the very top of the window, click anywhere, or press **T** |
 | **Settings or logo reset after updating from "Logo Visualizer"** | The app was renamed. Your saved logo is copied over automatically, but slider settings start fresh, and macOS asks for microphone permission again. |
 

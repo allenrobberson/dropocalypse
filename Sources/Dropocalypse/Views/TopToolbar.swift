@@ -643,14 +643,16 @@ struct TopToolbar: View {
                 slider("Wobble", $settings.wobble, 0...1.5)
             }
             Text("Logo layers").font(.caption)
-            Segmented3D(selection: $settings.layerMode,
-                        options: LayerMode.allCases.map { (label: $0.name, value: $0.rawValue) })
             Well {
-                slider("Layer jump", $settings.layerAmount, 0...1.5)
+                let whole: (Double) -> String = { String(format: "%.0f", $0) }
+                slider("Wave", $settings.layerWave, 0...100, format: whole)
+                slider("Explode", $settings.layerExplode, 0...100, format: whole)
+                slider("Bands", $settings.layerBands, 0...100, format: whole)
+                slider("Scatter", $settings.layerScatter, 0...100, format: whole)
             }
-            .disabled(settings.layerMode == 0)
-            Text("Each separate shape in your logo (a letter, an icon) jumps on its own: a wave across, "
-                 + "bursting out, riding the bass/mid/treble, or scattering.")
+            Text("Each separate shape in your logo (a letter, an icon) moves on its own. 0 = still, 100 = super "
+                 + "wild; mix as many as you like. Wave: hops left to right. Explode: bursts outward. Bands: rides "
+                 + "the bass/mid/treble. Scatter: flies every which way.")
                 .font(.caption2).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Reset to defaults") { settings.resetMotion() }

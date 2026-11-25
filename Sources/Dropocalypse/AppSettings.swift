@@ -64,9 +64,21 @@ final class AppSettings: ObservableObject {
     @AppStorage("glow") var glow: Double = 0.6
     @AppStorage("logoTrails") var logoTrails: Bool = false
     @AppStorage("logoTint") var logoTint: Double = 0.0
-    /// Logo layers (LogoLayers.swift): 0 off, 1 wave, 2 explode, 3 bands, 4 scatter.
-    @AppStorage("layerMode") var layerMode: Int = 0
-    @AppStorage("layerAmount") var layerAmount: Double = 0.7
+    /// Logo layers (LogoLayers.swift): how hard each move is, 0 (none) to 100 (super wild).
+    @AppStorage("layerWave") var layerWave: Double = AppSettings.legacyLayer(1)
+    @AppStorage("layerExplode") var layerExplode: Double = AppSettings.legacyLayer(2)
+    @AppStorage("layerBands") var layerBands: Double = AppSettings.legacyLayer(3)
+    @AppStorage("layerScatter") var layerScatter: Double = AppSettings.legacyLayer(4)
+
+    var layerAmounts: LayerAmounts {
+        LayerAmounts(wave: Float(layerWave), explode: Float(layerExplode), bands: Float(layerBands),
+                     scatter: Float(layerScatter))
+    }
+
+    /// 1.6.0 had one move at a time ("layerMode"); that move starts at 50 after updating.
+    static func legacyLayer(_ mode: Int) -> Double {
+        UserDefaults.standard.integer(forKey: "layerMode") == mode ? 50 : 0
+    }
 
     // Look
     @AppStorage("beatFlash") var beatFlash: Double = 0.4
@@ -78,7 +90,7 @@ final class AppSettings: ObservableObject {
     func resetMotion() {
         logoSize = 0.32; pulse = 0.7; squash = 0.6; bounce = 0.5; slide = 0.4
         wobble = 0.35; glow = 0.6; logoTrails = false; logoTint = 0
-        layerMode = 0; layerAmount = 0.7
+        layerWave = 0; layerExplode = 0; layerBands = 0; layerScatter = 0
         beatFlash = 0.4; brightness = 1.0
     }
 }

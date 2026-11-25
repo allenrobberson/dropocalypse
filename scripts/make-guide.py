@@ -560,10 +560,10 @@ def build():
         ["<b>Bounce</b>", "0.50", "Kicks launch the logo upward and it falls back with gravity"],
         ["<b>Slide</b>", "0.40", "Each beat pushes the logo left or right, then a spring pulls it back"],
         ["<b>Wobble</b>", "0.35", "Each beat tips the logo into a quick rotation that settles back"],
-        ["<b>Logo layers</b>", "Off", "Splits the logo into its separate shapes, which jump on their own: <b>Wave</b> "
-         "(one after another, left to right), <b>Explode</b> (outward on big hits), <b>Bands</b> (each rides the bass, "
-         "mids or treble) or <b>Scatter</b> (every shape its own way, spinning)"],
-        ["<b>Layer jump</b>", "0.70", "How far the shapes jump when Logo layers is on"],
+        ["<b>Wave</b> (layers)", "0", "Logo shapes hop one after another, left to right. 0 = still, 100 = super wild"],
+        ["<b>Explode</b> (layers)", "0", "Logo shapes burst outward from the centre and spring back"],
+        ["<b>Bands</b> (layers)", "0", "Each logo shape rides the bass, mids or treble"],
+        ["<b>Scatter</b> (layers)", "0", "Every logo shape flies off its own way and spins. Mix any of the four"],
         ["<b>Reset to defaults</b>", "", "Resets the Motion, Logo and Look sliders"],
     ], [1.6 * inch, 0.85 * inch, 4.05 * inch]))
     s.append(Spacer(1, 6))

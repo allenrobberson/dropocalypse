@@ -38,9 +38,13 @@ These sliders control how your logo reacts to the bass. **0 turns a motion off c
 | **Bounce** | 0.50 | Kicks launch the logo upward and it falls back with gravity. A small squash happens when it lands. |
 | **Slide** | 0.40 | Each beat pushes the logo left or right, alternating sides, and a spring pulls it back to center. Adds a slow side-to-side drift too. |
 | **Wobble** | 0.35 | Each beat tips the logo into a quick rotation that settles back to level |
-| **Logo layers** | Off | Splits your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and makes them jump on their own. **Wave**: the shapes hop one after another from left to right. **Explode**: they burst outward on the bigger hits and spring back. **Bands**: each shape rides the bass, mids or treble. **Scatter**: each one flies off in its own direction and spins. Works on images and text items. |
-| **Layer jump** | 0.70 | How far the shapes jump when **Logo layers** is on (0 to 1.5) |
+| **Wave** (logo layers) | 0 | The shapes hop one after another from left to right. 0 = still, 100 = super wild (at the top they also flip). |
+| **Explode** (logo layers) | 0 | The shapes burst outward from the centre and spring back. Higher values also fire on softer beats. |
+| **Bands** (logo layers) | 0 | Each shape rides the bass, mids or treble, rising and growing with its part of the music. |
+| **Scatter** (logo layers) | 0 | Every shape flies off in its own direction and spins. |
 | **Reset to defaults** | | Puts the Motion, Logo and Look sliders (except auto-cycle timing) back to their defaults |
+
+The four **logo layers** sliders split your logo into its separate shapes (each letter, icon or piece that doesn't touch another) and move them on their own. They go from 0 (still) to 100 (super wild), and you can mix as many as you like. They work on images and text items.
 
 > **Tip:** for a calm, branded look, try Pulse 0.5 and everything else at 0. For a festival-style "everything goes off" look, push Squash, Bounce and Wobble to 1.2 or higher.
 
@@ -62,8 +66,8 @@ These sit under the list of items in the **Logo** menu, and in the detached cont
 |---|---|
 | **Calm and branded** | Pulse 0.5, everything else 0, Glow 0.4 |
 | **Festival chaos** | Squash 1.2, Bounce 1.3, Wobble 1.2, Slide 0.8, Glow 1.0 |
-| **Letters on the drop** | Logo layers: Explode, Layer jump 1.0, Bounce 0.3 |
-| **Stadium wave** | Logo layers: Wave, Layer jump 0.8, Slide 0 |
+| **Letters on the drop** | Explode 60, Scatter 15, Bounce 0.3 |
+| **Stadium wave** | Wave 50, Bands 20, Slide 0 |
 | **Melt into the visuals** | Logo trails on, Color tint 0.4 |
 | **Show off the Tesseract** | Size 0.15–0.2 so the inner cube is visible |
 | **Visuals only** | Press **G** to hide the logo |

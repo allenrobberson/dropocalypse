@@ -1940,7 +1940,7 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
         if (i == 0) firstRadius = std::max(ext.halfW, ext.halfH) * 0.9f;
         ItemLayers& il = layers_[i];
         if (!il.tex.empty())
-            il.motion.update(dt, st.layerMode, st.layerAmount, il.nx, il.ny, audio.bass, audio.mid, audio.treble,
+            il.motion.update(dt, st.layers, il.nx, il.ny, audio.bass, audio.mid, audio.treble,
                              audio.beatCount, audio.beatStrength);
     }
 
@@ -1985,7 +1985,7 @@ void Renderer::render(GLuint target, int width, int height, AudioAnalysis& analy
     // One item: whole, or shape by shape when logo layers are on.
     auto drawItem = [&](int i, const LogoCB& data, Blend blend) {
         const ItemLayers& il = layers_[i];
-        if (st.layerMode <= kLayersOff || il.tex.size() < 2) {
+        if (!st.layers.any() || il.tex.size() < 2) {
             drawLogo(data, blend, logoTex_[i]);
             return;
         }

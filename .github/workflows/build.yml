@@ -306,7 +306,7 @@ jobs:
           i=26
           for name in "Monstercat Bars" "Lo-fi Chill" "Glitch VHS" "Liquid Chrome" "Kinetic Text"; do
             rm -rf /tmp/dropocalypse-selftest && mkdir -p /tmp/dropocalypse-selftest/dropocalypse
-            printf 'sceneIndex=%s\nautoCycle=0\nlayerMode=3\nitems=1\nitem0.kind=text\nitem0.text=DROP\nitem0.font=1\nitem0.color=1\n' \
+            printf 'sceneIndex=%s\nautoCycle=0\nlayerBands=60\nlayerExplode=60\nitems=1\nitem0.kind=text\nitem0.text=DROP\nitem0.font=1\nitem0.color=1\n' \
               "$i" > /tmp/dropocalypse-selftest/dropocalypse/settings.ini
             xvfb-run -a -s "-screen 0 1280x720x24" ./build-linux/dropocalypse --self-test=style$i.ppm | tee style$i.log
             grep -q "style $name" style$i.log || { echo "expected the $name style"; exit 1; }
