@@ -155,7 +155,7 @@ def steps(items):
 def table(header, rows, widths, swatches=None):
     """swatches: optional list of colors, one per row, painted into the first column."""
     color = CUR["color"]
-    data = [[P(h, cell_head) for h in header]] + [[P(c, cell) for c in r] for r in rows]
+    data = [[P(h, cell_head) for h in header]] + [[P(c, cell) if isinstance(c, str) else c for c in r] for r in rows]
     t = Table(data, colWidths=widths, repeatRows=1)
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), color),
@@ -314,6 +314,20 @@ def shot(name, width, caption=None):
                            ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 3),
                            ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
     return t
+
+
+def thumb(name, width):
+    """A style still from docs/guide-images/styles (made by scripts/make-style-stills.py)."""
+    from reportlab.lib.utils import ImageReader
+    path = os.path.join(IMAGES, "styles", name + ".jpg")
+    if not os.path.exists(path):
+        return P("", cell)
+    iw, ih = ImageReader(path).getSize()
+    return Image(path, width=width, height=width * ih / iw)
+
+
+def style_row(num, name, slug, text):
+    return [num, f"<b>{name}</b>", thumb(slug, 1.15 * inch), text]
 
 
 def side_by_side(*cells, widths):
@@ -667,41 +681,41 @@ def build():
            "each style stays up (5 seconds to 6 minutes) under <b>Look</b>.", body)],
         widths=[2.5 * inch, 4.0 * inch]))
     s.append(Spacer(1, 8))
-    s.append(table(["#", "Style", "What it looks like"], [
-        ["1", "<b>Classic Tunnel</b>", "The waveform bursts out of the center into an endless twisting tunnel"],
-        ["2", "<b>Spectrum Skyline</b>", "Spectrum bars along the bottom with trails rising like smoke"],
-        ["3", "<b>Starburst</b>", "Rays shoot out of the center, one per frequency band"],
-        ["4", "<b>Oscilloscope Drift</b>", "A glowing waveform that ripples, rotates and drifts"],
-        ["5", "<b>Kaleido Bloom</b>", "A six-way kaleidoscope blooming outward from the center"],
-        ["6", "<b>Liquid Plasma</b>", "Flowing liquid colors with waveform rings melting into them"],
-        ["7", "<b>Vortex</b>", "A three-armed spiral of dots whipping around the center"],
-        ["8", "<b>Lissajous Neon</b>", "A mirrored neon scribble drawn by the sound wave itself"],
-        ["9", "<b>Mirror Hall</b>", "Waveforms reflected four ways into an infinite hall of mirrors"],
-        ["10", "<b>Black Hole</b>", "Everything is pulled inward and spirals into the center"],
-        ["11", "<b>Bass Ring</b>", "A circular spectrum wrapped around your logo, with sparks on every kick"],
-        ["12", "<b>Neon Equalizer</b>", "Smooth neon bars across the screen with a glassy reflection"],
-        ["13", "<b>Pulsar Ridges</b>", "Stacked white ridgelines that span the full screen and scroll upward, the classic “joy plot” look"],
-        ["14", "<b>Outrun Grid</b>", "A synthwave sunset: smooth striped sun, a full-width sunset-colored meter and a racing neon grid"],
-        ["15", "<b>Hyperspace</b>", "A starfield that jumps to warp speed on the drops"],
-        ["16", "<b>Particle Storm</b>", "Hundreds of glowing particles flowing in currents, scattering on beats"],
-        ["17", "<b>Lightning Storm</b>", "Lightning cracking out from behind the logo on the beat"],
-        ["18", "<b>Digital Rain</b>", "Columns of green glyphs raining down, faster with the bass"],
-        ["19", "<b>Lava Lamp</b>", "Soft blobs of color drifting and melting together"],
-        ["20", "<b>Inferno</b>", "Embers and flames rising from the bottom of the screen"],
-        ["21", "<b>Mirror Equalizer</b>", "Bars grow up and down from a center line, in a sunset rainbow"],
-        ["22", "<b>LED Meter</b>", "A classic analyzer: green-yellow-red LED segments with peak markers"],
-        ["23", "<b>Rainbow Peaks</b>", "Thin rainbow bars with glowing caps that bounce on the beat"],
-        ["24", "<b>Tesseract</b>", "A neon 4D hypercube turning itself inside out, spinning harder on every beat"],
-        ["25", "<b>Full Kaleidoscope</b>",
-         "A full-frame mandala: 4-way mirroring that sometimes reads as 8-way, in neon cyan, magenta, blue, gold and green. Bass zooms and turns it."],
-        ["26", "<b>Main Stage</b>",
-         "The view from an arena floor: beam fans meet overhead like a cathedral ceiling, lasers fire on the beat and a crowd bounces with phones up"],
-        ["27", "<b>Monstercat Bars</b>", "A tidy row of smooth, pale spectrum bars above the logo"],
-        ["28", "<b>Lo-fi Chill</b>", "A snowy night town under a big moon, with fog and a small soft equalizer"],
-        ["29", "<b>Glitch VHS</b>", "Worn videotape: the picture tears, splits into colour fringes and wobbles on the beat"],
-        ["30", "<b>Liquid Chrome</b>", "Flowing polished liquid metal that swells and ripples with the bass"],
-        ["31", "<b>Kinetic Text</b>", "Rows of your first logo or text item sliding across; the beat lights a row"],
-    ], [0.4 * inch, 1.6 * inch, 4.5 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
+    s.append(table(["#", "Style", "Preview", "What it looks like"], [
+        style_row("1", "Classic Tunnel", "classic-tunnel", "The waveform bursts out of the center into an endless twisting tunnel"),
+        style_row("2", "Spectrum Skyline", "spectrum-skyline", "Spectrum bars along the bottom with trails rising like smoke"),
+        style_row("3", "Starburst", "starburst", "Rays shoot out of the center, one per frequency band"),
+        style_row("4", "Oscilloscope Drift", "oscilloscope-drift", "A glowing waveform that ripples, rotates and drifts"),
+        style_row("5", "Kaleido Bloom", "kaleido-bloom", "A six-way kaleidoscope blooming outward from the center"),
+        style_row("6", "Liquid Plasma", "liquid-plasma", "Flowing liquid colors with waveform rings melting into them"),
+        style_row("7", "Vortex", "vortex", "A three-armed spiral of dots whipping around the center"),
+        style_row("8", "Lissajous Neon", "lissajous-neon", "A mirrored neon scribble drawn by the sound wave itself"),
+        style_row("9", "Mirror Hall", "mirror-hall", "Waveforms reflected four ways into an infinite hall of mirrors"),
+        style_row("10", "Black Hole", "black-hole", "Everything is pulled inward and spirals into the center"),
+        style_row("11", "Bass Ring", "bass-ring", "A circular spectrum wrapped around your logo, with sparks on every kick"),
+        style_row("12", "Neon Equalizer", "neon-equalizer", "Smooth neon bars across the screen with a glassy reflection"),
+        style_row("13", "Pulsar Ridges", "pulsar-ridges", "Stacked white ridgelines that span the full screen and scroll upward, the classic “joy plot” look"),
+        style_row("14", "Outrun Grid", "outrun-grid", "A synthwave sunset: smooth striped sun, a full-width sunset-colored meter and a racing neon grid"),
+        style_row("15", "Hyperspace", "hyperspace", "A starfield that jumps to warp speed on the drops"),
+        style_row("16", "Particle Storm", "particle-storm", "Hundreds of glowing particles flowing in currents, scattering on beats"),
+        style_row("17", "Lightning Storm", "lightning-storm", "Lightning cracking out from behind the logo on the beat"),
+        style_row("18", "Digital Rain", "digital-rain", "Columns of green glyphs raining down, faster with the bass"),
+        style_row("19", "Lava Lamp", "lava-lamp", "Soft blobs of color drifting and melting together"),
+        style_row("20", "Inferno", "inferno", "Embers and flames rising from the bottom of the screen"),
+        style_row("21", "Mirror Equalizer", "mirror-equalizer", "Bars grow up and down from a center line, in a sunset rainbow"),
+        style_row("22", "LED Meter", "led-meter", "A classic analyzer: green-yellow-red LED segments with peak markers"),
+        style_row("23", "Rainbow Peaks", "rainbow-peaks", "Thin rainbow bars with glowing caps that bounce on the beat"),
+        style_row("24", "Tesseract", "tesseract", "A neon 4D hypercube turning itself inside out, spinning harder on every beat"),
+        style_row("25", "Full Kaleidoscope", "full-kaleidoscope",
+         "A full-frame mandala: 4-way mirroring that sometimes reads as 8-way, in neon cyan, magenta, blue, gold and green. Bass zooms and turns it."),
+        style_row("26", "Main Stage", "main-stage",
+         "The view from an arena floor: beam fans meet overhead like a cathedral ceiling, lasers fire on the beat and a crowd bounces with phones up"),
+        style_row("27", "Monstercat Bars", "monstercat-bars", "A tidy row of smooth, pale spectrum bars above the logo"),
+        style_row("28", "Lo-fi Chill", "lo-fi-chill", "A snowy night town under a big moon, with fog and a small soft equalizer"),
+        style_row("29", "Glitch VHS", "glitch-vhs", "Worn videotape: the picture tears, splits into colour fringes and wobbles on the beat"),
+        style_row("30", "Liquid Chrome", "liquid-chrome", "Flowing polished liquid metal that swells and ripples with the bass"),
+        style_row("31", "Kinetic Text", "kinetic-text", "Rows of your first logo or text item sliding across; the beat lights a row"),
+    ], [0.4 * inch, 1.35 * inch, 1.35 * inch, 3.4 * inch], swatches=[hsv_color(h_, 0.8, 0.85) for h_ in STYLE_HUES]))
     s.append(Spacer(1, 8))
     s.append(tip_box("Bass Ring and Particle Storm are built around a centered logo, so turn Bounce and Slide "
                      "down to keep it in place. For Pulsar Ridges and Outrun Grid, a smaller logo Size (about 0.2) "
@@ -716,6 +730,18 @@ def build():
         P("<b>Add your own:</b> in the style list, under <b>Your MilkDrop presets</b>, click <b>Choose folder</b> and "
           "pick a folder of .milk files (subfolders too). Each preset becomes a style you can search for and pick. "
           "They stay out of auto-cycle unless you turn on <b>Include these presets in auto-cycle</b>.", body)]))
+    milk = [("milk-acid-mandala", "Acid Mandala"), ("milk-flame-face", "Flame Face"), ("milk-mind-blob", "Mind Blob"),
+            ("milk-geiss-lightning", "Geiss Lightning"), ("milk-dark-galaxy", "Dark Galaxy"),
+            ("milk-hypraxis", "Hypraxis"), ("milk-planar-travel", "Planar Travel"),
+            ("milk-box-of-tricks", "Box of Tricks"), ("milk-lorenz-chaser", "Lorenz Chaser")]
+    cap = ParagraphStyle("mcap", parent=small, alignment=TA_CENTER)
+    grid = [[[thumb(sl, 2.0 * inch), Spacer(1, 2), P(f"<b>{nm}</b>", cap)] for sl, nm in milk[r * 3:r * 3 + 3]]
+            for r in range(3)]
+    gt = Table(grid, colWidths=[2.17 * inch] * 3)
+    gt.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    s.append(Spacer(1, 6))
+    s.append(gt)
 
     # ---- Shortcuts
     s += section(8, "Keyboard shortcuts")
