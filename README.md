@@ -88,7 +88,7 @@
   </tr>
 </table>
 
-<p align="center"><sub>All 31 styles, logo layers and the 9 built-in MilkDrop presets. Recorded in the Mac app with real music playing; Main Stage is rendered from the same drawing code, and the logo layers demo was recorded from the Linux app with a synthetic dance loop (<code>scripts/make-style-previews.sh</code>). The logo is the app icon. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
+<p align="center"><sub>All 31 styles, logo layers and the 9 built-in MilkDrop presets. All recorded in the Mac app with real music playing (Main Stage is rendered from the same drawing code). The first 26 use the app icon as the logo; the newer ones use a wordmark split into logo layers (Explode), so its letters fly apart on the beat. Want phone-shaped video? There's also a <a href="docs/media/styles/portrait-frame.jpg">9:16 portrait frame</a>.</sub></p>
 
 A free, open-source, Winamp / MilkDrop-style music visualizer for **Mac, Windows and Linux** that **makes your logo dance to the bass**.
 
