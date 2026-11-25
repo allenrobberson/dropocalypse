@@ -3,6 +3,9 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.6.4", [
+            "**The style timer moved.** **Change style every** (how long each style stays up when auto-cycle is on) is now at the very top of the style list: click the style name in the toolbar. The Auto key just turns auto-cycle on and off.",
+        ]),
         ("1.6.3", [
             "**Linux AppImage updates.** The AppImage is now named Dropocalypse-<version>-x86_64.AppImage and carries update information, so AppImageUpdate and similar tools can update it. Mac and Windows are unchanged.",
         ]),

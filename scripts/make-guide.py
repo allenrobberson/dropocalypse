@@ -517,7 +517,7 @@ def build():
     s.append(Spacer(1, 8))
     s.append(table(["Control", "What it does"], [
         ["<b>‹ · Style name · ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
-        ["<b>⟳ Auto</b>", "Turns auto-cycle on or off; it glows green while on. Auto-cycle moves to the next <b>checked</b> style with a smooth crossfade. <b>Right-click</b> it to set how long each style stays up (5 seconds to 6 minutes)"],
+        ["<b>⟳ Auto</b>", "Turns auto-cycle on or off; it glows green while on. Auto-cycle moves to the next <b>checked</b> style with a smooth crossfade. Set how long each style stays up (5 seconds to 6 minutes) with <b>Change style every</b> at the top of the style list"],
         ["<b>Logo</b>", "Your logos and text items, plus size, glow, color tint and trails"],
         ["<b>Motion</b>", "How your logo reacts to the bass"],
         ["<b>Audio</b>", "Which input to listen to, sensitivity and beat threshold. Red when audio isn't running"],
@@ -678,9 +678,8 @@ def build():
            "<b>All</b> and <b>None</b> check or clear every box at once.", body),
          Spacer(1, 4),
          P("Turn on <b>Auto-cycle</b> at the top of the list, or with ⟳ in the toolbar or the A key. Set how long "
-           "each style stays up with <b>Change style every</b> (30 seconds to start, 5 seconds to 6 minutes): "
-           "right-click the ⟳ <b>Auto</b> key in the toolbar, or find it under <b>Style</b> in the detached "
-           "controls.", body)],
+           "each style stays up with <b>Change style every</b> at the very top of the list (30 seconds to start, "
+           "5 seconds to 6 minutes).", body)],
         widths=[2.5 * inch, 4.0 * inch]))
     s.append(Spacer(1, 8))
     s.append(table(["#", "Style", "Preview", "What it looks like"], [

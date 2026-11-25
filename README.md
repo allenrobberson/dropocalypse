@@ -118,11 +118,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.4: style timer in the style list
+- ⏱ **Change style every** is now at the very top of the style list (click the style name), with the Auto-cycle switch right under it. The Auto key no longer has its own right-click menu.
+
 ### 1.6.3: AppImage updates
 - 🐧 **Linux AppImage**: now named `Dropocalypse-<version>-x86_64.AppImage` and carries update information, so AppImageUpdate and similar tools can update it. On Linux 1.6.2 or older, download 1.6.3 once from the [latest release](../../releases/latest); after that, Update now works again.
-
-### 1.6.2: a picture for every style in the guide
-- 🖼 **The user guide shows every style**: each of the 31 styles and 9 MilkDrop presets has a preview, plus one for each logo layers move (Wave, Explode, Bands, Scatter) and the new Motion menu.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 
@@ -219,7 +219,7 @@ From left to right:
 | Control | What it does |
 |---|---|
 | **‹** · **Style name** · **›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
-| ⟳ **Auto** | Turns auto-cycle on or off. It glows green while auto-cycle is on. **Right-click** it (Mac: also Control-click) for its settings: how long each style stays up, from 5 seconds to 6 minutes |
+| ⟳ **Auto** | Turns auto-cycle on or off. It glows green while auto-cycle is on. Set how long each style stays up (5 seconds to 6 minutes) with **Change style every** at the top of the style list (click the style name) |
 | **Logo** | Opens the [Logo menu](#logos-and-text): your logos and text items, plus size, glow, tint and trails |
 | **Motion** | Opens the [Motion menu](#motion-panel): how the logo reacts to the bass |
 | **Audio** | Opens the [Audio menu](#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. It turns red when audio isn't running. |
@@ -275,7 +275,7 @@ You can also **drag images** from Finder, File Explorer, your file manager or a 
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [31 styles](#the-31-styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
-| ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes: right-click the **Auto** key), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
+| ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes with **Change style every** at the top of the style list), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ### Motion panel
 

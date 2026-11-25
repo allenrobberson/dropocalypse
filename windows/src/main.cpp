@@ -1814,7 +1814,12 @@ static void styleListBody(RenderSettings& r, int cur) {
     const int n = (int)allScenes().size();
     const int bundledEnd = kBuiltInSceneCount + g.milkCatalog.bundledCount;
     const int fixed = std::min(n, 64); // styles with their own auto-cycle checkbox
-    // Click a name to show it; checkboxes pick which styles auto-cycle rotates through.
+    // How long each style stays up, then the list: click a name to show it; checkboxes pick
+    // which styles auto-cycle rotates through.
+    ui3d::beginWell();
+    slider("Change style every", &r.cycleSeconds, 5, 360, "%.0f s");
+    ui3d::endWell();
+    ui3d::toggle("Auto-cycle (A)", &r.autoCycle);
     ImGui::TextDisabled("Checked = included in auto-cycle");
     if (ui3d::smallButton("All")) r.cycleSkip = 0;
     ImGui::SameLine();
@@ -1836,15 +1841,6 @@ static void styleListBody(RenderSettings& r, int cur) {
     if (checked == 0) ImGui::TextDisabled("Nothing checked: auto-cycle uses every style");
     else ImGui::TextDisabled("Auto-cycle: %d of %d styles%s", checked, cycling,
                              (r.userPresetStart >= 0 && r.cycleUserPresets) ? ", plus your presets" : "");
-}
-
-/// Auto-cycle settings: how long each style stays, and which styles take part.
-static void autoCycleBody(RenderSettings& r, int cur) {
-    ui3d::toggle("Auto-cycle (A)", &r.autoCycle);
-    ui3d::beginWell();
-    slider("Change style every", &r.cycleSeconds, 5, 360, "%.0f s");
-    ui3d::endWell();
-    styleListBody(r, cur);
 }
 
 static void keysPanelBody() {
@@ -1932,8 +1928,8 @@ static void drawToolbar(float dt) {
     const int iNext = add(it);
     it = BarItem();
     it.id = "##auto"; it.word = "Auto"; it.letter = " "; it.glyph = Glyph::Cycle;
-    it.name = r.autoCycle ? "Auto-cycle is on (A). Right-click for settings."
-                          : "Auto-cycle is off (A). Right-click for settings.";
+    it.name = r.autoCycle ? "Auto-cycle is on (A). Click the style name to set how often it changes."
+                          : "Auto-cycle is off (A). Click the style name to set how often it changes.";
     it.look = r.autoCycle ? Look::Lit : Look::Normal; it.spin = r.autoCycle;
     const int iAuto = add(it);
     add(divider);
@@ -1977,7 +1973,6 @@ static void drawToolbar(float dt) {
     if (bar[iNext].clicked) nextScene(1);
     if (bar[iName].clicked) ui3d::openUnder("stylelist", bar[iName]);
     if (bar[iAuto].clicked) r.autoCycle = !r.autoCycle;
-    if (bar[iAuto].rightClicked) ui3d::openUnder("autocycle", bar[iAuto]);
     if (bar[iLogo].clicked) ui3d::openUnder("logos", bar[iLogo]);
     if (bar[iMotion].clicked) ui3d::openUnder("motion", bar[iMotion]);
     if (bar[iAudio].clicked) ui3d::openUnder("audio", bar[iAudio]);
@@ -1998,12 +1993,6 @@ static void drawToolbar(float dt) {
     if (ui3d::beginMenu("stylelist", "Styles", "Click a name to show it")) {
         body(menuW);
         styleListBody(r, cur);
-        ImGui::PopTextWrapPos();
-        ImGui::EndPopup();
-    }
-    if (ui3d::beginMenu("autocycle", "Auto-cycle")) {
-        body(menuW);
-        autoCycleBody(r, cur);
         ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
@@ -2154,7 +2143,7 @@ static void drawControlsPanel() {
         }
         ImGui::SameLine();
         if (ui3d::arrowKey("##nextstyle", ImGuiDir_Right)) nextScene(1);
-        if (ui3d::section("Auto-cycle", ImGuiTreeNodeFlags_DefaultOpen)) autoCycleBody(r, cur);
+        if (ui3d::section("Styles and auto-cycle", ImGuiTreeNodeFlags_DefaultOpen)) styleListBody(r, cur);
     }
 
     // Sections

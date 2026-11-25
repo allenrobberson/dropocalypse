@@ -72,9 +72,6 @@ struct TopToolbar: View {
                         arrowKey("chevron.right", help: "Next style (→)") { model.nextScene(1) }
                     }
                     Toggle("Auto-cycle (A)", isOn: $settings.autoCycle)
-                    Well {
-                        slider("Change style every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
-                    }
                 }
 
                 DisclosureGroup("Motion", isExpanded: $showMotion) { motionControls }
@@ -279,31 +276,17 @@ struct TopToolbar: View {
             .help(OverlayLayout.textColorNames[index])
     }
 
-    /// Auto-cycle key: green and lit while on. Right-click (or Control-click) for its settings.
+    /// Auto-cycle key: green and lit while on. Its timing lives at the top of the style list.
     private func autoCycleKey(letters: Bool) -> some View {
-        let isOpen = popoverBinding("autocycle")
-        return Button { settings.autoCycle.toggle() } label: {
+        Button { settings.autoCycle.toggle() } label: {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 14, weight: .semibold))
                 if !letters { Text("Auto") }
             }
         }
         .buttonStyle(RaisedKeyStyle(look: settings.autoCycle ? .lit : .normal, height: 36, minWidth: 36))
-        .help(settings.autoCycle ? "Auto-cycle is on (A). Right-click for settings."
-                                 : "Auto-cycle is off (A). Right-click for settings.")
-        .contextMenu {
-            Button(settings.autoCycle ? "Turn auto-cycle off" : "Turn auto-cycle on") { settings.autoCycle.toggle() }
-            Button("Auto-cycle settings…") { isOpen.wrappedValue = true }
-        }
-        .popover(isPresented: isOpen, arrowEdge: .bottom) {
-            MenuPanel(title: "Auto-cycle", subtitle: "Click the style name to choose which styles take part.") {
-                Toggle("Auto-cycle (A)", isOn: $settings.autoCycle)
-                Well {
-                    slider("Change style every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
-                }
-            }
-            .environment(\.colorScheme, .dark)
-        }
+        .help(settings.autoCycle ? "Auto-cycle is on (A). Click the style name to set how often it changes."
+                                 : "Auto-cycle is off (A). Click the style name to set how often it changes.")
     }
 
     /// The Screen menu: which display shows the visuals, full screen, and detaching the controls.
@@ -403,8 +386,11 @@ struct TopToolbar: View {
         let checked = scenes.prefix(fixed).filter { settings.isInCycle($0.name) }.count
         return MenuPanel(title: "Styles", subtitle: "Click a name to show it. Checked styles are the ones auto-cycle rotates through.",
                          width: 340) {
+            Well {
+                slider("Change style every", $settings.cycleSeconds, 5...360) { "\(Int($0)) s" }
+            }
             HStack {
-                Toggle("Auto-cycle", isOn: $settings.autoCycle)
+                Toggle("Auto-cycle (A)", isOn: $settings.autoCycle)
                 Spacer()
                 Button("All") { settings.setAllInCycle(true) }
                 Button("None") { settings.setAllInCycle(false) }

@@ -14,7 +14,7 @@ From left to right:
 | Control | What it does |
 |---|---|
 | **‹** · **Style name** · **›** | Previous style, open the style list, next style. In the list, click a name to show it, and use the **checkboxes** to choose which styles auto-cycle rotates through |
-| ⟳ **Auto** | Turns auto-cycle on or off. It glows green while auto-cycle is on. **Right-click** it (Mac: also Control-click) for its settings: how long each style stays up, from 5 seconds to 6 minutes |
+| ⟳ **Auto** | Turns auto-cycle on or off. It glows green while auto-cycle is on. Set how long each style stays up (5 seconds to 6 minutes) with **Change style every** at the top of the style list (click the style name) |
 | **Logo** | Opens the [Logo menu](Your-Logo-and-Motion#logos-and-text): your logos and text items, plus size, glow, tint and trails |
 | **Motion** | Opens the [Motion menu](Your-Logo-and-Motion#motion-panel): how the logo reacts to the bass |
 | **Audio** | Opens the [Audio menu](Audio-Sources#audio-panel): what to listen to (an app, all Mac audio, a mic or line-in) and sensitivity. It turns red when audio isn't running. |
@@ -56,7 +56,7 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 |---|---|
 | **‹** / **›** | Previous / next style. You can also use the ← → arrow keys. |
 | **Style name** | Opens the style list. Click a name to jump straight to any of the [31 styles](Styles). The **checkbox** to the left of each style decides whether auto-cycle includes it. **All** and **None** check or clear every box at once. |
-| ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes: right-click the **Auto** key), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
+| ⟳ **Auto** | When on, the app moves to the next **checked** style every 30 seconds (adjustable from 5 seconds to 6 minutes with **Change style every** at the top of the style list), with a smooth 2.5-second crossfade. Unchecked styles are skipped; if nothing is checked, it uses every style. Choosing a style by hand restarts the timer, and the arrows and arrow keys still reach every style. |
 
 ## Look panel
 

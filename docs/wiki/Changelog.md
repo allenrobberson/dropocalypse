@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.4
+- ⏱ **Change style every moved to the top of the style list.** Click the style name: the timer (5 seconds to 6 minutes) is the first thing in the list, with the Auto-cycle switch under it. The ⟳ Auto key's right-click menu is gone; the key just turns auto-cycle on and off. In the detached controls it's at the top of the style list too (Windows and Linux: the **Styles and auto-cycle** section). Mac, Windows and Linux.
+
 ## 1.6.3
 - 🐧 **AppImage name and update information.** The Linux AppImage is now `Dropocalypse-<version>-x86_64.AppImage` (no "Linux", as the AppImage catalog asks) and embeds `gh-releases-zsync` update information; each release publishes the matching `.zsync` file, so AppImageUpdate and similar tools can update it. The in-app updater accepts both names.
 - ⚠️ **One manual step on Linux:** 1.6.2 and older look for the old file name, so their **Update now** can't find 1.6.3. Download 1.6.3 once from the [latest release](https://github.com/allenrobberson/dropocalypse/releases/latest); updates work in one click again after that.
