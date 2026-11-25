@@ -22,4 +22,14 @@ jobs:
         run: |
           tag=$(gh release view --json tagName --jq .tagName)
           gh release upload "$tag" docs/Dropocalypse-User-Guide.pdf --clobber
+          # Keep the release's checksum list right for the new guide.
+          mkdir -p sums && cd sums
+          if gh release download "$tag" --pattern SHA256SUMS.txt; then
+            cp ../docs/Dropocalypse-User-Guide.pdf .
+            grep -v ' Dropocalypse-User-Guide.pdf$' SHA256SUMS.txt > new.txt || true
+            sha256sum Dropocalypse-User-Guide.pdf >> new.txt
+            mv new.txt SHA256SUMS.txt
+            cat SHA256SUMS.txt
+            gh release upload "$tag" SHA256SUMS.txt --clobber
+          fi
           echo "Updated the guide on $tag"
