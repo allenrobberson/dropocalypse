@@ -1,0 +1,52 @@
+name: Upload to Mac App Store
+
+# Sends the signed Mac App Store package from a GitHub release to App Store Connect, so it can be
+# picked as the build for an App Store version. Run by hand; it does not submit for review.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version whose Dropocalypse-<version>.pkg to upload (for example 1.6.2)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          sparse-checkout: scripts
+
+      - name: App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"; mkdir -p "$KEY_DIR"
+          ASC_KEY_P8="$ASC_KEY_P8" python3 - "$KEY_DIR/AuthKey_AAX8B3U4QH.p8" <<'PY'
+          import os, re, sys, textwrap
+          raw = os.environ["ASC_KEY_P8"]
+          body = re.sub(r"(?i)[^A-Za-z0-9+/=]*(BEGIN|END)\s+(EC\s+)?PRIVATE\s+KEY[^A-Za-z0-9+/=]*", "\n", raw)
+          body = "".join(re.findall(r"[A-Za-z0-9+/=]+", body))
+          open(sys.argv[1], "w").write("-----BEGIN PRIVATE KEY-----\n" + "\n".join(textwrap.wrap(body, 64)) + "\n-----END PRIVATE KEY-----\n")
+          PY
+          chmod 600 "$KEY_DIR/AuthKey_AAX8B3U4QH.p8"
+
+      - name: Download the package from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          case "$VERSION" in (*[!0-9.]*|"") echo "::error::Version must look like 1.6.2"; exit 1;; esac
+          gh release download "v$VERSION" -R "$GITHUB_REPOSITORY" --pattern "Dropocalypse-$VERSION.pkg"
+          pkgutil --check-signature "Dropocalypse-$VERSION.pkg" | head -5
+
+      - name: Upload to App Store Connect
+        env:
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          xcrun altool --upload-app --type macos --file "Dropocalypse-$VERSION.pkg" \
+            --apiKey AAX8B3U4QH --apiIssuer "$ASC_ISSUER_ID" --output-format normal
