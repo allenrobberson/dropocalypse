@@ -678,7 +678,9 @@ def build():
            "<b>All</b> and <b>None</b> check or clear every box at once.", body),
          Spacer(1, 4),
          P("Turn on <b>Auto-cycle</b> at the top of the list, or with ⟳ in the toolbar or the A key. Set how long "
-           "each style stays up (5 seconds to 6 minutes) under <b>Look</b>.", body)],
+           "each style stays up with <b>Change style every</b> (30 seconds to start, 5 seconds to 6 minutes): "
+           "right-click the ⟳ <b>Auto</b> key in the toolbar, or find it under <b>Style</b> in the detached "
+           "controls.", body)],
         widths=[2.5 * inch, 4.0 * inch]))
     s.append(Spacer(1, 8))
     s.append(table(["#", "Style", "Preview", "What it looks like"], [
