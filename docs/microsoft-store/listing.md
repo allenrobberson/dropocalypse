@@ -27,8 +27,10 @@ PERFECT FOR
 • Anyone who misses the classic Winamp visuals
 
 FEATURES
-• 26 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract, Full Kaleidoscope and Main Stage
+• 31 visual styles, including Classic Tunnel, Spectrum Skyline, Liquid Plasma, Black Hole, Outrun Grid, Hyperspace, Digital Rain, LED Meter, a 4D Tesseract, Full Kaleidoscope, Main Stage, Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text
+• 9 classic MilkDrop presets built in, and you can add your own folder of .milk presets
 • Your logo reacts to the music: pulse, squash, bounce, slide, wobble, glow and trails, each adjustable
+• Logo layers: split your logo into its separate shapes and make them wave, explode, ride the bass, mids and treble, or scatter
 • Up to 4 logos at once, plus text such as a DJ name, an event or a hashtag
 • Listens to whatever your PC is playing (no microphone needed), one output device, a microphone or a line-in
 • Two screens: detach the controls onto your laptop and send the visuals full screen to a TV or projector
@@ -45,10 +47,10 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-New in 1.4.0: Main Stage, a new style that puts you on an arena floor. Stage lights meet overhead like a cathedral ceiling and bloom on every kick, lasers spray from the stage and sweep the crowd, and a crowd with phones up bounces to the bass. Plus a What's New window that shows what changed after each update, and a brighter neon app icon.
+New in 1.6.2: MilkDrop presets, five new styles and logo layers. Nine classic MilkDrop presets are built in, and you can add your own folder of .milk files. Five new styles: Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text. Logo layers split your logo into its separate shapes, which move on the beat with four sliders (Wave, Explode, Bands, Scatter) from 0 (still) to 100 (super wild). The printable guide now shows a picture of every style.
 
 ## Product features (up to 20, short)
-- 26 music-reactive visual styles
+- 31 music-reactive styles plus MilkDrop presets
 - Your logo dances to the bass
 - Listens to any audio playing on your PC
 - Two-screen mode for live shows
