@@ -266,11 +266,19 @@ int main(int argc, char** argv) {
     // warm-up into DIR as NNNN.ppm, with their times in DIR/times.txt. Used to make the README GIFs.
     std::string previewDir;
     double previewWarmup = 4.0, previewSeconds = 4.4;
+    int previewW = 720, previewH = 406;   // --preview-size=WxH (e.g. 720x1280 for vertical clips)
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         if (a == "--updated") updated = true;
         if (a.rfind("--preview=", 0) == 0) { previewDir = a.substr(10); selfTest = true; }
         if (a.rfind("--preview-seconds=", 0) == 0) previewSeconds = std::max(0.5, std::atof(a.c_str() + 18));
+        if (a.rfind("--preview-size=", 0) == 0) {
+            int w = 0, h = 0;
+            if (std::sscanf(a.c_str() + 15, "%dx%d", &w, &h) == 2 && w >= 64 && h >= 64 && w <= 4096 && h <= 4096) {
+                previewW = w;
+                previewH = h;
+            }
+        }
         if (a.rfind("--self-test", 0) == 0) {
             selfTest = true;
             if (a.size() > 12 && a[11] == '=') selfTestShot = a.substr(12);
@@ -304,7 +312,7 @@ int main(int argc, char** argv) {
     glfwWindowHintString(GLFW_X11_INSTANCE_NAME, "dropocalypse");
     glfwWindowHintString(GLFW_WAYLAND_APP_ID, "dropocalypse");
     g.window = previewDir.empty() ? glfwCreateWindow(1280, 720, "Dropocalypse", nullptr, nullptr)
-                                  : glfwCreateWindow(720, 406, "Dropocalypse", nullptr, nullptr);
+                                  : glfwCreateWindow(previewW, previewH, "Dropocalypse", nullptr, nullptr);
     if (!g.window) {
         showFatal("Couldn't start OpenGL 3.3. Please update your graphics driver.");
         glfwTerminate();
@@ -418,7 +426,16 @@ int main(int argc, char** argv) {
             static FILE* times = nullptr;
             const double t = nowSeconds() - previewStart - previewWarmup;
             if (t >= 0 && t <= previewSeconds) {
-                if (!times) times = std::fopen((previewDir + "/times.txt").c_str(), "w");
+                if (!times) {
+                    times = std::fopen((previewDir + "/times.txt").c_str(), "w");
+                    // Wall-clock time of the first saved frame, so a script can line up the music.
+                    const double epoch = std::chrono::duration<double>(
+                        std::chrono::system_clock::now().time_since_epoch()).count();
+                    if (FILE* e = std::fopen((previewDir + "/start-epoch.txt").c_str(), "w")) {
+                        std::fprintf(e, "%.4f\n", epoch - t);
+                        std::fclose(e);
+                    }
+                }
                 char name[64];
                 std::snprintf(name, sizeof(name), "/%04d.ppm", previewIndex);
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
