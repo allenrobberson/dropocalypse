@@ -22,7 +22,7 @@ pulseaudio --check 2>/dev/null || pulseaudio -D --exit-idle-time=-1
 pactl load-module module-null-sink sink_name=clip >/dev/null
 pactl set-default-sink clip
 
-' read -r slug|' read -r slug index items extra audio start secs; do
+while IFS='|' read -r -u 3 slug index items extra audio start secs; do
   [[ -z "$slug" || "$slug" == \#* ]] && continue
   echo "== $slug (style $index, $audio from ${start}s, ${secs}s)"
   cfg=/tmp/dropocalypse-selftest/dropocalypse
@@ -79,5 +79,5 @@ PY
   ffmpeg -nostdin -v error -y -i "$frames/sel/$(printf %05d $((secs * FPS / 4))).ppm" -vf scale=1080:1920:flags=lanczos \
     "$OUT/$slug-still2.png"
   rm -rf "$frames"
-done < "$MANIFEST"
+done 3< "$MANIFEST"
 ls -la "$OUT"

@@ -2,7 +2,7 @@ name: Social clips
 
 # Records vertical 9:16 clips from the real Linux app for social posts. The music and the list of
 # clips (clips.txt) come from a separate branch, so audio files never land on main. The clips are
-# uploaded as a workflow artifact; nothing is committed.
+# committed back to that branch (out/) and uploaded as a workflow artifact.
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +12,7 @@ on:
         default: "social-assets"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   clips:
@@ -52,3 +52,13 @@ jobs:
           name: social-clips
           path: out
           retention-days: 7
+
+      - name: Commit the clips to the assets branch
+        working-directory: assets
+        run: |
+          rm -rf out && cp -r ../out out
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add out
+          git commit -m "Rendered clips" || exit 0
+          git push origin HEAD:${{ inputs.assets_branch }}
