@@ -3,6 +3,10 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.6.5", [
+            "**Phone remote (preview).** Control Dropocalypse from your phone's web browser, with no app to install. Turn on **Phone remote** in the new **Phone** menu (or in the detached controls), press **Show QR code** and scan it with your phone's camera. This first version has the styles, auto-cycle, your MilkDrop presets and the Motion sliders; more is coming.",
+            "**Same Wi-Fi.** Your phone and computer need to be on the same Wi-Fi, or the computer can join your phone's hotspot. Phones you've paired reconnect on their own, even after a restart, until you press **Disconnect**.",
+        ]),
         ("1.6.4", [
             "**The style timer moved.** **Change style every** (how long each style stays up when auto-cycle is on) is now at the very top of the style list: click the style name in the toolbar. The Auto key just turns auto-cycle on and off.",
         ]),

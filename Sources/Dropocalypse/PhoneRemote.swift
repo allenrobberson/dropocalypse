@@ -11,6 +11,13 @@ final class PhoneRemote: ObservableObject {
     @Published private(set) var phones: [String] = []
     @Published private(set) var error: String?
     @Published private(set) var qr: (size: Int, modules: [UInt8]) = (0, [])
+    /// The QR code stays hidden until asked for, so an audience can't scan it off the big screen.
+    @Published var showQR = false
+    /// This Mac's local networks: (address, interface name).
+    @Published private(set) var addresses: [NetAddress] = []
+    struct NetAddress: Hashable { let ip: String; let name: String }
+    private var pairCode = ""
+    private var addressesAt = Date.distantPast
 
     private unowned let model: VisualizerModel
     private var settings: AppSettings { model.settings }
@@ -29,6 +36,18 @@ final class PhoneRemote: ObservableObject {
         if on { start() } else { stop() }
     }
 
+    /// The address the QR code uses ("" = automatic).
+    func setAddress(_ ip: String) {
+        settings.phoneAddress = ip
+        if let server { remote_set_address(server, ip) }
+        objectWillChange.send()
+    }
+
+    var currentAddress: String {
+        guard let server else { return "" }
+        return String(cString: remote_local_ip(server))
+    }
+
     func disconnectAll() {
         if let server { remote_disconnect_all(server) }
     }
@@ -41,6 +60,8 @@ final class PhoneRemote: ObservableObject {
             return
         }
         server = s
+        remote_set_tokens(s, settings.phoneTokens)
+        remote_set_address(s, settings.phoneAddress)
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in self?.tick() }
         tick()
     }
@@ -81,6 +102,21 @@ final class PhoneRemote: ObservableObject {
             }
         }
 
+        let tokens = String(cString: remote_tokens(server))
+        if tokens != settings.phoneTokens { settings.phoneTokens = tokens }
+        let code = String(cString: remote_pair_code(server))
+        if code != pairCode {   // a phone just used the code: hide the new one again
+            if !pairCode.isEmpty { showQR = false }
+            pairCode = code
+        }
+        if Date().timeIntervalSince(addressesAt) > 3 {
+            addressesAt = Date()
+            let list = String(cString: remote_addresses(server)).split(separator: "\n").map { line -> NetAddress in
+                let parts = line.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false)
+                return NetAddress(ip: String(parts[0]), name: parts.count > 1 ? String(parts[1]) : "")
+            }
+            if list != addresses { addresses = list }
+        }
         let url = String(cString: remote_pair_url(server))
         if url != pairURL {
             pairURL = url
@@ -218,21 +254,43 @@ struct PhoneRemotePanel: View {
                 } else if remote.pairURL.isEmpty {
                     Text("No local network found. Connect this Mac to Wi-Fi (or to your phone's hotspot) to use the phone remote.")
                         .font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                } else if !remote.showQR {
+                    Button("Show QR code to pair a phone") { remote.showQR = true }
+                    Text("Hidden so an audience can't scan it off the screen. Paired phones reconnect on their own.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 } else {
                     QRCodeView(size: remote.qr.size, modules: remote.qr.modules)
                         .frame(width: 190, height: 190)
                     Text("Scan with your phone's camera.").font(.callout)
                     Text("Or open \(remote.pairURL)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                     Text("The code works once; each phone gets a new one.").font(.caption).foregroundStyle(.secondary)
+                    Button("Hide QR code") { remote.showQR = false }
+                }
+                if remote.addresses.count > 1 || !settings.phoneAddress.isEmpty {
+                    Picker("Network", selection: Binding(get: { settings.phoneAddress },
+                                                         set: { remote.setAddress($0) })) {
+                        Text("Automatic (\(remote.currentAddress))").tag("")
+                        ForEach(remote.addresses, id: \.ip) { entry in
+                            Text(entry.name.isEmpty ? entry.ip : "\(entry.ip)  (\(entry.name))").tag(entry.ip)
+                        }
+                        if !settings.phoneAddress.isEmpty && !remote.addresses.contains(where: { $0.ip == settings.phoneAddress }) {
+                            Text("\(settings.phoneAddress) (not connected)").tag(settings.phoneAddress)
+                        }
+                    }
+                    .font(.caption)
                 }
                 Text("The phone and this Mac must be on the same Wi-Fi (or this Mac joins the phone's hotspot). If macOS asks, allow Dropocalypse to find devices on your local network.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if remote.phones.isEmpty {
                     Text("No phones connected.").font(.caption).foregroundStyle(.secondary)
+                    if !settings.phoneTokens.isEmpty {
+                        Button("Forget paired phones") { remote.disconnectAll() }
+                    }
                 } else {
                     Text("Connected:").font(.callout)
                     ForEach(remote.phones, id: \.self) { Text("• \($0)").font(.caption) }
                     Button("Disconnect phones") { remote.disconnectAll() }
+                    Text("Disconnected phones need to scan a new QR code.").font(.caption).foregroundStyle(.secondary)
                 }
             }
         }

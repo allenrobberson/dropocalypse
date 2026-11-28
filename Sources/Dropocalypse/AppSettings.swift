@@ -30,6 +30,10 @@ final class AppSettings: ObservableObject {
     @AppStorage("recordFolderBookmark") var recordFolderBookmark: Data = Data()
     /// Serve the phone remote on the local network (PhoneRemote.swift).
     @AppStorage("phoneRemote") var phoneRemote: Bool = false
+    /// Paired phones (one token per line), so they reconnect after a restart without scanning again.
+    @AppStorage("phoneTokens") var phoneTokens: String = ""
+    /// The network address the QR code uses; empty = automatic.
+    @AppStorage("phoneAddress") var phoneAddress: String = ""
 
     private var skipped: Set<String> {
         Set(cycleSkip.split(separator: "\n").map(String.init))

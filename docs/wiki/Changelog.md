@@ -2,6 +2,9 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.5
+- 📱 **Phone remote (preview).** Control Dropocalypse from your phone's web browser, no app to install. Turn on **Phone remote** in the new **Phone** toolbar menu (or the detached controls), press **Show QR code to pair a phone** and scan it. The phone gets the style picker and arrows, auto-cycle and its timer, the style list with auto-cycle checkboxes, your MilkDrop presets folder with search, and the Motion and Logo layers sliders. Changes show up on both sides instantly. Each pairing code works once, the QR hides itself after a phone pairs, and paired phones reconnect after a restart until you press **Disconnect phones**. LAN only. Mac, Windows and Linux. See [Phone Remote](Phone-Remote).
+
 ## 1.6.4
 - ⏱ **Change style every moved to the top of the style list.** Click the style name: the timer (5 seconds to 6 minutes) is the first thing in the list, with the Auto-cycle switch under it. The ⟳ Auto key's right-click menu is gone; the key just turns auto-cycle on and off. In the detached controls it's at the top of the style list too (Windows and Linux: the **Styles and auto-cycle** section). Mac, Windows and Linux.
 

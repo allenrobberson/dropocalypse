@@ -77,6 +77,8 @@ struct AppSettings {
     int frameCap = 0;                 // 0 = the display refresh, otherwise 30 or 60
     std::wstring milkFolder;          // the user's own MilkDrop presets (searched with subfolders)
     bool phoneRemote = false;         // serve the phone remote on the local network
+    std::string phoneTokens;          // paired phones (comma separated), so they reconnect after a restart
+    std::string phoneAddress;         // network address for the QR code; empty = automatic
 };
 
 static std::wstring appDataDir() {
@@ -124,6 +126,8 @@ static std::string serialize(const AppSettings& s) {
     out += std::string("portrait=") + (s.r.portrait ? "1" : "0") + "\n";
     out += "recordFolder=" + narrow(s.recordFolder) + "\n";
     out += std::string("phoneRemote=") + (s.phoneRemote ? "1" : "0") + "\n";
+    out += "phoneTokens=" + s.phoneTokens + "\n";
+    out += "phoneAddress=" + s.phoneAddress + "\n";
     out += serializeItems(s.items);
     return out;
 }
@@ -190,6 +194,8 @@ static bool loadSettings(const std::wstring& path, AppSettings& s) {
     if (kv.count("whatsNewLastSeen")) s.whatsNewLastSeen = kv["whatsNewLastSeen"];
     flag("controlsDetached", s.controlsDetached);
     flag("phoneRemote", s.phoneRemote);
+    if (kv.count("phoneTokens")) s.phoneTokens = kv["phoneTokens"];
+    if (kv.count("phoneAddress")) s.phoneAddress = kv["phoneAddress"];
     if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
     if (kv.count("frameCap")) {
         int cap = std::atoi(kv["frameCap"].c_str());
@@ -1630,6 +1636,10 @@ struct PhoneRemote {
     std::string qrFor;
     std::vector<unsigned char> qr;
     int qrSize = 0;
+    bool showQr = false;   // hidden until asked for, so an audience can't scan it off the big screen
+    std::string qrCode;    // the pairing code the QR shows; a new one means a phone just paired
+    std::vector<std::pair<std::string, std::string>> addresses;   // this computer's networks
+    double addressesAt = -10;
 };
 static PhoneRemote gRemote;
 
@@ -1741,6 +1751,14 @@ static void remoteTick() {
             gRemote.error = remote_last_error();
             return;
         }
+        remote_set_tokens(gRemote.server, g.settings.phoneTokens.c_str());
+        remote_set_address(gRemote.server, g.settings.phoneAddress.c_str());
+    }
+    {   // save the paired phones (a new phone, or Disconnect)
+        std::string tokens = remote_tokens(gRemote.server);
+        for (auto& c : tokens) if (c == '\n') c = ',';
+        if (!tokens.empty()) tokens.pop_back();
+        if (tokens != g.settings.phoneTokens) g.settings.phoneTokens = tokens;
     }
     if (std::getenv("DROPOCALYPSE_REMOTE_LOG")) {   // for testing: print each new pairing address
         static std::string logged;
@@ -1812,9 +1830,18 @@ static void phonePanelBody() {
         return;
     }
     const std::string url = remote_pair_url(gRemote.server);
+    const std::string code = remote_pair_code(gRemote.server);
+    if (code != gRemote.qrCode) {   // a phone just used the code: hide the new one again
+        if (!gRemote.qrCode.empty()) gRemote.showQr = false;
+        gRemote.qrCode = code;
+    }
     if (url.empty()) {
         ImGui::TextColored(ui3d::col::red, "No local network found. Connect this computer to Wi-Fi (or to your "
                                            "phone's hotspot) to use the phone remote.");
+    } else if (!gRemote.showQr) {
+        if (ui3d::button("Show QR code to pair a phone")) gRemote.showQr = true;
+        ImGui::TextDisabled("Hidden so an audience can't scan it off the screen. Paired phones reconnect on "
+                            "their own.");
     } else {
         if (url != gRemote.qrFor) {
             gRemote.qrFor = url;
@@ -1838,6 +1865,43 @@ static void phonePanelBody() {
         ImGui::TextUnformatted("Scan with your phone's camera.");
         ImGui::TextDisabled("Or open %s", url.c_str());
         ImGui::TextDisabled("The code works once; each phone gets a new one.");
+        if (ui3d::button("Hide QR code")) gRemote.showQr = false;
+    }
+    // Several networks (Ethernet and Wi-Fi, a VPN): choose the one the phone is on.
+    if (nowSeconds() - gRemote.addressesAt > 3) {
+        gRemote.addressesAt = nowSeconds();
+        gRemote.addresses.clear();
+        const std::string all = remote_addresses(gRemote.server);
+        size_t a = 0;
+        while (a < all.size()) {
+            size_t b = all.find('\n', a), tab = all.find('\t', a);
+            if (b == std::string::npos) break;
+            if (tab > b) tab = b;
+            gRemote.addresses.emplace_back(all.substr(a, tab - a), tab < b ? all.substr(tab + 1, b - tab - 1) : "");
+            a = b + 1;
+        }
+    }
+    if (gRemote.addresses.size() > 1 || !g.settings.phoneAddress.empty()) {
+        ImGui::TextDisabled("Network:");
+        auto label = [](const std::pair<std::string, std::string>& e) {
+            return e.second.empty() ? e.first : e.first + "  (" + e.second + ")";
+        };
+        const std::string cur = g.settings.phoneAddress.empty()
+                                    ? "Automatic (" + std::string(remote_local_ip(gRemote.server)) + ")"
+                                    : g.settings.phoneAddress;
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ui3d::beginCombo("##phonenet", cur.c_str())) {
+            if (ImGui::Selectable("Automatic", g.settings.phoneAddress.empty())) {
+                g.settings.phoneAddress.clear();
+                remote_set_address(gRemote.server, "");
+            }
+            for (const auto& e : gRemote.addresses)
+                if (ImGui::Selectable(label(e).c_str(), e.first == g.settings.phoneAddress)) {
+                    g.settings.phoneAddress = e.first;
+                    remote_set_address(gRemote.server, e.first.c_str());
+                }
+            ImGui::EndCombo();
+        }
     }
     ImGui::TextDisabled("The phone and this computer must be on the same Wi-Fi (or this computer joins the "
                         "phone's hotspot).");
@@ -1846,8 +1910,11 @@ static void phonePanelBody() {
 #endif
     ImGui::Spacing();
     const std::string phones = remote_clients(gRemote.server);
-    if (phones.empty()) ImGui::TextDisabled("No phones connected.");
-    else {
+    if (phones.empty()) {
+        ImGui::TextDisabled("No phones connected.");
+        if (!g.settings.phoneTokens.empty() && ui3d::button("Forget paired phones"))
+            remote_disconnect_all(gRemote.server);
+    } else {
         ImGui::TextUnformatted("Connected:");
         size_t a = 0;
         while (a < phones.size()) {
@@ -1856,6 +1923,7 @@ static void phonePanelBody() {
             a = b + 1;
         }
         if (ui3d::button("Disconnect phones")) remote_disconnect_all(gRemote.server);
+        ImGui::TextDisabled("Disconnected phones need to scan a new QR code.");
     }
     ImGui::PopTextWrapPos();
 }

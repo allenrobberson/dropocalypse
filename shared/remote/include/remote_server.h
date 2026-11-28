@@ -59,6 +59,17 @@ const char* remote_pair_code(RemoteServer* s);
 /* The computer's address on the local network ("" when there is none). */
 const char* remote_local_ip(RemoteServer* s);
 
+/* This computer's local network addresses, one per line: "192.168.1.20<TAB>en0" (the name may be
+ * empty). Valid until the next call. */
+const char* remote_addresses(RemoteServer* s);
+/* Use this address in the pairing URL (when the computer has it); "" = choose automatically. */
+void remote_set_address(RemoteServer* s, const char* ip);
+
+/* Paired phones' tokens, one per line, so the app can save them and phones reconnect after a
+ * restart without scanning again. Changes when a phone pairs or on Disconnect. */
+const char* remote_tokens(RemoteServer* s);
+void remote_set_tokens(RemoteServer* s, const char* lines);
+
 /* Returns 1 and fills *ev when an event is waiting, 0 when there are none. */
 int remote_next_event(RemoteServer* s, RemoteEvent* ev);
 /* Sends a text message to one phone, or to every paired phone when client < 0. */

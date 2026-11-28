@@ -118,6 +118,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.5: phone remote (preview)
+- 📱 **Phone remote**: turn it on in the **Phone** menu, press **Show QR code** and scan it with your phone. The phone's browser shows the controls (no app to install): styles, auto-cycle, your MilkDrop presets and the Motion sliders, with more coming. The phone and computer must be on the same Wi-Fi (or the computer joins your phone's hotspot). See [Phone Remote](../../wiki/Phone-Remote).
+
 ### 1.6.4: style timer in the style list
 - ⏱ **Change style every** is now at the very top of the style list (click the style name), with the Auto-cycle switch right under it. The Auto key no longer has its own right-click menu.
 
@@ -470,6 +473,15 @@ Open the **▾** next to Record to choose the **video size** (720p or 1080p at 6
 2. Under **Visuals**, pick your TV, projector or second monitor from the screen list. The visuals go full screen there.
 3. Keep the controls window on your main screen and change styles, logo, motion and audio while the show runs. Your audience only sees the visuals.
 4. Click **Attach controls to the visuals** (or close the controls window) to put the toolbar back on top. Dropocalypse remembers which way you left it.
+
+### Phone remote
+Control the show from your phone while the computer stays plugged into the screen or projector. No app to install: it runs in the phone's web browser.
+1. Open the **Phone** menu (or the **Phone remote** section of the detached controls) and turn on **Phone remote**.
+2. Press **Show QR code to pair a phone** and scan it with the phone's camera. Each code works once; the QR hides again after a phone pairs, so the audience can't scan it off the big screen.
+3. The phone and computer must be on the **same Wi-Fi**. No Wi-Fi at the venue? Turn on your phone's hotspot and join it from the computer.
+4. Paired phones reconnect on their own, even after Dropocalypse restarts. **Disconnect phones** (or **Forget paired phones**) signs them all out.
+
+The first time, macOS asks to let Dropocalypse find devices on your local network, and Windows may ask to allow it on private networks: say yes. If the computer has several networks (Ethernet and Wi-Fi, or a VPN), pick the one your phone is on under **Network**. In this preview the phone has the styles, auto-cycle, MilkDrop presets and Motion sliders; the rest of the controls are coming.
 
 ### Setting up for a live show
 

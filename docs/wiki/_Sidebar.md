@@ -10,6 +10,7 @@
 - [Your Logo and Motion](Your-Logo-and-Motion)
 - [Controls and Settings](Controls-and-Settings)
 - [Keyboard Shortcuts](Keyboard-Shortcuts)
+- [Phone Remote](Phone-Remote)
 
 **Shows and help**
 - [Live Shows and TVs](Live-Shows-and-TVs)

@@ -180,6 +180,19 @@ int main() {
         CHECK(readUntil(c3, "\"hello\"").find("101") != std::string::npos);
         CHECK(waitEvent(s, ev, REMOTE_EVENT_CONNECTED));
 
+        // Paired phones survive a restart: the app saves the tokens and gives them back.
+        CHECK(std::string(remote_tokens(s)) == token + "\n");
+        {
+            RemoteServer* s2 = remote_start(48100, "linux");
+            CHECK(s2 != nullptr);
+            remote_set_tokens(s2, (token + "\n").c_str());
+            sock_t r1 = dial(remote_port(s2));
+            sendAll(r1, upgrade("token=" + token));
+            CHECK(readUntil(r1, "\"hello\"").find("101") != std::string::npos);
+            closeSock(r1);
+            remote_stop(s2);
+        }
+
         // Upload with the token.
         sock_t c4 = dial(port);
         sendAll(c4, "POST /upload?token=" + token + "&name=logo%20one.png HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nabcde");
@@ -199,6 +212,7 @@ int main() {
         CHECK(waitEvent(s, ev, REMOTE_EVENT_DISCONNECTED));
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         CHECK(remote_client_count(s) == 0);
+        CHECK(std::string(remote_tokens(s)).empty());
         sock_t c6 = dial(port);
         sendAll(c6, upgrade("token=" + token));
         CHECK(readUntil(c6, "\r\n\r\n").find("403") != std::string::npos);
@@ -212,6 +226,10 @@ int main() {
     int n = remote_qr("http://192.168.1.20:47800/?pair=K7PQ2MXA", qr, sizeof(qr));
     CHECK(n >= 21 && (n - 17) % 4 == 0);
     CHECK(qr[0] == 1 && qr[n - 1] == 1);   // finder patterns in the corners
+
+    remote_set_address(s, "10.9.8.7");   // not this computer's: falls back to an automatic choice
+    CHECK(std::string(remote_local_ip(s)) != "10.9.8.7");
+    remote_addresses(s);
 
     CHECK(std::strstr(remote_schema_json(), "\"sections\"") != nullptr);
 

@@ -35,6 +35,10 @@ GitHub's handling of these requests is covered by the [GitHub Privacy Statement]
 
 The **Microsoft Store edition** is updated by the Microsoft Store, so it never checks GitHub and makes no network connections of its own.
 
+## Network use: phone remote
+
+The **Phone remote** is off until you turn it on. While it's on, Dropocalypse runs a small web server that only answers devices on your local network (your Wi-Fi or your phone's hotspot). It never connects to the internet for this. A phone has to scan a one-time pairing code before it can change anything; the page it opens talks only to your computer. Pictures you send from the phone (when that arrives) go straight to the app, the same as dropping a file on it. Dropocalypse keeps a random key for each paired phone in its settings so the phone can reconnect; **Disconnect phones** deletes them. Turning Phone remote off stops the server.
+
 ## No tracking
 
 Dropocalypse has no accounts, no ads, no analytics, no crash reporting and no tracking of any kind.

@@ -17,7 +17,6 @@
 #include <memory>
 #include <mutex>
 #include <random>
-#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -186,56 +185,61 @@ std::string ipString(uint32_t ip) {
     return buf;
 }
 
-/// The computer's address on the local network: the one the default route uses, else the first
-/// private address on any interface.
-std::string findLocalIp() {
-    // Override for computers with several networks (Ethernet + Wi-Fi, VPNs) where the automatic
-    // choice is the wrong one: DROPOCALYPSE_REMOTE_ADDRESS=192.168.1.20
-    if (const char* forced = std::getenv("DROPOCALYPSE_REMOTE_ADDRESS"))
-        if (*forced) return forced;
-    uint32_t found = 0;
-    sock_t u = socket(AF_INET, SOCK_DGRAM, 0);
-    if (u != kBadSock) {
-        sockaddr_in to{};
-        to.sin_family = AF_INET;
-        to.sin_port = htons(53);
-        inet_pton(AF_INET, "8.8.8.8", &to.sin_addr);   // nothing is sent: connect() only picks a route
-        if (connect(u, (sockaddr*)&to, sizeof(to)) == 0) {
-            sockaddr_in me{};
-            socklen_t len = sizeof(me);
-            if (getsockname(u, (sockaddr*)&me, &len) == 0) {
-                uint32_t ip = ntohl(me.sin_addr.s_addr);
-                if (isLocalNetwork(ip) && (ip >> 24) != 127) found = ip;
-            }
-        }
-        closeSock(u);
-    }
-    if (found) return ipString(found);
+/// Every private IPv4 address of this computer, with the network's name where the system gives one:
+/// {"192.168.1.20", "en0"}.
+std::vector<std::pair<std::string, std::string>> listLocalIps() {
+    std::vector<std::pair<std::string, std::string>> out;
+    auto add = [&](uint32_t ip, const std::string& name) {
+        if (!isLocalNetwork(ip) || (ip >> 24) == 127) return;
+        for (auto& e : out) if (e.first == ipString(ip)) return;
+        out.emplace_back(ipString(ip), name);
+    };
 #ifdef _WIN32
     char host[256];
     if (gethostname(host, sizeof(host)) == 0) {
         addrinfo hints{}, *res = nullptr;
         hints.ai_family = AF_INET;
         if (getaddrinfo(host, nullptr, &hints, &res) == 0) {
-            for (addrinfo* p = res; p && !found; p = p->ai_next) {
-                uint32_t ip = ntohl(((sockaddr_in*)p->ai_addr)->sin_addr.s_addr);
-                if (isLocalNetwork(ip) && (ip >> 24) != 127) found = ip;
-            }
+            for (addrinfo* p = res; p; p = p->ai_next) add(ntohl(((sockaddr_in*)p->ai_addr)->sin_addr.s_addr), "");
             freeaddrinfo(res);
         }
     }
 #else
     ifaddrs* list = nullptr;
     if (getifaddrs(&list) == 0) {
-        for (ifaddrs* p = list; p && !found; p = p->ifa_next) {
-            if (!p->ifa_addr || p->ifa_addr->sa_family != AF_INET) continue;
-            uint32_t ip = ntohl(((sockaddr_in*)p->ifa_addr)->sin_addr.s_addr);
-            if (isLocalNetwork(ip) && (ip >> 24) != 127) found = ip;
-        }
+        for (ifaddrs* p = list; p; p = p->ifa_next)
+            if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET)
+                add(ntohl(((sockaddr_in*)p->ifa_addr)->sin_addr.s_addr), p->ifa_name ? p->ifa_name : "");
         freeifaddrs(list);
     }
 #endif
-    return found ? ipString(found) : "";
+    return out;
+}
+
+/// The address to put in the QR code: the one the user picked (while this computer still has it),
+/// else the one the default route uses, else the first private address.
+std::string findLocalIp(const std::string& preferred) {
+    // For testing, and computers whose networks the app can't see: DROPOCALYPSE_REMOTE_ADDRESS=192.168.1.20
+    if (const char* forced = std::getenv("DROPOCALYPSE_REMOTE_ADDRESS"))
+        if (*forced) return forced;
+    const auto all = listLocalIps();
+    for (auto& e : all) if (e.first == preferred) return preferred;
+    sock_t u = socket(AF_INET, SOCK_DGRAM, 0);
+    if (u != kBadSock) {
+        sockaddr_in to{};
+        to.sin_family = AF_INET;
+        to.sin_port = htons(53);
+        inet_pton(AF_INET, "8.8.8.8", &to.sin_addr);   // nothing is sent: connect() only picks a route
+        uint32_t ip = 0;
+        if (connect(u, (sockaddr*)&to, sizeof(to)) == 0) {
+            sockaddr_in me{};
+            socklen_t len = sizeof(me);
+            if (getsockname(u, (sockaddr*)&me, &len) == 0) ip = ntohl(me.sin_addr.s_addr);
+        }
+        closeSock(u);
+        if (ip && isLocalNetwork(ip) && (ip >> 24) != 127) return ipString(ip);
+    }
+    return all.empty() ? "" : all.front().first;
 }
 
 std::string deviceName(const std::string& ua) {
@@ -287,7 +291,8 @@ struct RemoteServer {
     std::mutex m;                 // guards everything below
     std::vector<std::unique_ptr<Client>> clients;
     std::deque<Event> events;
-    std::set<std::string> tokens;
+    std::vector<std::string> tokens;   // paired phones, oldest first
+    std::string preferredIp;
     std::string pairCode;
     std::string localIp;
     std::chrono::steady_clock::time_point ipCheckedAt{};
@@ -296,7 +301,7 @@ struct RemoteServer {
 
     // Returned to the caller (valid until the next call).
     Event current;
-    std::string urlOut, clientsOut, ipOut, codeOut;
+    std::string urlOut, clientsOut, ipOut, codeOut, tokensOut, addressesOut;
 
     void newPairCode() { pairCode = randomString(8, "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"); }
 
@@ -320,7 +325,11 @@ struct RemoteServer {
         c.closing = true;
     }
 
-    bool tokenOk(const std::string& t) { return !t.empty() && tokens.count(t) > 0; }
+    bool tokenOk(const std::string& t) {
+        if (t.empty()) return false;
+        for (auto& k : tokens) if (k == t) return true;
+        return false;
+    }
 
     /// A complete HTTP request header is in c.in: answer it. Returns false if more bytes are needed
     /// (an upload body still arriving).
@@ -357,7 +366,8 @@ struct RemoteServer {
                     return true;
                 }
                 token = randomString(32, "abcdefghijklmnopqrstuvwxyz0123456789");
-                tokens.insert(token);
+                tokens.push_back(token);
+                if (tokens.size() > 16) tokens.erase(tokens.begin());   // forget the oldest phone
                 newPairCode();   // one-time: the next phone needs the new code
             }
             Sha1 sha;
@@ -577,7 +587,7 @@ RemoteServer* remote_start(int preferredPort, const char* platform) {
     s->port = port;
     s->platform = platform ? platform : "";
     s->newPairCode();
-    s->localIp = findLocalIp();
+    s->localIp = findLocalIp(s->preferredIp);
     s->ipCheckedAt = std::chrono::steady_clock::now();
     s->thread = std::thread([s] { s->run(); });
     return s;
@@ -602,7 +612,7 @@ const char* remote_local_ip(RemoteServer* s) {
     const auto now = std::chrono::steady_clock::now();
     if (now - s->ipCheckedAt > std::chrono::seconds(5)) {
         s->ipCheckedAt = now;
-        s->localIp = findLocalIp();
+        s->localIp = findLocalIp(s->preferredIp);
     }
     s->ipOut = s->localIp;
     return s->ipOut.c_str();
@@ -613,6 +623,41 @@ const char* remote_pair_url(RemoteServer* s) {
     std::lock_guard<std::mutex> lock(s->m);
     s->urlOut = ip.empty() ? "" : "http://" + ip + ":" + std::to_string(s->port) + "/?pair=" + s->pairCode;
     return s->urlOut.c_str();
+}
+
+const char* remote_addresses(RemoteServer* s) {
+    std::string out;
+    for (auto& e : listLocalIps()) out += e.first + "\t" + e.second + "\n";
+    std::lock_guard<std::mutex> lock(s->m);
+    s->addressesOut = out;
+    return s->addressesOut.c_str();
+}
+
+void remote_set_address(RemoteServer* s, const char* ip) {
+    std::lock_guard<std::mutex> lock(s->m);
+    s->preferredIp = ip ? ip : "";
+    s->localIp = findLocalIp(s->preferredIp);
+    s->ipCheckedAt = std::chrono::steady_clock::now();
+}
+
+const char* remote_tokens(RemoteServer* s) {
+    std::lock_guard<std::mutex> lock(s->m);
+    s->tokensOut.clear();
+    for (auto& t : s->tokens) s->tokensOut += t + "\n";
+    return s->tokensOut.c_str();
+}
+
+void remote_set_tokens(RemoteServer* s, const char* lines) {
+    std::lock_guard<std::mutex> lock(s->m);
+    s->tokens.clear();
+    std::string all = lines ? lines : "", t;
+    for (char c : all + "\n") {
+        if (c == '\n' || c == ',' || c == ' ') {
+            if (t.size() == 32 && !s->tokenOk(t)) s->tokens.push_back(t);
+            t.clear();
+        } else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) t += c;
+    }
+    while (s->tokens.size() > 16) s->tokens.erase(s->tokens.begin());
 }
 
 const char* remote_pair_code(RemoteServer* s) {

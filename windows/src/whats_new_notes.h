@@ -5,70 +5,75 @@ struct WhatsNewItem { const char* title; const char* body; };
 struct WhatsNewEntry { const char* version; const WhatsNewItem* items; int count; };
 
 inline const WhatsNewItem kWhatsNewItems0[] = {
-    {"The style timer moved.", "Change style every (how long each style stays up when auto-cycle is on) is now at the very top of the style list: click the style name in the toolbar. The Auto key just turns auto-cycle on and off."},
+    {"Phone remote (preview).", "Control Dropocalypse from your phone's web browser, with no app to install. Turn on Phone remote in the new Phone menu (or in the detached controls), press Show QR code and scan it with your phone's camera. This first version has the styles, auto-cycle, your MilkDrop presets and the Motion sliders; more is coming."},
+    {"Same Wi-Fi.", "Your phone and computer need to be on the same Wi-Fi, or the computer can join your phone's hotspot. Phones you've paired reconnect on their own, even after a restart, until you press Disconnect."},
 };
 inline const WhatsNewItem kWhatsNewItems1[] = {
-    {"Linux AppImage updates.", "The AppImage is now named Dropocalypse-<version>-x86_64.AppImage and carries update information, so AppImageUpdate and similar tools can update it. Mac and Windows are unchanged."},
+    {"The style timer moved.", "Change style every (how long each style stays up when auto-cycle is on) is now at the very top of the style list: click the style name in the toolbar. The Auto key just turns auto-cycle on and off."},
 };
 inline const WhatsNewItem kWhatsNewItems2[] = {
-    {"A picture for every style.", "The printable PDF guide in each download now shows each of the 31 styles and 9 MilkDrop presets, how each logo layers move looks, and the Motion menu with its Logo layers sliders."},
+    {"Linux AppImage updates.", "The AppImage is now named Dropocalypse-<version>-x86_64.AppImage and carries update information, so AppImageUpdate and similar tools can update it. Mac and Windows are unchanged."},
 };
 inline const WhatsNewItem kWhatsNewItems3[] = {
+    {"A picture for every style.", "The printable PDF guide in each download now shows each of the 31 styles and 9 MilkDrop presets, how each logo layers move looks, and the Motion menu with its Logo layers sliders."},
+};
+inline const WhatsNewItem kWhatsNewItems4[] = {
     {"Logo layers are sliders now.", "In the Motion menu, Wave, Explode, Bands and Scatter each go from 0 (no movement) to 100 (super wild), and you can mix them. If you used logo layers in 1.6.0, your move starts at 50."},
     {"The shapes really move.", "Letters and pieces now fly well apart, even on wide logos and text, where 1.6.0 barely moved them."},
 };
-inline const WhatsNewItem kWhatsNewItems4[] = {
+inline const WhatsNewItem kWhatsNewItems5[] = {
     {"MilkDrop presets.", "Nine classic MilkDrop presets are now styles, after the built-in ones: Acid Mandala, Flame Face, Mind Blob, Geiss Lightning, Dark Galaxy, Hypraxis, Planar Travel, Box of Tricks and Lorenz Chaser."},
     {"Add your own presets.", "Open the style list and, under Your MilkDrop presets, choose a folder of .milk files. Every preset in it becomes a style you can search for and pick."},
     {"Five new styles.", "Monstercat Bars, Lo-fi Chill (a snowy night town under the moon), Glitch VHS (the picture tears and glitches on the beat), Liquid Chrome and Kinetic Text (rows of your logo or text sliding across the screen)."},
     {"Logo layers.", "In the Motion menu, every separate shape in your logo can jump on its own: Wave, Explode, Bands or Scatter."},
 };
-inline const WhatsNewItem kWhatsNewItems5[] = {
+inline const WhatsNewItem kWhatsNewItems6[] = {
     {"Taller Mirror Equalizer.", "The bars now stretch almost to the top and bottom of the screen when the music is loud."},
 };
-inline const WhatsNewItem kWhatsNewItems6[] = {
+inline const WhatsNewItem kWhatsNewItems7[] = {
     {"Smoother on Mac.", "Dropocalypse does less work for every frame it draws, so it uses less of your Mac's power and runs cooler, especially on busy styles like Digital Rain, Inferno and LED Meter. Everything looks the same."},
 };
-inline const WhatsNewItem kWhatsNewItems7[] = {
+inline const WhatsNewItem kWhatsNewItems8[] = {
     {"Style list in 3D (Mac).", "Clicking the style name now opens the list in the same 3D style as the other menus."},
     {"Tidier controls window (Mac).", "When the controls are detached, each section no longer repeats its own title."},
 };
-inline const WhatsNewItem kWhatsNewItems8[] = {
+inline const WhatsNewItem kWhatsNewItems9[] = {
     {"A brand-new toolbar.", "Every button is now a raised key and every slider a mixer fader, the same on Mac, Windows and Linux."},
     {"Letters on small screens.", "When the window is narrow, each menu shows one letter: L Logo, M Motion, A Audio, V Look, S Screen, U Updates and ? Keys. Hold the mouse over a letter to see its name. Detach always shows the whole word."},
     {"A few things moved.", "Your logos and their size, glow and trails are now in one Logo menu. Full screen is in the Screen menu (the F key still works). Right-click the Auto key to choose how long each style stays up."},
 };
-inline const WhatsNewItem kWhatsNewItems9[] = {
+inline const WhatsNewItem kWhatsNewItems10[] = {
     {"New style: Main Stage.", "Stand on an arena floor. Fans of stage lights meet overhead like a cathedral ceiling and bloom open on every kick, lasers spray from the stage and sweep over the crowd, and a crowd with phones up bounces to the bass. The lighting changes look every 8 beats."},
     {"What's New window.", "After each update, Dropocalypse shows you what changed, like this. You can open it again any time from the Updates menu."},
 };
-inline const WhatsNewItem kWhatsNewItems10[] = {
+inline const WhatsNewItem kWhatsNewItems11[] = {
     {"Neon glow icon.", "Richer colours and a soft glow on every platform."},
     {"Safer Mac updates.", "If the new version can't be copied into place, your current version is always kept."},
     {"Auto-cycle fix (Mac).", "Style cycling can no longer get stuck."},
 };
-inline const WhatsNewItem kWhatsNewItems11[] = {
+inline const WhatsNewItem kWhatsNewItems12[] = {
     {"New app icon.", "The drop with its rainbow bars, now crisp on the Dock, the taskbar and Linux launchers."},
 };
-inline const WhatsNewItem kWhatsNewItems12[] = {
+inline const WhatsNewItem kWhatsNewItems13[] = {
     {"Up to 4 logos at once.", "Add a headliner, support acts or sponsors. Each one reacts to the beat in its own way."},
     {"Text items.", "Add a DJ name, a night or a hashtag as glowing text, in four styles and six colours."},
 };
 
 // Newest first.
 inline const WhatsNewEntry kWhatsNew[] = {
-    {"1.6.4", kWhatsNewItems0, 1},
-    {"1.6.3", kWhatsNewItems1, 1},
-    {"1.6.2", kWhatsNewItems2, 1},
-    {"1.6.1", kWhatsNewItems3, 2},
-    {"1.6.0", kWhatsNewItems4, 4},
-    {"1.5.3", kWhatsNewItems5, 1},
-    {"1.5.2", kWhatsNewItems6, 1},
-    {"1.5.1", kWhatsNewItems7, 2},
-    {"1.5.0", kWhatsNewItems8, 3},
-    {"1.4.0", kWhatsNewItems9, 2},
-    {"1.3.2", kWhatsNewItems10, 3},
-    {"1.3.1", kWhatsNewItems11, 1},
-    {"1.3.0", kWhatsNewItems12, 2},
+    {"1.6.5", kWhatsNewItems0, 2},
+    {"1.6.4", kWhatsNewItems1, 1},
+    {"1.6.3", kWhatsNewItems2, 1},
+    {"1.6.2", kWhatsNewItems3, 1},
+    {"1.6.1", kWhatsNewItems4, 2},
+    {"1.6.0", kWhatsNewItems5, 4},
+    {"1.5.3", kWhatsNewItems6, 1},
+    {"1.5.2", kWhatsNewItems7, 1},
+    {"1.5.1", kWhatsNewItems8, 2},
+    {"1.5.0", kWhatsNewItems9, 3},
+    {"1.4.0", kWhatsNewItems10, 2},
+    {"1.3.2", kWhatsNewItems11, 3},
+    {"1.3.1", kWhatsNewItems12, 1},
+    {"1.3.0", kWhatsNewItems13, 2},
 };
-inline constexpr int kWhatsNewCount = 13;
+inline constexpr int kWhatsNewCount = 14;
