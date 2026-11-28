@@ -417,7 +417,7 @@ jobs:
           body: |
             ## 📖 User guide
             New here? Download **Dropocalypse-User-Guide.pdf** below. It's a printable, step-by-step guide to installing and
-            using Dropocalypse on Mac, Windows and Linux, covering every control, all 26 styles, keyboard shortcuts and troubleshooting.
+            using Dropocalypse on Mac, Windows and Linux, covering every control, all 31 styles and the MilkDrop presets, the phone remote, keyboard shortcuts and troubleshooting.
             (It's also included inside the Mac .dmg, the Windows .zip and the Linux .tar.gz.)
 
             ## Download
@@ -466,3 +466,18 @@ jobs:
         run: bash scripts/release-friendly.sh "${{ inputs.release_version != '' && inputs.release_version || github.ref_name }}"
         env:
           GH_TOKEN: ${{ github.token }}
+
+  microsoft-store:
+    name: Send to Microsoft Store
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Start the Microsoft Store workflow for this version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${RELEASE_VERSION#v}"
+          gh workflow run store.yml --repo "$GITHUB_REPOSITORY" --ref main -f version="$v" -f publish=true
+          echo "Microsoft Store submission for $v started (see the Microsoft Store workflow)."

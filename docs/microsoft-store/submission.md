@@ -45,6 +45,8 @@ Do this once. Put the secret only in GitHub. Don't paste the client secret into 
 
 ## 3. Run the workflow
 
+Every release now does this by itself: when the Build workflow publishes a release, its last job starts the **Microsoft Store** workflow for the same version. Run it by hand only to resend a version.
+
 Actions → **Microsoft Store** → **Run workflow**. Leave the version empty to use `docs/guide-version.txt`, or type a higher `1.2.7` when that version is ready. **Upload the package to Partner Center** stays on.
 
 The workflow builds the MSIX, then runs `msstore publish` for Store ID `9N1TJ9D5R5C8`. Each upload must use a higher version than the one already in Partner Center.
