@@ -58,7 +58,14 @@ jobs:
           xcrun stapler staple app/Dropocalypse.app
           spctl --assess --type execute --verbose app/Dropocalypse.app
           rm "$ZIP" && ditto -c -k --sequesterRsrc --keepParent app/Dropocalypse.app "$ZIP"
-          sha256sum *.zip *.dmg *.pdf > SHA256SUMS.txt 2>/dev/null || shasum -a 256 *.zip *.dmg *.pdf > SHA256SUMS.txt
+          # Replace only the Mac lines in the release's checksum list; keep Windows, Linux and the rest.
+          [ -s SHA256SUMS.txt ] || { echo "::error::The release has no SHA256SUMS.txt to update."; exit 1; }
+          grep -v -F -e " $DMG" -e " $ZIP" SHA256SUMS.txt > sums.new || true
+          shasum -a 256 "$DMG" "$ZIP" >> sums.new
+          for f in $(awk '{print $2}' SHA256SUMS.txt); do
+            grep -q " $f\$" sums.new || { echo "::error::$f went missing from the checksum list."; exit 1; }
+          done
+          mv sums.new SHA256SUMS.txt
           cat SHA256SUMS.txt
           gh release upload "$TAG" "$DMG" "$ZIP" SHA256SUMS.txt --clobber
           echo "Stapled and re-uploaded $DMG and $ZIP."

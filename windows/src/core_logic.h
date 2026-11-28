@@ -2,6 +2,7 @@
 // No Windows headers: the test binary compiles this on its own.
 #pragma once
 
+#include <cctype>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -57,6 +58,26 @@ inline std::vector<int> whatsNewEntries(const std::vector<std::string>& versions
         if (wanted) out.push_back(i);
     }
     return out;
+}
+
+/// The updater only talks to GitHub: the release API, the release pages and GitHub's download
+/// servers (asset downloads redirect there). Checked before connecting and after redirects.
+inline bool isTrustedUpdateHost(std::string host) {
+    for (auto& c : host) c = (char)std::tolower((unsigned char)c);
+    static const char* const allowed[] = {"api.github.com", "github.com", "objects.githubusercontent.com",
+                                          "release-assets.githubusercontent.com"};
+    for (const char* a : allowed)
+        if (host == a) return true;
+    return false;
+}
+
+/// The host of an "https://host[:port]/..." address, or "" when it isn't https.
+inline std::string httpsHostOf(const std::string& url) {
+    if (url.compare(0, 8, "https://") != 0) return "";
+    size_t end = url.find_first_of(":/?#", 8);
+    std::string host = url.substr(8, end == std::string::npos ? std::string::npos : end - 8);
+    if (host.find('@') != std::string::npos) return "";   // no user:password@host tricks
+    return host;
 }
 
 /// "<hash>  <file>" or "<hash> *<file>" from a sha256sum listing. Empty if `file` is absent.

@@ -185,6 +185,7 @@ bool Recorder::start(const std::wstring& path, int qualityIndex, bool portrait, 
     }
     slotsWritten_ = 0;
     start_ = std::chrono::steady_clock::now();
+    workersDone_ = 0;
     videoThread_ = std::thread(&Recorder::videoWorker, this);
     audioThread_ = std::thread(&Recorder::audioWorker, this);
     recording_ = true;
@@ -308,12 +309,30 @@ void Recorder::videoWorker() {
     }
     close(videoFd_);
     videoFd_ = -1;
+    ++workersDone_;
 }
 
 void Recorder::audioWorker() {
-    // Opening a FIFO for writing waits until ffmpeg opens it for reading.
-    int fd = open(fifoPath_.c_str(), O_WRONLY);
-    if (fd < 0) { failed_ = true; return; }
+    // Wait for ffmpeg to open the FIFO for reading, without blocking: if ffmpeg fails before it
+    // gets there, Stop and Quit must not hang. Give up 5 seconds after Stop.
+    int fd = -1;
+    std::chrono::steady_clock::time_point stopAt{};
+    for (;;) {
+        fd = open(fifoPath_.c_str(), O_WRONLY | O_NONBLOCK);
+        if (fd >= 0 || errno != ENXIO) break;
+        {
+            std::lock_guard<std::mutex> l(aMutex_);
+            if (aStop_) {
+                const auto now = std::chrono::steady_clock::now();
+                if (stopAt == std::chrono::steady_clock::time_point{}) stopAt = now;
+                else if (now - stopAt > std::chrono::seconds(5)) break;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    if (fd < 0) { failed_ = true; ++workersDone_; return; }
+    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK);   // ordinary blocking writes from here
+    struct Done { std::atomic<int>& n; ~Done() { ++n; } } done{workersDone_};
     int64_t framesWritten = 0;
     for (;;) {
         std::vector<int16_t> chunk;
@@ -325,9 +344,12 @@ void Recorder::audioWorker() {
             stopping = aStop_;
         }
         // Keep the sound in step with the clock: if no audio arrived for a while, write silence.
+        // At most one second per pass, so a long stall (a sleeping laptop) catches up in steps
+        // instead of building minutes of silence in memory at once.
         int64_t due = (int64_t)(clockSeconds() * kAudioRate);
         int64_t have = framesWritten + (int64_t)chunk.size() / 2;
-        if (due - have > kAudioRate / 10) chunk.insert(chunk.begin(), (size_t)(due - have) * 2, (int16_t)0);
+        if (due - have > kAudioRate / 10)
+            chunk.insert(chunk.begin(), (size_t)std::min<int64_t>(due - have, kAudioRate) * 2, (int16_t)0);
         if (!chunk.empty()) {
             if (!writeAll(fd, chunk.data(), chunk.size() * sizeof(int16_t))) { failed_ = true; break; }
             framesWritten += (int64_t)chunk.size() / 2;
@@ -375,6 +397,10 @@ void Recorder::stop(std::function<void(const std::wstring&, bool)> onDone) {
 }
 
 void Recorder::finish() {
+    // The writers end once ffmpeg has taken everything. If ffmpeg stops reading (stuck or
+    // crashed but still open), stop it after two minutes so the writers can't block forever.
+    for (int i = 0; i < 2400 && workersDone_ < 2; ++i) std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    if (workersDone_ < 2 && pid_ > 0) kill(pid_, SIGKILL);
     if (videoThread_.joinable()) videoThread_.join();
     if (audioThread_.joinable()) audioThread_.join();
     int status = 0;

@@ -443,6 +443,7 @@ void AudioCapture::run(std::wstring id, bool loopback) {
         auto lastData = std::chrono::steady_clock::now();
         auto lastDefaultCheck = lastData;
         bool restart = false;
+        int failures = 0;   // capture calls failing in a row
 
         while (!stopRequested_ && !restart) {
             // The event still wakes as soon as samples arrive. The timeout only matters while silent.
@@ -479,6 +480,13 @@ void AudioCapture::run(std::wstring id, bool loopback) {
                 gotData = true;
             }
             if (hr == AUDCLNT_E_DEVICE_INVALIDATED) { restart = true; break; }
+            // Any other error that keeps coming back (about half a second): reconnect too, so
+            // the status line never says "Listening" while nothing arrives.
+            if (FAILED(hr)) {
+                if (++failures > 25) { restart = true; break; }
+            } else {
+                failures = 0;
+            }
 
             auto now = std::chrono::steady_clock::now();
             if (gotData) {

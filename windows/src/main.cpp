@@ -335,6 +335,7 @@ static bool httpsGetUrl(const std::string& url, std::string& out, std::string& e
         return false;
     }
     std::wstring fullPath = std::wstring(path) + extra;
+    if (!isTrustedUpdateHost(narrow(host))) { error = "Refused to download from outside GitHub."; return false; }
     HINTERNET session = WinHttpOpen(L"Dropocalypse-updater", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                     WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) { error = "Couldn't start the network request."; return false; }
@@ -349,6 +350,15 @@ static bool httpsGetUrl(const std::string& url, std::string& out, std::string& e
               WinHttpReceiveResponse(request, nullptr);
     if (!ok) error = "Couldn't reach GitHub. Check your internet connection.";
     uint64_t total = 0;
+    if (ok) {   // after redirects, the file must still come from GitHub
+        DWORD urlLen = 0;
+        WinHttpQueryOption(request, WINHTTP_OPTION_URL, nullptr, &urlLen);
+        std::wstring finalUrl(urlLen / sizeof(wchar_t) + 1, L'\0');
+        if (urlLen && WinHttpQueryOption(request, WINHTTP_OPTION_URL, finalUrl.data(), &urlLen)) {
+            finalUrl.resize(wcslen(finalUrl.c_str()));
+            if (!isTrustedUpdateHost(httpsHostOf(narrow(finalUrl)))) { ok = false; error = "Refused to download from outside GitHub."; }
+        }
+    }
     if (ok) {
         DWORD status = 0, size = sizeof(status);
         WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,

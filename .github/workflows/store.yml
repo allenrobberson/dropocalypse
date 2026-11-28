@@ -28,10 +28,12 @@ jobs:
 
       - name: Build Microsoft Store edition
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $v = "${{ inputs.version }}".Trim()
+          $v = "$env:INPUT_VERSION".Trim()
           if (-not $v) { $v = (Get-Content docs/guide-version.txt | Select-Object -First 1).Trim() }
-          if ($v -match '-dev') { throw "Store packages need a plain version such as 1.2.6, not '$v'." }
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Store packages need a plain version such as 1.2.6, not '$v'." }
           "STORE_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append
           cmake -S windows -B build-store -A x64 "-DAPP_VERSION=$v" -DDROPOCALYPSE_STORE=ON
           if ($LASTEXITCODE -ne 0) { throw "configure failed" }

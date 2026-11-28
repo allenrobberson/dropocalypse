@@ -77,6 +77,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var signalScratch = [Float](repeating: 0, count: signalSampleCount)
 
     private let spectrum = Spectrum()
+    private var spectrumRate: Double = 48_000
     private let fx = StyleFX()
     private var motions = [LogoMotion](repeating: LogoMotion(), count: OverlayLayout.maxItems)
     private var lastTime = CACurrentMediaTime()
@@ -360,6 +361,12 @@ final class Renderer: NSObject, MTKViewDelegate {
         analysis.sensitivity = Float(settings.sensitivity)
         analysis.beatThreshold = Float(settings.beatThreshold)
         let audio = analysis.snapshot()
+        // The bars' frequency bands follow the input's real sample rate (44.1, 48 or 96 kHz).
+        let rate = capture.sampleRate
+        if rate > 0 && rate != spectrumRate {
+            spectrumRate = rate
+            spectrum.configure(sampleRate: rate)
+        }
         spectrum.update(from: analysis)
 
         updateScene(now: now, dt: dt, audio: audio)

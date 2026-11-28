@@ -222,6 +222,18 @@ static void testGpuSignalAndPacing() {
     CHECK(hiddenFrameSleepMs(false, true) == 100);
 }
 
+static void testUpdateHosts() {
+    CHECK(isTrustedUpdateHost(httpsHostOf("https://github.com/allenrobberson/dropocalypse/releases/download/v1/a.zip")));
+    CHECK(isTrustedUpdateHost(httpsHostOf("https://release-assets.githubusercontent.com/x?sig=1")));
+    CHECK(isTrustedUpdateHost(httpsHostOf("https://objects.githubusercontent.com/x")));
+    CHECK(isTrustedUpdateHost(httpsHostOf("https://API.GitHub.com/repos")));
+    CHECK(!isTrustedUpdateHost(httpsHostOf("https://evil.example/a.zip")));
+    CHECK(!isTrustedUpdateHost(httpsHostOf("https://github.com.evil.example/a.zip")));
+    CHECK(!isTrustedUpdateHost(httpsHostOf("https://github.com@evil.example/a.zip")));
+    CHECK(!isTrustedUpdateHost(httpsHostOf("http://github.com/a.zip")));
+    CHECK(httpsHostOf("https://github.com:443/x") == "github.com");
+}
+
 static void testSignaturePolicy() {
     UpdateSignatureFacts ok;
     ok.runningIsSigned = true;
@@ -423,6 +435,7 @@ int main() {
     testWindowsUpdateHandoff();
     testGpuSignalAndPacing();
     testSignaturePolicy();
+    testUpdateHosts();
     testOverlayLayout();
     testOverlayMotionAndText();
     testOverlaySettings();

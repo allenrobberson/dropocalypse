@@ -2,6 +2,7 @@ static bool httpsGetUrl(const std::string& url, std::string& out, std::string& e
                         const std::function<void(uint64_t, uint64_t)>& progress = nullptr,
                         const char* extraHeader = nullptr) {
     if (url.rfind("https://", 0) != 0) { error = "Bad download address."; return false; }
+    if (!isTrustedUpdateHost(httpsHostOf(url))) { error = "Refused to download from outside GitHub."; return false; }
     CURL* c = curl_easy_init();
     if (!c) { error = "Couldn't start the network request."; return false; }
     struct Sink {
@@ -45,8 +46,12 @@ static bool httpsGetUrl(const std::string& url, std::string& out, std::string& e
     CURLcode rc = curl_easy_perform(c);
     long status = 0;
     curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &status);
+    char* finalUrl = nullptr;   // after redirects, the file must still come from GitHub
+    curl_easy_getinfo(c, CURLINFO_EFFECTIVE_URL, &finalUrl);
+    const bool trusted = finalUrl && isTrustedUpdateHost(httpsHostOf(finalUrl));
     curl_slist_free_all(headers);
     curl_easy_cleanup(c);
+    if (rc == CURLE_OK && !trusted) { error = "Refused to download from outside GitHub."; return false; }
     if (sink.tooBig) { error = "Download was larger than expected."; return false; }
     if (rc != CURLE_OK) { error = "Couldn't reach GitHub. Check your internet connection."; return false; }
     if (status != 200) { error = "GitHub didn't answer (" + std::to_string(status) + "). Try again later."; return false; }

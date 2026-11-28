@@ -39,6 +39,7 @@ jobs:
           sha256sum Dropocalypse-User-Guide.pdf >> SHA256SUMS.txt
           cat SHA256SUMS.txt
           gh release upload "$TAG" Dropocalypse-User-Guide.pdf SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
-      - run: bash scripts/release-friendly.sh "${{ inputs.version }}"
+      - run: bash scripts/release-friendly.sh "$VERSION"
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}

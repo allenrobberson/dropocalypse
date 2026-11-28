@@ -40,7 +40,10 @@ jobs:
       - name: Record the GIFs
         env:
           STYLES: ${{ inputs.styles }}
-        run: scripts/make-style-previews.sh $STYLES
+        run: |
+          # Style numbers and names only (letters, digits, spaces, commas and dashes).
+          if [[ ! "$STYLES" =~ ^[A-Za-z0-9\ ,_-]*$ ]]; then echo "::error::Unexpected characters in styles"; exit 1; fi
+          scripts/make-style-previews.sh $STYLES
 
       - name: Commit them
         run: |

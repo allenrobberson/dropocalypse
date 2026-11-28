@@ -85,6 +85,7 @@ private:
     std::string fifoPath_, tmpDir_;
     std::wstring path_;
     std::atomic<bool> failed_{false};
+    std::atomic<int> workersDone_{0};   // video and audio writers that have finished
 
     // Video queue (render thread -> video writer).
     std::mutex vMutex_;

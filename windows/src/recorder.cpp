@@ -256,7 +256,10 @@ void Recorder::captureFrame(ID3D11Texture2D* source, float uvX, float uvY, float
         int64_t wallFrames = now100ns * kAudioRate / 10000000;
         int64_t have = audioFramesWritten_ + (int64_t)audioPending_.size() / 2;
         if (wallFrames - have > kAudioRate / 5) {
-            std::vector<int16_t> silence((size_t)(wallFrames - have - kAudioRate / 20) * 2, 0);
+            // At most one second per video frame: a long stall (a sleeping laptop) catches up in
+            // steps instead of building minutes of silence on this thread at once.
+            const int64_t gap = std::min<int64_t>(wallFrames - have - kAudioRate / 20, kAudioRate);
+            std::vector<int16_t> silence((size_t)gap * 2, 0);
             writeAudioFrames(silence.data(), (uint32_t)(silence.size() / 2));
         }
     }

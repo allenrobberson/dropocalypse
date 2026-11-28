@@ -55,10 +55,12 @@ jobs:
 
       - name: Commit the clips to the assets branch
         working-directory: assets
+        env:
+          ASSETS_BRANCH: ${{ inputs.assets_branch }}
         run: |
           rm -rf out && cp -r ../out out
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add out
           git commit -m "Rendered clips" || exit 0
-          git push origin HEAD:${{ inputs.assets_branch }}
+          git push origin "HEAD:refs/heads/$ASSETS_BRANCH"

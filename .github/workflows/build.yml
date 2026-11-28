@@ -183,7 +183,7 @@ jobs:
           Copy-Item windows/README.txt package/Dropocalypse/README.txt
           Copy-Item LICENSE package/Dropocalypse/LICENSE.txt
           $gv = (Get-Content docs/guide-version.txt -ErrorAction SilentlyContinue | Select-Object -First 1)
-          if ("${{ inputs.release_version }}" -ne "" -and $gv -ne $env:APP_VERSION) {
+          if ("$env:RELEASE_VERSION" -ne "" -and $gv -ne $env:APP_VERSION) {
             Write-Output "::warning::User Guide says version $gv but this release is $env:APP_VERSION. Run scripts/make-guide.py and commit the PDF."
           }
           Copy-Item docs/Dropocalypse-User-Guide.pdf "package/Dropocalypse/Dropocalypse User Guide.pdf"
@@ -248,6 +248,11 @@ jobs:
             libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev \
             libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules \
             glslang-tools xvfb mesa-utils libgl1-mesa-dri fonts-dejavu-core imagemagick
+
+      - name: Linux UI is generated from the current Windows UI
+        run: |
+          python3 linux/port/generate.py
+          git diff --exit-code linux/src/main.cpp || { echo "::error::linux/src/main.cpp is out of date: run python3 linux/port/generate.py and commit it."; exit 1; }
 
       - name: Check GLSL shaders compile
         run: |
@@ -334,8 +339,12 @@ jobs:
       - name: Package AppImage and tar.gz
         run: |
           DESTDIR="$PWD/AppDir" cmake --install build-linux
-          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          sha256sum linuxdeploy-x86_64.AppImage   # logged so the packaging tool used is on record
+          # Pinned release with a checked hash: this tool packs the AppImage people install.
+          # To update: pick a newer tag, download it, and replace both values.
+          LINUXDEPLOY_TAG=1-alpha-20251107-1
+          LINUXDEPLOY_SHA256=c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
+          wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_TAG/linuxdeploy-x86_64.AppImage"
+          echo "$LINUXDEPLOY_SHA256  linuxdeploy-x86_64.AppImage" | sha256sum -c -
           chmod +x linuxdeploy-x86_64.AppImage
           mkdir -p dist
           export LDAI_OUTPUT="dist/Dropocalypse-$APP_VERSION-x86_64.AppImage"
@@ -463,7 +472,7 @@ jobs:
             Sponsorships cover the yearly Apple Developer membership that keeps Mac downloads signed and notarized, and the time spent on new styles and features.
 
       - name: Plain-English download labels and a click-here box
-        run: bash scripts/release-friendly.sh "${{ inputs.release_version != '' && inputs.release_version || github.ref_name }}"
+        run: bash scripts/release-friendly.sh "$RELEASE_VERSION"
         env:
           GH_TOKEN: ${{ github.token }}
 
