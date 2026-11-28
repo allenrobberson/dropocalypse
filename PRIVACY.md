@@ -31,13 +31,13 @@ Dropocalypse connects to the internet for one purpose: keeping the app up to dat
 
 GitHub's handling of these requests is covered by the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement).
 
-**How to turn it off:** open the **Updates** menu in the toolbar and turn off **Check for updates automatically**. On Windows you can also choose **Don't check for updates** on the first-launch notice. With it off, Dropocalypse makes no network connections at all unless you click **Check now** or **Update now**.
+**How to turn it off:** open the **Updates** menu in the toolbar and turn off **Check for updates automatically**. On Windows you can also choose **Don't check for updates** on the first-launch notice. With it off (and **Phone remote** off), Dropocalypse makes no network connections at all unless you click **Check now** or **Update now**.
 
 The **Microsoft Store edition** is updated by the Microsoft Store, so it never checks GitHub and makes no network connections of its own.
 
 ## Network use: phone remote
 
-The **Phone remote** is off until you turn it on. While it's on, Dropocalypse runs a small web server that only answers devices on your local network (your Wi-Fi or your phone's hotspot). It never connects to the internet for this. A phone has to scan a one-time pairing code before it can change anything; the page it opens talks only to your computer. Pictures you send from the phone (when that arrives) go straight to the app, the same as dropping a file on it. Dropocalypse keeps a random key for each paired phone in its settings so the phone can reconnect; **Disconnect phones** deletes them. Turning Phone remote off stops the server.
+The **Phone remote** is off until you turn it on. While it's on, Dropocalypse runs a small web server that only answers devices on your local network (your Wi-Fi or your phone's hotspot). It never connects to the internet for this. A phone has to scan a one-time pairing code before it can change anything; the page it opens talks only to your computer. Pictures you send from the phone go straight to the app over your local network, the same as dropping a file on it. Dropocalypse keeps a random key for each paired phone in its settings so the phone can reconnect; **Disconnect phones** deletes them. Turning Phone remote off stops the server.
 
 ## No tracking
 

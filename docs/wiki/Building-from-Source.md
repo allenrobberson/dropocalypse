@@ -55,6 +55,7 @@ Sources/Dropocalypse/
   Render/WaveDrawer.swift     waveform / spectrum / dots geometry
   Render/LogoMotion.swift     spring physics for pulse, squash, bounce, slide, wobble
   Views/                      SwiftUI window, auto-hiding toolbar, detached controls
+  PhoneRemote.swift           phone remote: QR code, pairing, the options the phone can change
 
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
@@ -65,6 +66,11 @@ windows/
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
   src/main.cpp                windows, swap chains, toolbar, detached controls, updater, settings
   app.manifest                "asInvoker": runs without admin rights
+
+shared/remote/                phone remote, compiled by all three apps
+  remote_server.cpp           local-network web server + WebSocket, pairing, uploads
+  schema.json                 the one description of every option on the phone
+  page.html                   the phone page (embedded by scripts/make-remote-assets.py)
 
 linux/
   src/audio.cpp               PulseAudio / PipeWire capture (outputs and inputs) + the same DSP

@@ -513,7 +513,7 @@ def build():
     ])
     s.append(Spacer(1, 6))
     s.append(shot("toolbar.jpg", 6.4 * inch, "The toolbar, left to right: style, auto-cycle, Logo, Motion, Audio, "
-                  "Look, Record, status, then Detach, Screen, Updates and Keys"))
+                  "Look, Record, status, then Detach, Phone, Screen, Updates and Keys"))
     s.append(Spacer(1, 8))
     s.append(table(["Control", "What it does"], [
         ["<b>‹ · Style name · ›</b>", "Previous style, open the style list, next style. In the list, click a name to show it; the <b>checkbox</b> to its left decides whether auto-cycle includes it (All / None buttons at the top)"],
@@ -527,6 +527,8 @@ def build():
         ["Status text", "The input, its sample rate and buffer size, plus a frame time (for example 6.2 ms) while the toolbar is showing"],
         ["<b>Detach</b>", "Moves the controls into their own window, stacked top to bottom, so they stay on your laptop "
                           "while the visuals play on a TV or projector. <b>Attach</b> puts them back."],
+        ["<b>Phone</b>", "Turns on the <b>phone remote</b> (section 9): scan a QR code and control Dropocalypse "
+                         "from your phone's web browser. Glows green while a phone is connected."],
         ["<b>Screen</b>", "Picks the display that shows the visuals full screen, and turns full screen on or off (F)"],
         ["<b>Updates</b>", "Your version, <b>Check now</b> and automatic checks. Turns pink (<b>Update X.Y.Z</b>) when a new "
                            "version is out. <b>Update now</b> checks the download and, if the checks pass, installs "
@@ -536,7 +538,7 @@ def build():
     s.append(Spacer(1, 6))
     s.append(sub("On small screens: letters"))
     s.append(P("When the window is too narrow for the full names (a 720p projector, a small laptop), each menu shows "
-               "one letter: <b>L</b> Logo, <b>M</b> Motion, <b>A</b> Audio, <b>V</b> Look, <b>S</b> Screen, "
+               "one letter: <b>L</b> Logo, <b>M</b> Motion, <b>A</b> Audio, <b>V</b> Look, <b>P</b> Phone, <b>S</b> Screen, "
                "<b>U</b> Updates and <b>?</b> Keys. Hold the mouse over a letter to see its name, and the open menu "
                "shows its full name as its title. <b>Detach</b> always shows the whole word. The full names come "
                "back by themselves when there's room, and the keyboard shortcuts don't change.", small))
@@ -797,6 +799,44 @@ def build():
            body)],
         widths=[2.25 * inch, 4.25 * inch]))
 
+    s.append(CondPageBreak(5.2 * inch))
+    s.append(sub("Control it from your phone"))
+    s.append(P("Leave the computer plugged into the screen or projector and run the show from your phone. There's "
+               "no app to install: the controls open in the phone's web browser.", body))
+    s.append(Spacer(1, 4))
+    s.append(side_by_side(
+        shot("phone-remote.jpg", 1.7 * inch, "The phone remote"),
+        [P("1. Open the <b>Phone</b> menu in the toolbar (or the <b>Phone remote</b> section of the detached "
+           "controls) and turn on <b>Phone remote</b>.", body),
+         Spacer(1, 4),
+         P("2. Press <b>Show QR code to pair a phone</b> and scan it with the phone's camera. Each code works once, "
+           "and the QR code hides itself after a phone pairs, so the audience can't scan it off the big screen.", body),
+         Spacer(1, 4),
+         P("3. The phone shows <b>Logos and text</b>, <b>Style</b>, <b>Motion</b>, <b>Logo look</b>, <b>Audio</b> "
+           "and <b>Look</b>. Changes show up on both sides right away.", body),
+         Spacer(1, 4),
+         P("4. The phone and computer must be on the <b>same Wi-Fi</b>. No Wi-Fi at the venue? Turn on your "
+           "phone's hotspot and join it from the computer.", body),
+         Spacer(1, 4),
+         P("5. Paired phones reconnect on their own, even after a restart. <b>Disconnect phones</b> signs them "
+           "all out.", body)],
+        widths=[2.05 * inch, 4.45 * inch]))
+    s.append(Spacer(1, 6))
+    s.append(side_by_side(
+        shot("phone-transparent.jpg", 1.7 * inch, "Removing a plain background"),
+        [P("<b>Add a logo from your phone.</b> Tap <b>Add logo</b> to pick a photo or take one with the camera. "
+           "iPhone photos (HEIC) work too.", body),
+         Spacer(1, 4),
+         P("If the picture has a plain background, the phone asks <b>Make the background transparent?</b> Tap "
+           "<b>Yes</b> to see a preview, where the checkerboard shows the see-through parts. Turn on <b>Also clear "
+           "enclosed areas</b> to clear the inside of letters too, then <b>Use it</b> or <b>Use the original</b>. "
+           "This works best for logos on a plain color; it won't cut a person out of a busy photo.", body),
+         Spacer(1, 4),
+         P("The first time, macOS asks to let Dropocalypse find devices on your local network, and Windows may "
+           "ask to allow it on private networks: say yes. With several networks (Ethernet and Wi-Fi, a VPN), pick "
+           "the one your phone is on under <b>Network</b>.", small)],
+        widths=[2.05 * inch, 4.45 * inch]))
+
     # ---- Troubleshooting
     s += section(10, "Troubleshooting")
     s.append(table(["Problem", "Fix"], [
@@ -825,6 +865,12 @@ def build():
          "your microphone. Then use Audio → Restart audio and check the selected input."
          if FONT == "Guide" else
          "Check microphone access in your system privacy settings, then use Audio > Restart audio."],
+        ["<b>The phone can't reach Dropocalypse</b>",
+         "Put the phone and computer on the same Wi-Fi; guest and venue Wi-Fi often keep devices apart, so use your "
+         "phone's hotspot instead. Check that Phone remote is on. Mac: allow Local Network for Dropocalypse in "
+         "System Settings, Privacy &amp; Security. Windows: allow it on private networks in the firewall."],
+        ["<b>Phone: “This pairing code was already used”</b>",
+         "Each code works once. Press <b>Show QR code</b> in the Phone menu and scan the new one."],
         ["<b>Mac: listening to an app, but nothing reacts</b>",
          "Make sure the app is playing. Then allow Dropocalypse in System Settings, Privacy &amp; Security, "
          "<b>Screen &amp; System Audio Recording</b>, and click Restart audio. Needs macOS 14.2 or later."],

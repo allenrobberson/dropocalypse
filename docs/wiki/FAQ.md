@@ -15,6 +15,9 @@ Yes. Press **Record** (or **R**) and Dropocalypse saves the visuals and the musi
 **Can I use it on stream (OBS, Twitch, YouTube)?**
 Yes. Capture the Dropocalypse window in OBS (Window Capture on Windows and Linux, macOS Screen Capture on a Mac). Hide the toolbar with **Esc** first.
 
+**Can I control it from my phone?**
+Yes. Turn on **Phone remote** in the **Phone** menu, press **Show QR code** and scan it with your phone's camera. The controls open in the phone's web browser, no app needed, and you can even add a logo straight from your photos. The phone and computer must be on the same Wi-Fi (or the computer joins your phone's hotspot). See [[Phone Remote]].
+
 **Can I use my band's or my own logo?**
 That's the point! Use any logo you have the right to use. Transparent PNGs look best. See [[Your Logo and Motion]].
 

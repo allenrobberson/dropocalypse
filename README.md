@@ -101,6 +101,7 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 - ⚡ **Low latency**: roughly 10–20 ms from sound to screen (see [How it stays fast](#how-it-stays-fast)).
 - 🎚 **Any source**: pick **any app on your Mac** (Spotify, Music, a browser…) or **all Mac audio** from a drop-down (macOS 14.2+), **what the computer is playing** on Windows and Linux, or a built-in mic, USB mic, audio interface or line-in.
 - 🖥 **Edge-to-edge full screen** that covers every pixel (even beside the MacBook notch), with an auto-hiding toolbar along the top edge, kept clear of the notch, for projectors, TVs and DJ booths.
+- 📱 **Phone remote**: scan a QR code and run the show from your phone's web browser, no app needed. Add a logo straight from your photos or camera (with one-tap background removal), and change styles, motion, audio and look.
 - 🖥️🖥️ **Two screens**: detach the controls into their own window on your laptop and send the visuals full screen to a TV, projector or second monitor.
 - 🔴 **Record videos**: save the visuals and the music as an MP4 (720p, 1080p or 4K) to share on YouTube, Instagram or TikTok. **Portrait** records a 9:16 frame (720×1280, 1080×1920 or 2160×3840) for Reels and TikToks.
 - ⬇ **One-click updates**: the **Updates** menu tells you when a new version is out, checks the download, and installs it for you.
@@ -123,12 +124,6 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ### 1.6.5: phone remote (preview)
 - 📱 **Phone remote**: turn it on in the **Phone** menu, press **Show QR code** and scan it with your phone. The phone's browser shows the controls (no app to install): styles, auto-cycle, your MilkDrop presets and the Motion sliders, with more coming. The phone and computer must be on the same Wi-Fi (or the computer joins your phone's hotspot). See [Phone Remote](../../wiki/Phone-Remote).
-
-### 1.6.4: style timer in the style list
-- ⏱ **Change style every** is now at the very top of the style list (click the style name), with the Auto-cycle switch right under it. The Auto key no longer has its own right-click menu.
-
-### 1.6.3: AppImage updates
-- 🐧 **Linux AppImage**: now named `Dropocalypse-<version>-x86_64.AppImage` and carries update information, so AppImageUpdate and similar tools can update it. On Linux 1.6.2 or older, download 1.6.3 once from the [latest release](../../releases/latest); after that, Update now works again.
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 
@@ -233,6 +228,7 @@ From left to right:
 | ● **Record** / ■ **Stop** | Red while recording, with the running time. Records the visuals and the music to an MP4 video. The **▾** next to it sets the video size and where to save. See [Recording](#recording). |
 | *Status text* | The input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your laptop while the visuals go on a TV or projector. See [Two screens](#two-screens-controls-on-one-visuals-on-the-other). |
+| **Phone** | Turns on the [phone remote](#phone-remote): scan a QR code and control Dropocalypse from your phone's web browser. It glows green while a phone is connected. Also in the detached controls window. |
 | **Screen** | Picks the display that shows the visuals full screen (TV, projector, second monitor), and turns full screen on or off (also **F**) |
 | **Updates** | Your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. Also in the detached controls window. |
 | **Keys** | Shows the keyboard shortcuts |
@@ -245,6 +241,7 @@ From left to right:
 | **M** | Motion |
 | **A** | Audio |
 | **V** | Look ("visuals"; L is already Logo) |
+| **P** | Phone |
 | **S** | Screen |
 | **U** | Updates |
 | **?** | Keys |
@@ -599,6 +596,7 @@ Sources/DropocalypseCore/
   LogoLayers.swift            splits a logo into shapes, layer motion, Kinetic Text rows
   Render/Milkdrop.swift       MilkDrop presets through projectM (loaded at run time)
   Views/                      SwiftUI window, auto-hiding toolbar, detached controls
+  PhoneRemote.swift           phone remote: QR code, pairing, the options the phone can change
 
 windows/
   src/audio.cpp               WASAPI capture (mic, line-in, system-audio loopback) + the same DSP
@@ -612,6 +610,11 @@ windows/
   src/recorder.cpp            MP4 recording (Media Foundation, H.264 + AAC)
   src/main.cpp                windows, swap chains, toolbar, detached controls, updater, settings
   app.manifest                "asInvoker": runs without admin rights
+
+shared/remote/                phone remote, compiled by all three apps
+  remote_server.cpp           local-network web server + WebSocket, pairing, uploads
+  schema.json                 the one description of every option on the phone
+  page.html                   the phone page (embedded by scripts/make-remote-assets.py)
 
 linux/
   src/audio.cpp               PulseAudio / PipeWire capture (outputs and inputs) + the same DSP
@@ -657,7 +660,7 @@ Dropocalypse is free and always will be. If it livens up your shows or streams, 
 
 ## Privacy and code signing
 
-- **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer, and recordings are only made when you press **Record** and saved only to the folder you choose. The only network use is a daily update check with GitHub (which you can turn off in the **Updates** menu) and downloading an update when you click **Update now**.
+- **[Privacy Policy](PRIVACY.md):** your audio never leaves your computer, and recordings are only made when you press **Record** and saved only to the folder you choose. The only network use is a daily update check with GitHub (which you can turn off in the **Updates** menu), downloading an update when you click **Update now**, and the **Phone remote** when you turn it on, which only talks to devices on your local network.
 - **[Code signing policy](CODE_SIGNING_POLICY.md):** the Mac app is signed and notarized by Apple, and the [Microsoft Store edition](https://apps.microsoft.com/detail/9N1TJ9D5R5C8) is signed by Microsoft. The portable Windows zip is not code-signed yet; every download is built by GitHub Actions from this public code and listed with its SHA-256 checksum.
 
 ## License

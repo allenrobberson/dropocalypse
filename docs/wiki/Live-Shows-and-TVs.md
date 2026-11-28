@@ -16,6 +16,10 @@
 3. Keep the controls window on your main screen and change styles, logo, motion and audio while the show runs. Your audience only sees the visuals.
 4. Click **Attach controls to the visuals** (or close the controls window) to put the toolbar back on top. Dropocalypse remembers which way you left it.
 
+## Control it from your phone
+
+Leave the computer plugged into the screen or projector and walk around with your phone: turn on **Phone remote** in the **Phone** menu, press **Show QR code** and scan it. Change styles, add or swap logos, adjust motion, audio and look from the phone's browser. The QR code hides itself after a phone pairs, so the audience can't scan it off the big screen. See [[Phone Remote]].
+
 ## Showing it on a TV or projector
 
 | Method | Lag | Quality | How |
@@ -35,4 +39,5 @@ Dropocalypse doesn't have Chromecast built in. Google's Cast toolkit is made for
 - [ ] Auto-cycle on, unwanted styles unchecked, timer set (30–60 s)
 - [ ] Brightness adjusted for the projector
 - [ ] Full screen on the right display (**F**)
+- [ ] Phone remote paired, if you're using it (same Wi-Fi or your phone's hotspot)
 - [ ] Computer set not to sleep (Mac: System Settings → Lock Screen / Displays; Windows: Power settings; Linux: your desktop's Power settings)

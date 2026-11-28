@@ -33,6 +33,7 @@ FEATURES
 • Logo layers: split your logo into its separate shapes and make them wave, explode, ride the bass, mids and treble, or scatter
 • Up to 4 logos at once, plus text such as a DJ name, an event or a hashtag
 • Listens to whatever your PC is playing (no microphone needed), one output device, a microphone or a line-in
+• Phone remote: scan a QR code and control the show from your phone's web browser, no app needed. Add a logo straight from your phone's photos or camera, with one-tap background removal
 • Two screens: detach the controls onto your laptop and send the visuals full screen to a TV or projector
 • Record the visuals and the music to an MP4 video (720p, 1080p or 4K, landscape or 9:16 portrait)
 • Auto-cycle through the styles you pick, from 5 seconds to 6 minutes each
@@ -47,7 +48,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-New in 1.6.2: MilkDrop presets, five new styles and logo layers. Nine classic MilkDrop presets are built in, and you can add your own folder of .milk files. Five new styles: Monstercat Bars, Lo-fi Chill, Glitch VHS, Liquid Chrome and Kinetic Text. Logo layers split your logo into its separate shapes, which move on the beat with four sliders (Wave, Explode, Bands, Scatter) from 0 (still) to 100 (super wild). The printable guide now shows a picture of every style.
+New in 1.6.6: Phone remote. Turn it on in the new Phone menu, scan the QR code and control Dropocalypse from your phone's web browser, with no app to install. Change styles and auto-cycle, pick MilkDrop presets, adjust Motion, Logo look, Audio and Look, and add a logo straight from your phone's photos or camera. If the picture has a plain background, the phone can make it transparent in one tap. Your phone and PC need to be on the same Wi-Fi (or the PC joins your phone's hotspot).
 
 ## Product features (up to 20, short)
 - 31 music-reactive styles plus MilkDrop presets

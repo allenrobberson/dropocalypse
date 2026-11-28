@@ -17,6 +17,7 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 | 🎧 **No mic needed** | Listen straight to Spotify or any app on a Mac (macOS 14.2+), or to whatever your computer is playing on Windows and Linux. Mics and line-in work too. See [[Audio Sources]]. |
 | ⚡ **Low latency** | About 10–20 ms from sound to screen, so drops land on the beat. See [[How It Works]]. |
 | 🔴 **Record clips** | Save the visuals and the music as an MP4 (720p, 1080p or 4K) for TikTok, Reels and YouTube, in landscape or a vertical 9:16 frame. See [[Controls and Settings]]. |
+| 📱 **Phone remote** | Scan a QR code and run the show from your phone's browser, no app needed: styles, logos (add one straight from your photos, with one-tap background removal), motion, audio and look. See [[Phone Remote]]. |
 | 🖥 **Built for shows** | Edge-to-edge full screen, an auto-hiding toolbar, and auto-cycle through the styles you pick. See [[Live Shows and TVs]]. |
 | 💸 **Free forever** | No account, no ads, no tracking, no watermark. MIT licensed. The Windows version is portable and needs no admin rights, or [get it from the Microsoft Store](https://apps.microsoft.com/detail/9N1TJ9D5R5C8). |
 
@@ -29,9 +30,9 @@ Dropocalypse is a free, open-source, Winamp / MilkDrop-style music visualizer fo
 
 ## All pages
 
-- **Using Dropocalypse:** [[Installation]] · [[Quick Start]] · [[Audio Sources]] · [[Styles]] · [[Your Logo and Motion]] · [[Controls and Settings]] · [[Keyboard Shortcuts]]
+- **Using Dropocalypse:** [[Installation]] · [[Quick Start]] · [[Audio Sources]] · [[Styles]] · [[Your Logo and Motion]] · [[Controls and Settings]] · [[Keyboard Shortcuts]] · [[Phone Remote]]
 - **Shows and help:** [[Live Shows and TVs]] · [[Troubleshooting]] · [[FAQ]]
 - **For developers:** [[How It Works]] · [[Building from Source]] · [[Adding a Style]]
 - **Project:** [[Changelog]] · [[Support the Project]]
 
-Current version: **1.6.4**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.
+Current version: **1.6.6**. It updates itself in one click from the **Updates** menu. The app tells you when a newer one is out.

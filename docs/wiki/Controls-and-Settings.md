@@ -22,6 +22,7 @@ From left to right:
 | ● **Record** / ■ **Stop** | Red while recording, with the running time. Records the visuals and the music to an MP4 video. The **▾** next to it sets the video size and where to save. See [Recording](#recording). |
 | *Status text* | The input being used, its sample rate and the audio buffer size (lower ms = faster reaction) |
 | **Detach** | Moves the controls into their own window, stacked top to bottom, so they can stay on your laptop while the visuals go on a TV or projector. See [Two screens](Live-Shows-and-TVs#two-screens-controls-on-one-visuals-on-the-other). |
+| **Phone** | Turns on the [phone remote](Phone-Remote): scan a QR code and control Dropocalypse from your phone's web browser. It glows green while a phone is connected. Also in the detached controls window. |
 | **Screen** | Picks the display that shows the visuals full screen (TV, projector, second monitor), and turns full screen on or off (also **F**) |
 | **Updates** | Your version, **Check now** and **Check for updates automatically**. When a newer version is out it turns pink and reads **Update X.Y.Z**: **Update now** checks the download and, if the checks pass, installs it and reopens. Your logo and settings are kept. If a check fails, nothing is changed. **Download page** gets it yourself, or **Ignore for 24 hours**. Also in the detached controls window. |
 | **Keys** | Shows the keyboard shortcuts |
@@ -34,6 +35,7 @@ From left to right:
 | **M** | Motion |
 | **A** | Audio |
 | **V** | Look ("visuals"; L is already Logo) |
+| **P** | Phone |
 | **S** | Screen |
 | **U** | Updates |
 | **?** | Keys |

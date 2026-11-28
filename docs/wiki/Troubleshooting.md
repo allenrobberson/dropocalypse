@@ -18,7 +18,9 @@
 | **It twitches when no music is playing** | Lower **Sensitivity**, or switch to a direct line-in feed |
 | **My USB interface or app isn't listed** | Plug it in or open the app, then click **Refresh list** (Windows: **Refresh devices**) in the Audio panel |
 | **My logo looks blurry** | Use a larger image; around 1000 px on the long side is ideal |
-| **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background. |
+| **My logo has a white box around it** | The image has a solid background. Export it as a PNG with a transparent background, or add it from your phone with the [phone remote](Phone-Remote) and tap **Yes** when it offers to make the background transparent. |
+| **The phone can't reach Dropocalypse** | Put the phone and computer on the same Wi-Fi (guest and venue Wi-Fi often block devices from seeing each other; use your phone's hotspot instead). Make sure **Phone remote** is still on. Mac: allow **Local Network** for Dropocalypse in System Settings → Privacy & Security. Windows: allow Dropocalypse on private networks in the firewall. See [[Phone Remote]]. |
+| **Phone: "This pairing code was already used"** | Each code works once. Press **Show QR code** in the **Phone** menu and scan the new one. |
 | **The toolbar won't appear** | Move the mouse to the very top of the window, click anywhere, or press **T** |
 | **Settings or logo reset after updating from "Logo Visualizer"** | The app was renamed. Your saved logo is copied over automatically, but slider settings start fresh, and macOS asks for microphone permission again. |
 
