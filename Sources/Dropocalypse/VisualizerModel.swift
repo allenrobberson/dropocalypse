@@ -609,6 +609,23 @@ final class VisualizerModel: NSObject, ObservableObject {
         pushItems()
     }
 
+    /// A picture sent from the phone remote: added like a dropped file, or swapped into item
+    /// `index` (the phone's Replace… button). Returns what went wrong, or nil.
+    func addPhoneLogo(_ data: Data, name: String, replacing index: Int?) -> String? {
+        guard let image = NSImage(data: data), image.isValid else {
+            return "Couldn't open that picture. Try a PNG or JPG."
+        }
+        if let index, items.indices.contains(index) {
+            pendingReplace = items[index].id
+        } else if !canAddItem {
+            return "That's the most: \(OverlayLayout.maxItems) at once. Remove one to add another."
+        }
+        errorMessage = nil
+        setLogo(image, name: name)
+        pendingReplace = nil
+        return errorMessage
+    }
+
     func addTextItem() {
         guard canAddItem else { return }
         items.append(OverlayItem(text: "YOUR TEXT", font: 1, color: 0))

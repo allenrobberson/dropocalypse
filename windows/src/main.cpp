@@ -1640,6 +1640,7 @@ struct PhoneRemote {
     std::string qrCode;    // the pairing code the QR shows; a new one means a phone just paired
     std::vector<std::pair<std::string, std::string>> addresses;   // this computer's networks
     double addressesAt = -10;
+    int replaceSlot = -1;   // the phone's next picture replaces this item (its Replace... button)
 };
 static PhoneRemote gRemote;
 
@@ -1682,6 +1683,45 @@ static void remoteValues(std::vector<std::pair<std::string, std::string>>& out) 
     num("layers.explode", r.layers.explode);
     num("layers.bands", r.layers.bands);
     num("layers.scatter", r.layers.scatter);
+
+    // Logos and text, and Logo look.
+    std::string items = "[";
+    for (size_t i = 0; i < g.settings.items.size(); ++i) {
+        const OverlayItemInfo& it = g.settings.items[i];
+        items += std::string(i ? "," : "") + "{\"kind\":" + (it.isText ? "\"text\"" : "\"image\"") +
+                 ",\"name\":" + jsonQuote(it.name) + ",\"text\":" + jsonQuote(it.text) +
+                 ",\"font\":" + std::to_string(it.font) + ",\"color\":" + std::to_string(it.color) + "}";
+    }
+    out.emplace_back("items.list", items + "]");
+    flag("logo.show", r.showLogo);
+    num("logo.size", r.logoSize);
+    num("logo.glow", r.glow);
+    num("logo.tint", r.logoTint);
+    flag("logo.trails", r.logoTrails);
+
+    // Audio.
+    std::string sources = "[", curKey;
+    bool found = false;
+    for (const auto& src : g.sources) {
+        const std::string k = src.key();
+        if (k == g.settings.audioSource) found = true;
+        sources += std::string(sources.size() > 1 ? "," : "") + "{\"key\":" + jsonQuote(k) + ",\"name\":" + jsonQuote(narrow(src.name)) + "}";
+    }
+    if (!found) sources += std::string(sources.size() > 1 ? "," : "") + "{\"key\":" + jsonQuote(g.settings.audioSource) +
+                           ",\"name\":\"System audio (what this PC is playing)\"}";
+    out.emplace_back("audio.sources", sources + "]");
+    out.emplace_back("audio.source", jsonQuote(g.settings.audioSource));
+    flag("audio.running", g.audio.isRunning());
+    out.emplace_back("audio.status", jsonQuote(narrow(g.audio.status())));
+    num("audio.sensitivity", g.settings.sensitivity);
+    num("audio.beatThreshold", g.settings.beatThreshold);
+
+    // Look.
+    num("look.beatFlash", r.beatFlash);
+    num("look.brightness", r.brightness);
+    out.emplace_back("look.portrait", r.portrait ? "1" : "0");
+    flag("look.frameLocked", g.recorder.isRecording());
+    out.emplace_back("look.frameCap", std::to_string(g.settings.frameCap));
 }
 
 /// A "set" from the phone.
@@ -1697,6 +1737,10 @@ static void remoteSet(const std::string& id, const FlatJson& m) {
         {"motion.wobble", &r.wobble, 0, 1.5f},     {"layers.wave", &r.layers.wave, 0, 100},
         {"layers.explode", &r.layers.explode, 0, 100}, {"layers.bands", &r.layers.bands, 0, 100},
         {"layers.scatter", &r.layers.scatter, 0, 100},
+        {"logo.size", &r.logoSize, 0.08f, 0.8f},   {"logo.glow", &r.glow, 0, 1.5f},
+        {"logo.tint", &r.logoTint, 0, 1},          {"audio.sensitivity", &g.settings.sensitivity, 0.2f, 4},
+        {"audio.beatThreshold", &g.settings.beatThreshold, 1.1f, 2.2f},
+        {"look.beatFlash", &r.beatFlash, 0, 1},    {"look.brightness", &r.brightness, 0.4f, 1.6f},
     };
     for (const auto& s : sliders)
         if (id == s.id) { clampTo(*s.f, s.lo, s.hi); return; }
@@ -1705,6 +1749,20 @@ static void remoteSet(const std::string& id, const FlatJson& m) {
         r.sceneIndex = std::clamp((int)v, 0, n - 1);
     } else if (id == "style.autoCycle") r.autoCycle = v != 0;
     else if (id == "milk.cycleUser") r.cycleUserPresets = v != 0;
+    else if (id == "logo.show") r.showLogo = v != 0;
+    else if (id == "logo.trails") r.logoTrails = v != 0;
+    else if (id == "audio.source") {
+        const std::string key = m.s("v");
+        if (!key.empty() && key != g.settings.audioSource) {
+            g.settings.audioSource = key;
+            startAudio();
+        }
+    } else if (id == "look.portrait") {
+        if (!g.recorder.isRecording()) r.portrait = v != 0;
+    } else if (id == "look.frameCap") {
+        const int cap = (int)v;
+        g.settings.frameCap = (cap == 30 || cap == 60) ? cap : 0;
+    }
 }
 
 /// An "act" (a button) from the phone.
@@ -1724,6 +1782,62 @@ static void remoteAct(const std::string& id, const FlatJson& m) {
     else if (id == "milk.rescan") g.milkRescan = true;
     else if (id == "milk.remove") { g.settings.milkFolder.clear(); g.milkRescan = true; }
     else if (id == "motion.reset") resetMotion(r);
+    else if (id == "audio.refresh") g.sources = AudioCapture::listSources();
+    else if (id == "audio.restart") startAudio();
+    else {
+        // Logos and text.
+        const int i = (int)m.n("i", -1), n = (int)g.settings.items.size();
+        if (id == "items.addText") addTextItem();
+        else if (i < 0 || i >= n) return;
+        else if (id == "items.remove") removeItem(i);
+        else if (id == "items.move") moveItem(i, m.n("v") < 0 ? -1 : 1);
+        else if (id == "items.replace") gRemote.replaceSlot = i;
+        else if (g.settings.items[i].isText) {
+            OverlayItemInfo& it = g.settings.items[i];
+            if (id == "items.setText") { it.text = cleanItemText(m.s("v")); refreshTextItem(i); }
+            else if (id == "items.setFont") { it.font = std::clamp((int)m.n("v"), 0, kTextFontCount - 1); refreshTextItem(i); }
+            else if (id == "items.setColor") { it.color = std::clamp((int)m.n("v"), 0, kTextColorCount - 1); refreshTextItem(i); }
+        }
+    }
+}
+
+/// A picture sent from the phone: added like a dropped file (or swapped in after Replace...).
+static void remoteUpload(int client, const std::string& bytes, const std::string& name) {
+    auto tell = [&](const std::string& text) {
+        const std::string m = "{\"t\":\"toast\",\"text\":" + jsonQuote(text) + "}";
+        remote_send(gRemote.server, client, m.data(), m.size());
+    };
+    const int slot = gRemote.replaceSlot;
+    gRemote.replaceSlot = -1;
+    if (slot < 0 && (int)g.settings.items.size() >= kMaxOverlayItems) {
+        tell("That's the most: 4 at once. Remove one to add another.");
+        return;
+    }
+    std::string ext = ".png";
+    const size_t dot = name.find_last_of('.');
+    if (dot != std::string::npos && name.size() - dot <= 5) ext = name.substr(dot);
+    for (auto& c : ext) c = (char)std::tolower((unsigned char)c);
+    if (ext.find_first_not_of(".abcdefghijklmnopqrstuvwxyz0123456789") != std::string::npos) ext = ".png";
+    const std::wstring tmp = dataPath(L"phone-upload" + widen(ext));
+    writeFile(tmp, bytes);
+    g.pendingReplace = slot;
+    const size_t before = g.settings.items.size();
+    const std::string firstFile = slot >= 0 && slot < (int)before ? g.settings.items[slot].file : "";
+    g.errorMessage.clear();
+    loadLogoFrom(tmp);
+    deleteItemFile(tmp);
+    const bool added = g.settings.items.size() > before ||
+                       (slot >= 0 && slot < (int)g.settings.items.size() && g.settings.items[slot].file != firstFile);
+    if (!added) {
+        tell(g.errorMessage.empty() ? "Couldn't open that picture. Try a PNG or JPG." : narrow(g.errorMessage));
+        g.errorMessage.clear();
+        return;
+    }
+    // Name it after the phone's file, not the temporary copy.
+    const int at = slot >= 0 ? slot : (int)g.settings.items.size() - 1;
+    std::string shown = name.empty() ? "Photo" : name;
+    if (shown.size() > 80) shown.resize(80);
+    g.settings.items[at].name = shown;
 }
 
 static std::string remoteStylesMessage() {
@@ -1784,6 +1898,9 @@ static void remoteTick() {
             if (t == "set") remoteSet(id, msg);
             else if (t == "act") remoteAct(id, msg);
             g.lastActivity = nowSeconds();
+            fresh = true;
+        } else if (ev.type == REMOTE_EVENT_UPLOAD) {
+            remoteUpload(ev.client, std::string(ev.data, ev.size), ev.name ? ev.name : "");
             fresh = true;
         }
     }

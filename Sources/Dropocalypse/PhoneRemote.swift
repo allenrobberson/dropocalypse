@@ -25,6 +25,8 @@ final class PhoneRemote: ObservableObject {
     private var timer: Timer?
     private var sent: [String: String] = [:]
     private var stylesKey = ""
+    /// The phone's next picture replaces this item (its Replace… button).
+    private var replaceSlot: Int?
 
     init(model: VisualizerModel) {
         self.model = model
@@ -96,6 +98,15 @@ final class PhoneRemote: ObservableObject {
                       let id = msg["id"] as? String else { continue }
                 if msg["t"] as? String == "set" { set(id, msg["v"]) }
                 else if msg["t"] as? String == "act" { act(id, msg) }
+                fresh = true
+            case Int(REMOTE_EVENT_UPLOAD):
+                let data = Data(bytes: ev.data, count: ev.size)
+                let name = ev.name.map { String(cString: $0) } ?? ""
+                let slot = replaceSlot
+                replaceSlot = nil
+                if let problem = model.addPhoneLogo(data, name: name.isEmpty ? "Photo" : name, replacing: slot) {
+                    send(["t": "toast", "text": problem], to: ev.client)
+                }
                 fresh = true
             default:
                 break
@@ -172,7 +183,53 @@ final class PhoneRemote: ObservableObject {
             ("motion.wobble", settings.wobble),
             ("layers.wave", settings.layerWave), ("layers.explode", settings.layerExplode),
             ("layers.bands", settings.layerBands), ("layers.scatter", settings.layerScatter),
+            ("items.list", model.items.map { item -> [String: Any] in
+                ["kind": item.isText ? "text" : "image", "name": item.name, "text": item.text,
+                 "font": item.font, "color": item.color]
+            }),
+            ("logo.show", settings.showLogo), ("logo.size", settings.logoSize), ("logo.glow", settings.glow),
+            ("logo.tint", settings.logoTint), ("logo.trails", settings.logoTrails),
+            ("audio.sources", audioSources()), ("audio.source", settings.inputDeviceUID),
+            ("audio.running", model.capture.isRunning), ("audio.status", model.capture.statusText),
+            ("audio.hint", audioHint()),
+            ("audio.sensitivity", settings.sensitivity), ("audio.beatThreshold", settings.beatThreshold),
+            ("look.beatFlash", settings.beatFlash), ("look.brightness", settings.brightness),
+            ("look.portrait", settings.pictureOrientation != 0 ? 1 : 0), ("look.frameLocked", model.isRecording),
+            ("look.frameCap", settings.frameCap),
         ]
+    }
+
+    /// The same choices as the Audio panel's "Listen to" list.
+    private func audioSources() -> [[String: String]] {
+        let capture = model.capture
+        var list: [[String: String]] = []
+        if AudioCapture.macAudioSupported {
+            let group = "Mac audio: no mic needed"
+            list.append(["key": AudioCapture.allMacAudioTag, "name": "All Mac audio", "group": group])
+            for app in capture.audioApps {
+                list.append(["key": AudioCapture.appTag(app.id), "name": app.isPlaying ? "\(app.name)  ♪ playing" : app.name,
+                             "group": group])
+            }
+            let tag = settings.inputDeviceUID
+            if tag.hasPrefix("tap:app:"), !list.contains(where: { $0["key"] == tag }) {
+                let id = String(tag.dropFirst("tap:app:".count))
+                list.append(["key": tag, "name": "\(id.components(separatedBy: ".").last ?? id) (not open)", "group": group])
+            }
+        }
+        let mic = "Microphone or line-in"
+        list.append(["key": "", "name": "System default input", "group": mic])
+        for d in capture.devices { list.append(["key": d.uid, "name": d.name, "group": mic]) }
+        return list
+    }
+
+    private func audioHint() -> String {
+        if model.capture.isTapSource {
+            return "Pick Spotify, Music, a browser or any open app, and Dropocalypse hears exactly what it plays, at full quality. The first time, macOS asks to allow system audio recording. If nothing moves, turn on Dropocalypse in System Settings → Privacy & Security → Screen & System Audio Recording."
+        }
+        if !AudioCapture.macAudioSupported {
+            return "Update to macOS 14.2 or later to listen to Spotify and other apps directly."
+        }
+        return ""
     }
 
     private func set(_ id: String, _ value: Any?) {
@@ -193,6 +250,19 @@ final class PhoneRemote: ObservableObject {
         case "layers.explode": settings.layerExplode = clamp(0, 100)
         case "layers.bands": settings.layerBands = clamp(0, 100)
         case "layers.scatter": settings.layerScatter = clamp(0, 100)
+        case "logo.show": settings.showLogo = on
+        case "logo.size": settings.logoSize = clamp(0.08, 0.8)
+        case "logo.glow": settings.glow = clamp(0, 1.5)
+        case "logo.tint": settings.logoTint = clamp(0, 1)
+        case "logo.trails": settings.logoTrails = on
+        case "audio.source":
+            if let key = value as? String, key != settings.inputDeviceUID { settings.inputDeviceUID = key }
+        case "audio.sensitivity": settings.sensitivity = clamp(0.2, 4)
+        case "audio.beatThreshold": settings.beatThreshold = clamp(1.1, 2.2)
+        case "look.beatFlash": settings.beatFlash = clamp(0, 1)
+        case "look.brightness": settings.brightness = clamp(0.4, 1.6)
+        case "look.portrait": if !model.isRecording { settings.pictureOrientation = on ? 1 : 0 }
+        case "look.frameCap": settings.frameCap = [30, 60].contains(Int(d)) ? Int(d) : 0
         default: break
         }
     }
@@ -212,7 +282,25 @@ final class PhoneRemote: ObservableObject {
         case "milk.rescan": model.refreshMilkdrop()
         case "milk.remove": model.removeMilkFolder()
         case "motion.reset": settings.resetMotion()
-        default: break
+        case "audio.refresh": model.capture.refreshDevices()
+        case "audio.restart": model.startAudio()
+        case "items.addText": model.addTextItem()
+        default:
+            // Logos and text: the item at index "i".
+            let i = (msg["i"] as? NSNumber)?.intValue ?? -1
+            guard model.items.indices.contains(i) else { return }
+            let item = model.items[i]
+            switch id {
+            case "items.remove": model.removeItem(item.id)
+            case "items.move": model.moveItem(item.id, by: ((msg["v"] as? NSNumber)?.intValue ?? 1) < 0 ? -1 : 1)
+            case "items.replace": replaceSlot = i
+            case "items.setText": if item.isText, let text = msg["v"] as? String { model.setText(item.id, text) }
+            case "items.setFont":
+                if item.isText { model.setFont(item.id, min(max(0, (msg["v"] as? NSNumber)?.intValue ?? 0), OverlayLayout.textFontNames.count - 1)) }
+            case "items.setColor":
+                if item.isText { model.setColor(item.id, min(max(0, (msg["v"] as? NSNumber)?.intValue ?? 0), OverlayLayout.textColors.count - 1)) }
+            default: break
+            }
         }
     }
 

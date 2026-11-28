@@ -1,64 +1,288 @@
 {
-  "about": "The one description of the detached controls window, used by the phone remote page and checked against the Mac, Windows and Linux apps (scripts/check-remote-schema.py). Each section lists its items top to bottom. An item may say \"only\": [platforms], and may override any of its fields for one platform under \"mac\", \"windows\" or \"linux\". Values are read and written by id; buttons send their act id.",
+  "about": "The one description of the phone remote: the detached controls window's sections that the phone shows (Visuals, Record, Updates and Keyboard shortcuts stay on the computer), used by the phone remote page and checked against the Mac, Windows and Linux apps (scripts/check-remote-schema.py). Each section lists its items top to bottom. An item may say \"only\": [platforms], and may override any of its fields for one platform under \"mac\", \"windows\" or \"linux\". Values are read and written by id; buttons send their act id.",
   "version": 1,
   "order": {
-    "mac": ["visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "updates", "keys"],
-    "windows": ["updates", "visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "keys"],
-    "linux": ["updates", "visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "keys"]
+    "mac": [
+      "logos",
+      "style",
+      "motion",
+      "logolook",
+      "audio",
+      "look"
+    ],
+    "windows": [
+      "logos",
+      "style",
+      "motion",
+      "logolook",
+      "audio",
+      "look"
+    ],
+    "linux": [
+      "logos",
+      "style",
+      "motion",
+      "logolook",
+      "audio",
+      "look"
+    ]
   },
   "sections": [
+    {
+      "id": "logos",
+      "kind": "heading",
+      "title": "Logos and text",
+      "items": [
+        {
+          "type": "items",
+          "id": "items.list",
+          "max": 4,
+          "portrait": "look.portrait",
+          "empty": "No logo yet: add an image or some text.",
+          "addImage": {
+            "label": "Add logo",
+            "hint": "From your photos or camera. PNG with a transparent background works best."
+          },
+          "addText": {
+            "act": "items.addText",
+            "label": "Add text",
+            "mac": {
+              "label": "Add Text"
+            }
+          },
+          "replace": {
+            "act": "items.replace",
+            "label": "Replace...",
+            "mac": {
+              "label": "Replace…"
+            }
+          },
+          "remove": {
+            "act": "items.remove",
+            "label": "Remove"
+          },
+          "move": {
+            "act": "items.move",
+            "earlier": "Move left",
+            "later": "Move right",
+            "earlierPortrait": "Move up",
+            "laterPortrait": "Move down"
+          },
+          "setText": "items.setText",
+          "setFont": "items.setFont",
+          "setColor": "items.setColor",
+          "textPlaceholder": "Type your text",
+          "fonts": [
+            "Bold",
+            "Heavy",
+            "Serif",
+            "Mono"
+          ],
+          "colors": [
+            {
+              "name": "White",
+              "rgb": "#FFFFFF"
+            },
+            {
+              "name": "Pink",
+              "rgb": "#FF3EA5"
+            },
+            {
+              "name": "Cyan",
+              "rgb": "#2EE6FF"
+            },
+            {
+              "name": "Gold",
+              "rgb": "#FFC83D"
+            },
+            {
+              "name": "Lime",
+              "rgb": "#9BFF3A"
+            },
+            {
+              "name": "Purple",
+              "rgb": "#A65CFF"
+            }
+          ],
+          "hintRoom": "Up to 4. They sit side by side, or top to bottom in Portrait.",
+          "hintFull": "That's the most: 4 at once. Remove one to add another.",
+          "transparency": {
+            "ask": "This picture has a solid background. Make the background transparent?",
+            "yes": "Yes",
+            "no": "No, keep it",
+            "working": "Removing the background…",
+            "preview": "Here's how it looks. The checkerboard shows the see-through parts.",
+            "holes": "Also clear enclosed areas (like inside letters)",
+            "use": "Use it",
+            "original": "Use the original"
+          },
+          "sending": "Sending to Dropocalypse…",
+          "sent": "Added.",
+          "failed": "Couldn't send the picture. Check the connection and try again."
+        },
+        {
+          "type": "toggle",
+          "id": "logo.show",
+          "label": "Show logos (G)",
+          "mac": {
+            "label": "Show logos"
+          }
+        }
+      ]
+    },
     {
       "id": "style",
       "kind": "heading",
       "title": "Style",
       "items": [
-        {"type": "stylePicker", "id": "style.index", "prev": "style.prev", "next": "style.next"},
-        {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["mac"]},
+        {
+          "type": "stylePicker",
+          "id": "style.index",
+          "prev": "style.prev",
+          "next": "style.next"
+        },
+        {
+          "type": "toggle",
+          "id": "style.autoCycle",
+          "label": "Auto-cycle (A)",
+          "only": [
+            "mac"
+          ]
+        },
         {
           "type": "collapsible",
           "title": "Styles and auto-cycle",
           "open": true,
-          "mac": {"title": "Styles", "open": false, "hint": "Click a name to show it. Checked styles are the ones auto-cycle rotates through."},
+          "mac": {
+            "title": "Styles",
+            "open": false,
+            "hint": "Click a name to show it. Checked styles are the ones auto-cycle rotates through."
+          },
           "items": [
-            {"type": "well", "items": [
-              {"type": "slider", "id": "style.cycleSeconds", "label": "Change style every", "min": 5, "max": 360, "format": "%.0f s"}
-            ]},
-            {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["windows", "linux"]},
-            {"type": "hint", "text": "Checked = included in auto-cycle", "only": ["windows", "linux"]},
-            {"type": "row", "items": [
-              {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["mac"]},
-              {"type": "button", "act": "style.cycleAll", "label": "All", "small": true},
-              {"type": "button", "act": "style.cycleNone", "label": "None", "small": true}
-            ]},
-            {"type": "styleList", "id": "style.index", "cycle": "style.cycle", "setCycle": "style.setCycle",
-             "milkdropHeading": "MilkDrop"},
+            {
+              "type": "well",
+              "items": [
+                {
+                  "type": "slider",
+                  "id": "style.cycleSeconds",
+                  "label": "Change style every",
+                  "min": 5,
+                  "max": 360,
+                  "format": "%.0f s"
+                }
+              ]
+            },
+            {
+              "type": "toggle",
+              "id": "style.autoCycle",
+              "label": "Auto-cycle (A)",
+              "only": [
+                "windows",
+                "linux"
+              ]
+            },
+            {
+              "type": "hint",
+              "text": "Checked = included in auto-cycle",
+              "only": [
+                "windows",
+                "linux"
+              ]
+            },
+            {
+              "type": "row",
+              "items": [
+                {
+                  "type": "toggle",
+                  "id": "style.autoCycle",
+                  "label": "Auto-cycle (A)",
+                  "only": [
+                    "mac"
+                  ]
+                },
+                {
+                  "type": "button",
+                  "act": "style.cycleAll",
+                  "label": "All",
+                  "small": true
+                },
+                {
+                  "type": "button",
+                  "act": "style.cycleNone",
+                  "label": "None",
+                  "small": true
+                }
+              ]
+            },
+            {
+              "type": "styleList",
+              "id": "style.index",
+              "cycle": "style.cycle",
+              "setCycle": "style.setCycle",
+              "milkdropHeading": "MilkDrop"
+            },
             {
               "type": "milkFolder",
               "id": "milk.status",
               "heading": "Your MilkDrop presets",
               "emptyHint": "Pick a folder of .milk files (subfolders too), for example a MilkDrop or NestDrop \"Presets\" folder. A \"Textures\" folder next to it is used as well.",
-              "choose": {"act": "milk.choose", "label": "Choose folder...", "mac": {"label": "Choose Folder…"}},
-              "change": {"act": "milk.choose", "label": "Change folder...", "mac": {"label": "Change…"}},
+              "choose": {
+                "act": "milk.choose",
+                "label": "Choose folder...",
+                "mac": {
+                  "label": "Choose Folder…"
+                }
+              },
+              "change": {
+                "act": "milk.choose",
+                "label": "Change folder...",
+                "mac": {
+                  "label": "Change…"
+                }
+              },
               "buttons": [
-                {"act": "milk.open", "label": "Open"},
-                {"act": "milk.rescan", "label": "Rescan"},
-                {"act": "milk.remove", "label": "Remove"}
+                {
+                  "act": "milk.open",
+                  "label": "Open"
+                },
+                {
+                  "act": "milk.rescan",
+                  "label": "Rescan"
+                },
+                {
+                  "act": "milk.remove",
+                  "label": "Remove"
+                }
               ],
               "scanning": "Looking for presets…",
               "none": "No .milk files found in this folder.",
               "count": "%d presets",
               "countTruncated": "First %d presets",
-              "cycleUser": {"id": "milk.cycleUser", "label": "Include these in auto-cycle",
-                            "mac": {"label": "Include these %d presets in auto-cycle", "labelTruncated": "Include these %d presets in auto-cycle (first %d)"}},
+              "cycleUser": {
+                "id": "milk.cycleUser",
+                "label": "Include these in auto-cycle",
+                "mac": {
+                  "label": "Include these %d presets in auto-cycle",
+                  "labelTruncated": "Include these %d presets in auto-cycle (first %d)"
+                }
+              },
               "search": "Search presets",
               "noMatch": "No presets match.",
-              "mac": {"count": "", "countTruncated": ""}
+              "mac": {
+                "count": "",
+                "countTruncated": ""
+              }
             },
-            {"type": "cycleSummary", "id": "style.cycle",
-             "none": "Nothing checked: auto-cycle uses every style",
-             "some": "Auto-cycle: %d of %d styles",
-             "plusUser": ", plus your presets",
-             "mac": {"none": "Nothing checked, so auto-cycle uses every style."}}
+            {
+              "type": "cycleSummary",
+              "id": "style.cycle",
+              "none": "Nothing checked: auto-cycle uses every style",
+              "some": "Auto-cycle: %d of %d styles",
+              "plusUser": ", plus your presets",
+              "mac": {
+                "none": "Nothing checked, so auto-cycle uses every style."
+              }
+            }
           ]
         }
       ]
@@ -69,23 +293,321 @@
       "title": "Motion",
       "open": true,
       "items": [
-        {"type": "hint", "text": "Your logo's moves, driven by the bass", "only": ["mac"]},
-        {"type": "well", "items": [
-          {"type": "slider", "id": "motion.pulse", "label": "Pulse", "min": 0, "max": 1.5},
-          {"type": "slider", "id": "motion.squash", "label": "Squash & stretch", "min": 0, "max": 1.5},
-          {"type": "slider", "id": "motion.bounce", "label": "Bounce", "min": 0, "max": 1.5},
-          {"type": "slider", "id": "motion.slide", "label": "Slide", "min": 0, "max": 1.5},
-          {"type": "slider", "id": "motion.wobble", "label": "Wobble", "min": 0, "max": 1.5}
-        ]},
-        {"type": "label", "text": "Logo layers"},
-        {"type": "well", "items": [
-          {"type": "slider", "id": "layers.wave", "label": "Wave", "min": 0, "max": 100, "format": "%.0f"},
-          {"type": "slider", "id": "layers.explode", "label": "Explode", "min": 0, "max": 100, "format": "%.0f"},
-          {"type": "slider", "id": "layers.bands", "label": "Bands", "min": 0, "max": 100, "format": "%.0f"},
-          {"type": "slider", "id": "layers.scatter", "label": "Scatter", "min": 0, "max": 100, "format": "%.0f"}
-        ]},
-        {"type": "hint", "text": "Each separate shape in your logo (a letter, an icon) moves on its own. 0 = still, 100 = super wild; mix as many as you like. Wave: hops left to right. Explode: bursts outward. Bands: rides the bass/mid/treble. Scatter: flies every which way."},
-        {"type": "button", "act": "motion.reset", "label": "Reset to defaults"}
+        {
+          "type": "hint",
+          "text": "Your logo's moves, driven by the bass",
+          "only": [
+            "mac"
+          ]
+        },
+        {
+          "type": "well",
+          "items": [
+            {
+              "type": "slider",
+              "id": "motion.pulse",
+              "label": "Pulse",
+              "min": 0,
+              "max": 1.5
+            },
+            {
+              "type": "slider",
+              "id": "motion.squash",
+              "label": "Squash & stretch",
+              "min": 0,
+              "max": 1.5
+            },
+            {
+              "type": "slider",
+              "id": "motion.bounce",
+              "label": "Bounce",
+              "min": 0,
+              "max": 1.5
+            },
+            {
+              "type": "slider",
+              "id": "motion.slide",
+              "label": "Slide",
+              "min": 0,
+              "max": 1.5
+            },
+            {
+              "type": "slider",
+              "id": "motion.wobble",
+              "label": "Wobble",
+              "min": 0,
+              "max": 1.5
+            }
+          ]
+        },
+        {
+          "type": "label",
+          "text": "Logo layers"
+        },
+        {
+          "type": "well",
+          "items": [
+            {
+              "type": "slider",
+              "id": "layers.wave",
+              "label": "Wave",
+              "min": 0,
+              "max": 100,
+              "format": "%.0f"
+            },
+            {
+              "type": "slider",
+              "id": "layers.explode",
+              "label": "Explode",
+              "min": 0,
+              "max": 100,
+              "format": "%.0f"
+            },
+            {
+              "type": "slider",
+              "id": "layers.bands",
+              "label": "Bands",
+              "min": 0,
+              "max": 100,
+              "format": "%.0f"
+            },
+            {
+              "type": "slider",
+              "id": "layers.scatter",
+              "label": "Scatter",
+              "min": 0,
+              "max": 100,
+              "format": "%.0f"
+            }
+          ]
+        },
+        {
+          "type": "hint",
+          "text": "Each separate shape in your logo (a letter, an icon) moves on its own. 0 = still, 100 = super wild; mix as many as you like. Wave: hops left to right. Explode: bursts outward. Bands: rides the bass/mid/treble. Scatter: flies every which way."
+        },
+        {
+          "type": "button",
+          "act": "motion.reset",
+          "label": "Reset to defaults"
+        }
+      ]
+    },
+    {
+      "id": "logolook",
+      "kind": "collapsible",
+      "title": "Logo look",
+      "open": false,
+      "items": [
+        {
+          "type": "well",
+          "items": [
+            {
+              "type": "slider",
+              "id": "logo.size",
+              "label": "Size",
+              "min": 0.08,
+              "max": 0.8
+            },
+            {
+              "type": "slider",
+              "id": "logo.glow",
+              "label": "Glow",
+              "min": 0,
+              "max": 1.5
+            },
+            {
+              "type": "slider",
+              "id": "logo.tint",
+              "label": "Color tint",
+              "min": 0,
+              "max": 1
+            }
+          ]
+        },
+        {
+          "type": "toggle",
+          "id": "logo.trails",
+          "label": "Logo trails (feeds into the visuals)"
+        },
+        {
+          "type": "toggle",
+          "id": "logo.show",
+          "label": "Show logos (G)",
+          "mac": {
+            "label": "Show logos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "audio",
+      "kind": "collapsible",
+      "title": "Audio",
+      "titleOff": "Audio (off)",
+      "running": "audio.running",
+      "open": true,
+      "items": [
+        {
+          "type": "hint",
+          "text": "What Dropocalypse listens to",
+          "only": [
+            "mac"
+          ]
+        },
+        {
+          "type": "select",
+          "id": "audio.source",
+          "options": "audio.sources"
+        },
+        {
+          "type": "row",
+          "items": [
+            {
+              "type": "button",
+              "act": "audio.refresh",
+              "label": "Refresh devices",
+              "mac": {
+                "label": "Refresh list"
+              },
+              "small": true
+            },
+            {
+              "type": "button",
+              "act": "audio.restart",
+              "label": "Restart audio",
+              "small": true
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "audio.hint",
+          "only": [
+            "mac"
+          ]
+        },
+        {
+          "type": "well",
+          "items": [
+            {
+              "type": "slider",
+              "id": "audio.sensitivity",
+              "label": "Sensitivity",
+              "min": 0.2,
+              "max": 4
+            },
+            {
+              "type": "slider",
+              "id": "audio.beatThreshold",
+              "label": "Beat threshold",
+              "min": 1.1,
+              "max": 2.2,
+              "format": "%.2fx",
+              "mac": {
+                "format": "%.2f×"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "audio.status"
+        }
+      ]
+    },
+    {
+      "id": "look",
+      "kind": "collapsible",
+      "title": "Look",
+      "open": false,
+      "items": [
+        {
+          "type": "well",
+          "items": [
+            {
+              "type": "slider",
+              "id": "look.beatFlash",
+              "label": "Beat flash",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "type": "slider",
+              "id": "look.brightness",
+              "label": "Brightness",
+              "min": 0.4,
+              "max": 1.6
+            }
+          ]
+        },
+        {
+          "type": "label",
+          "text": "Frame"
+        },
+        {
+          "type": "segmented",
+          "id": "look.portrait",
+          "locked": "look.frameLocked",
+          "options": [
+            {
+              "label": "Landscape",
+              "value": 0
+            },
+            {
+              "label": "Portrait (9:16)",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "type": "hintBy",
+          "id": "look.portrait",
+          "texts": {
+            "0": "Landscape fills the window.",
+            "1": "Portrait centers a vertical frame. Recordings are 720x1280, 1080x1920, or 2160x3840."
+          },
+          "mac": {
+            "texts": {
+              "0": "Landscape fills the window.",
+              "1": "Portrait is a 9:16 frame, centered on screen. Recordings are 720×1280, 1080×1920, or 2160×3840."
+            }
+          }
+        },
+        {
+          "type": "label",
+          "text": "Frame rate"
+        },
+        {
+          "type": "segmented",
+          "id": "look.frameCap",
+          "options": [
+            {
+              "label": "Display",
+              "value": 0
+            },
+            {
+              "label": "60",
+              "value": 60
+            },
+            {
+              "label": "30",
+              "value": 30
+            }
+          ]
+        },
+        {
+          "type": "hintBy",
+          "id": "look.frameCap",
+          "texts": {
+            "default": "Display matches the monitor. 60 and 30 use less CPU."
+          },
+          "mac": {
+            "texts": {
+              "0": "Display matches the monitor.",
+              "default": "A lower cap uses less CPU. The picture stays the same shape."
+            }
+          }
+        }
       ]
     }
   ]

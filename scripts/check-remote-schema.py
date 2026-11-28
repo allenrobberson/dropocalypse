@@ -13,7 +13,8 @@ APPS = {
     "linux": (ROOT / "windows" / "src" / "main.cpp").read_text(),   # linux/src/main.cpp is generated from it
     "mac": (ROOT / "Sources" / "Dropocalypse" / "PhoneRemote.swift").read_text(),
 }
-KEYS = ("id", "act", "prev", "next", "cycle", "setCycle")
+KEYS = ("id", "act", "prev", "next", "cycle", "setCycle", "setText", "setFont", "setColor", "portrait",
+        "running", "locked", "options")
 ids = {}   # id -> platforms that show it
 
 

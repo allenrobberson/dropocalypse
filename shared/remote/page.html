@@ -94,12 +94,51 @@ label.switch input:checked + .track::after { left: 23px; }
 input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label); background: #101018;
   border: 1px solid #44445a; border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
 .milk { padding: 0 4px; }
+/* segmented */
+.seg { display: flex; background: var(--groove); border-radius: 10px; padding: 3px; gap: 3px; margin: 6px 0; }
+.seg button { flex: 1; appearance: none; border: 0; font: inherit; font-size: 14px; color: var(--label); background: transparent;
+  border-radius: 8px; padding: 9px 4px; min-height: 40px; }
+.seg button.on { background: var(--pink); color: var(--pink-label); font-weight: 700; }
+.seg.locked { opacity: .45; pointer-events: none; }
+select.field { width: 100%; appearance: none; -webkit-appearance: none; font: inherit; color: var(--label);
+  background: #22222e; border: 1px solid #44445a; border-radius: 10px; padding: 11px 12px; margin: 6px 0; }
+/* logo items */
+.item { background: var(--well); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+.item .top { display: flex; align-items: center; gap: 8px; }
+.item .num { color: var(--dim); font-variant-numeric: tabular-nums; }
+.item .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item input.text { flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--label); background: #101018;
+  border: 1px solid #44445a; border-radius: 8px; padding: 8px 10px; }
+.item .btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.item .btns .key { min-width: 44px; }
+.item .style { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.item .style select { font: inherit; font-size: 15px; color: var(--label); background: #22222e; border: 1px solid #44445a;
+  border-radius: 8px; padding: 7px 10px; }
+.sw { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; padding: 0; }
+.sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--pink); }
+/* dialogs and toasts */
+#sheet { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.7); display: none; align-items: flex-end; }
+#sheet.show { display: flex; }
+#sheet .box { width: 100%; background: var(--panel); border-radius: 16px 16px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rim); max-height: 92vh; overflow-y: auto; }
+#sheet .box p { margin: 0 0 12px; }
+#sheet canvas { display: block; max-width: 100%; max-height: 46vh; margin: 0 auto 12px; border-radius: 8px;
+  background: repeating-conic-gradient(#888 0 25%, #ccc 0 50%) 0 0 / 16px 16px; }
+#sheet .acts { display: flex; gap: 8px; }
+#sheet .acts .key { flex: 1; }
+#sheet .key.primary { background: var(--pink); color: var(--pink-label); border-color: #ff8cc6; font-weight: 700; }
+#toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 30;
+  background: #2b2b3a; border: 1px solid var(--rim); border-radius: 12px; padding: 12px 14px; display: none; }
+#toast.show { display: block; }
 </style>
 </head>
 <body>
 <header><h1><b>Drop</b>ocalypse</h1><div id="status"><i></i><span>Connecting…</span></div></header>
 <div id="notice"></div>
 <main id="app"></main>
+<div id="sheet"><div class="box"></div></div>
+<div id="toast"></div>
+<input id="picker" type="file" accept="image/*,.heic,.heif" hidden>
 <script>
 "use strict";
 (() => {
@@ -121,6 +160,14 @@ input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label);
   function setStatus(text, cls) {
     statusEl.className = cls || "";
     statusEl.querySelector("span").textContent = text;
+  }
+  let toastTimer = 0;
+  function toast(text, ms) {
+    const t = document.getElementById("toast");
+    t.textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), ms || 3500);
   }
   function showNotice(text) { notice.textContent = text; notice.classList.toggle("show", !!text); }
 
@@ -188,7 +235,9 @@ input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label);
     collapsible: (it) => {
       const d = el("details");
       d.open = !!it.open;
-      d.appendChild(el("summary", "", it.title));
+      const sum = el("summary", "", it.title);
+      d.appendChild(sum);
+      if (it.running) watch(it.running, v => { sum.textContent = v === false && it.titleOff ? it.titleOff : it.title; });
       const body = el("div", "body");
       if (it.hint) body.appendChild(el("div", "hint", it.hint));
       renderItems(it.items, body);
@@ -226,6 +275,53 @@ input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label);
       return l;
     },
     button: (it) => keyButton(it.label, () => act(it.act), (it.small ? "small" : "") + (it.full ? " full" : "")),
+    text: (it) => {
+      const t = el("div", "hint");
+      watch(it.id, v => { t.textContent = v || ""; t.style.display = v ? "" : "none"; });
+      return t;
+    },
+    hintBy: (it) => {
+      const t = el("div", "hint");
+      watch(it.id, v => { const k = String(+v); t.textContent = k in it.texts ? it.texts[k] : (it.texts["default"] || ""); });
+      return t;
+    },
+    segmented: (it) => {
+      const w = el("div", "seg");
+      const btns = it.options.map(o => {
+        const b = el("button", "", o.label);
+        b.type = "button";
+        b.addEventListener("click", () => { set(it.id, o.value); mark(o.value); });
+        w.appendChild(b);
+        return b;
+      });
+      const mark = v => btns.forEach((b, k) => b.classList.toggle("on", it.options[k].value === +v));
+      watch(it.id, mark);
+      if (it.locked) watch(it.locked, v => w.classList.toggle("locked", !!v));
+      return w;
+    },
+    select: (it) => {
+      const sel = el("select", "field");
+      sel.addEventListener("change", () => set(it.id, sel.value));
+      const fill = () => {
+        sel.textContent = "";
+        let group = null, groupName = null;
+        (state[it.options] || []).forEach(o => {
+          if ((o.group || "") !== groupName) {
+            groupName = o.group || "";
+            group = groupName ? el("optgroup") : null;
+            if (group) { group.label = groupName; sel.appendChild(group); }
+          }
+          const opt = el("option", "", o.name);
+          opt.value = o.key;
+          (group || sel).appendChild(opt);
+        });
+        if (it.id in state) sel.value = state[it.id];
+      };
+      watch(it.options, fill);
+      watch(it.id, v => { sel.value = v; });
+      return sel;
+    },
+    items: (it) => itemsWidget(it),
     stylePicker: (it) => {
       const w = el("div", "picker");
       const sel = el("select");
@@ -372,6 +468,256 @@ input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label);
     },
   };
 
+  // ---- Logos and text: the list, plus adding a picture from the phone's photos or camera.
+  function itemsWidget(it) {
+    const w = el("div");
+    const list = el("div");
+    const empty = el("div", "hint", it.empty);
+    const adds = el("div", "row");
+    const addImg = keyButton(it.addImage.label, () => pickImage(-1));
+    const addTxt = keyButton(it.addText.label, () => act(it.addText.act));
+    adds.append(addImg, addTxt);
+    const hint = el("div", "hint");
+    const imgHint = el("div", "hint", it.addImage.hint);
+    w.append(empty, list, adds, hint, imgHint);
+    const typing = {};   // item index -> time until which incoming text is ignored
+    const draw = () => {
+      const items = state[it.id] || [];
+      const portrait = !!state[it.portrait];
+      const full = items.length >= it.max;
+      empty.style.display = items.length ? "none" : "";
+      addImg.disabled = addTxt.disabled = full;
+      hint.textContent = full ? it.hintFull : it.hintRoom;
+      // Keep the text box being typed in (and its keyboard) instead of rebuilding it.
+      const active = document.activeElement;
+      if (active && active.classList.contains("text") && list.contains(active) && list.children.length === items.length) {
+        items.forEach((item, i) => {
+          const row = list.children[i];
+          const input = row.querySelector("input.text");
+          if (input && input !== active && !(typing[i] > Date.now())) input.value = item.text;
+        });
+        return;
+      }
+      list.textContent = "";
+      items.forEach((item, i) => {
+        const row = el("div", "item");
+        const top = el("div", "top");
+        top.appendChild(el("span", "num", (i + 1) + "."));
+        if (item.kind === "text") {
+          const input = el("input", "text");
+          input.type = "text";
+          input.maxLength = 60;
+          input.placeholder = it.textPlaceholder;
+          input.value = item.text;
+          input.addEventListener("input", () => {
+            typing[i] = Date.now() + 1500;
+            act(it.setText, {i: i, v: input.value});
+          });
+          top.appendChild(input);
+        } else {
+          top.appendChild(el("span", "nm", item.name || "Logo"));
+        }
+        row.appendChild(top);
+        const btns = el("div", "btns");
+        if (item.kind !== "text") btns.appendChild(keyButton(it.replace.label, () => pickImage(i), "small"));
+        const earlier = keyButton(portrait ? "\u25B2" : "\u25C0", () => act(it.move.act, {i: i, v: -1}), "small");
+        earlier.disabled = i === 0;
+        earlier.title = portrait ? it.move.earlierPortrait : it.move.earlier;
+        const later = keyButton(portrait ? "\u25BC" : "\u25B6", () => act(it.move.act, {i: i, v: 1}), "small");
+        later.disabled = i === items.length - 1;
+        later.title = portrait ? it.move.laterPortrait : it.move.later;
+        btns.append(earlier, later, keyButton(it.remove.label, () => act(it.remove.act, {i: i}), "small"));
+        row.appendChild(btns);
+        if (item.kind === "text") {
+          const st = el("div", "style");
+          const font = el("select");
+          it.fonts.forEach((f, k) => { const o = el("option", "", f); o.value = k; font.appendChild(o); });
+          font.value = item.font;
+          font.addEventListener("change", () => act(it.setFont, {i: i, v: +font.value}));
+          st.appendChild(font);
+          it.colors.forEach((c, k) => {
+            const b = el("button", "sw" + (item.color === k ? " on" : ""));
+            b.type = "button";
+            b.style.background = c.rgb;
+            b.title = c.name;
+            b.setAttribute("aria-label", c.name);
+            b.addEventListener("click", () => act(it.setColor, {i: i, v: k}));
+            st.appendChild(b);
+          });
+          row.appendChild(st);
+        }
+        list.appendChild(row);
+      });
+    };
+    watch(it.id, draw);
+    watch(it.portrait, draw);
+    uploadText = it;
+    return w;
+  }
+
+  let uploadText = null;
+  const picker = document.getElementById("picker");
+  let pickSlot = -1;
+  function pickImage(slot) {
+    pickSlot = slot;
+    picker.value = "";
+    picker.click();
+  }
+  picker.addEventListener("change", () => {
+    const f = picker.files && picker.files[0];
+    if (f) prepareImage(f, pickSlot);
+  });
+
+  const sheet = document.getElementById("sheet");
+  function openSheet(build) {
+    const box = sheet.querySelector(".box");
+    box.textContent = "";
+    build(box);
+    sheet.classList.add("show");
+  }
+  function closeSheet() { sheet.classList.remove("show"); }
+
+  /// Decodes the picture in the browser (which also turns iPhone HEIC photos and rotated camera
+  /// shots into plain upright pixels), scales it to at most 1600 pixels, and checks for transparency.
+  function prepareImage(file, slot) {
+    const T = uploadText.transparency;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const ctx = c.getContext("2d", {willReadFrequently: true});
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      const name = (file.name || "Photo").replace(/\.[^.]*$/, "") + ".png";
+      if (hasTransparency(ctx.getImageData(0, 0, c.width, c.height))) return sendCanvas(c, name, slot);
+      openSheet(box => {
+        box.appendChild(el("p", "", T.ask));
+        const prev = document.createElement("canvas");
+        prev.width = c.width; prev.height = c.height;
+        prev.getContext("2d").drawImage(c, 0, 0);
+        box.appendChild(prev);
+        const acts = el("div", "acts");
+        acts.append(keyButton(T.no, () => { closeSheet(); sendCanvas(c, name, slot); }),
+                    keyButton(T.yes, () => previewTransparent(c, name, slot), "primary"));
+        box.appendChild(acts);
+      });
+    };
+    img.onerror = () => {   // the browser can't show it (HEIC on some Android phones): let the app try
+      URL.revokeObjectURL(url);
+      sendBlob(file, file.name || "logo", slot);
+    };
+    img.src = url;
+  }
+
+  function previewTransparent(src, name, slot) {
+    const T = uploadText.transparency;
+    openSheet(box => box.appendChild(el("p", "", T.working)));
+    setTimeout(() => {
+      const base = src.getContext("2d").getImageData(0, 0, src.width, src.height);
+      let holes = false;
+      const out = document.createElement("canvas");
+      out.width = src.width; out.height = src.height;
+      const render = () => out.getContext("2d").putImageData(removeBackground(base, holes), 0, 0);
+      render();
+      openSheet(box => {
+        box.appendChild(el("p", "", T.preview));
+        box.appendChild(out);
+        const l = el("label", "switch");
+        const cb = el("input"); cb.type = "checkbox";
+        cb.addEventListener("change", () => { holes = cb.checked; render(); });
+        l.append(cb, el("span", "track"), el("span", "", T.holes));
+        box.appendChild(l);
+        const acts = el("div", "acts");
+        acts.append(keyButton(T.original, () => { closeSheet(); sendCanvas(src, name, slot); }),
+                    keyButton(T.use, () => { closeSheet(); sendCanvas(out, name, slot); }, "primary"));
+        box.appendChild(acts);
+      });
+    }, 30);
+  }
+
+  function hasTransparency(d) {
+    const a = d.data;
+    let clear = 0;
+    for (let i = 3; i < a.length; i += 4 * 7) if (a[i] < 250) clear++;
+    return clear > (a.length / 28) * 0.005;
+  }
+
+  /// Makes the background see-through: finds the most common color around the edge, then floods
+  /// in from the edge through pixels close to it (following gentle gradients and shadows), with
+  /// soft edges. With holes on, matching areas inside the picture (inside an O or an A) go too.
+  function removeBackground(d, holes) {
+    const w = d.width, h = d.height, src = d.data;
+    const out = new ImageData(new Uint8ClampedArray(src), w, h);
+    const px = out.data;
+    const counts = new Map();
+    const edge = (x, y) => {
+      const i = (y * w + x) * 4;
+      const k = (src[i] >> 4) << 8 | (src[i + 1] >> 4) << 4 | (src[i + 2] >> 4);
+      counts.set(k, (counts.get(k) || 0) + 1);
+    };
+    for (let x = 0; x < w; ++x) { edge(x, 0); edge(x, h - 1); }
+    for (let y = 0; y < h; ++y) { edge(0, y); edge(w - 1, y); }
+    let best = 0, bestN = -1;
+    counts.forEach((n, k) => { if (n > bestN) { bestN = n; best = k; } });
+    // Average the real colors in the winning bucket for the reference.
+    let rr = 0, gg = 0, bb = 0, nn = 0;
+    const tally = (x, y) => {
+      const i = (y * w + x) * 4;
+      if (((src[i] >> 4) << 8 | (src[i + 1] >> 4) << 4 | (src[i + 2] >> 4)) === best) { rr += src[i]; gg += src[i + 1]; bb += src[i + 2]; nn++; }
+    };
+    for (let x = 0; x < w; ++x) { tally(x, 0); tally(x, h - 1); }
+    for (let y = 0; y < h; ++y) { tally(0, y); tally(w - 1, y); }
+    const R = rr / nn, G = gg / nn, B = bb / nn;
+    const T = 42;   // how far from the background color still counts as background
+    const dist = i => Math.sqrt((src[i] - R) ** 2 + (src[i + 1] - G) ** 2 + (src[i + 2] - B) ** 2);
+    const step = (i, j) => Math.abs(src[i] - src[j]) + Math.abs(src[i + 1] - src[j + 1]) + Math.abs(src[i + 2] - src[j + 2]);
+    const bg = new Uint8Array(w * h);
+    const queue = new Int32Array(w * h);
+    let qh = 0, qt = 0;
+    const seed = p => { if (!bg[p] && dist(p * 4) < T * 1.5) { bg[p] = 1; queue[qt++] = p; } };
+    for (let x = 0; x < w; ++x) { seed(x); seed((h - 1) * w + x); }
+    for (let y = 0; y < h; ++y) { seed(y * w); seed(y * w + w - 1); }
+    while (qh < qt) {
+      const p = queue[qh++], x = p % w, y = (p - x) / w;
+      const tryN = q => {
+        if (bg[q]) return;
+        const dq = dist(q * 4);
+        if (dq < T || (dq < T * 2.5 && step(p * 4, q * 4) < 18)) { bg[q] = 1; queue[qt++] = q; }
+      };
+      if (x > 0) tryN(p - 1);
+      if (x < w - 1) tryN(p + 1);
+      if (y > 0) tryN(p - w);
+      if (y < h - 1) tryN(p + w);
+    }
+    if (holes) for (let p = 0; p < w * h; ++p) if (!bg[p] && dist(p * 4) < T * 0.6) bg[p] = 1;
+    for (let p = 0; p < w * h; ++p) {
+      if (bg[p]) { px[p * 4 + 3] = 0; continue; }
+      // Soft edge: pixels touching the background fade by how close to its color they are.
+      const x = p % w, y = (p - x) / w;
+      const touches = (x > 0 && bg[p - 1]) || (x < w - 1 && bg[p + 1]) || (y > 0 && bg[p - w]) || (y < h - 1 && bg[p + w]);
+      if (touches) {
+        const a = Math.min(1, Math.max(0.15, (dist(p * 4) - T * 0.5) / (T * 2)));
+        px[p * 4 + 3] = Math.round(px[p * 4 + 3] * a);
+      }
+    }
+    return out;
+  }
+
+  function sendCanvas(c, name, slot) {
+    c.toBlob(b => b ? sendBlob(b, name, slot) : toast(uploadText.failed), "image/png");
+  }
+
+  function sendBlob(blob, name, slot) {
+    if (slot >= 0) act(uploadText.replace.act, {i: slot});
+    toast(uploadText.sending, 20000);
+    fetch("/upload?token=" + encodeURIComponent(token) + "&name=" + encodeURIComponent(name), {method: "POST", body: blob})
+      .then(r => { if (!r.ok) throw new Error(); toast(uploadText.sent, 1500); })
+      .catch(() => toast(uploadText.failed));
+  }
+
   function renderItems(items, parent) {
     (items || []).forEach(it => {
       const make = widgets[it.type];
@@ -422,6 +768,8 @@ input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label);
       } else if (m.t === "styles") {
         styles = m;
         styleWatchers.forEach(fn => fn());
+      } else if (m.t === "toast") {
+        toast(m.text);
       } else if (m.t === "bye") {
         showNotice(m.text || "Disconnected.");
       }
