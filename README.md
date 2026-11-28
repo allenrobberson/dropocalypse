@@ -118,6 +118,9 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.6: logos from your phone
+- 📱 **Phone remote: logos and more.** **Add logo** opens your phone's photos or camera; plain backgrounds can be made transparent in one tap (with a preview). Add and edit text, reorder, replace and remove items, and use **Logo look**, **Audio** and **Look** from the phone.
+
 ### 1.6.5: phone remote (preview)
 - 📱 **Phone remote**: turn it on in the **Phone** menu, press **Show QR code** and scan it with your phone. The phone's browser shows the controls (no app to install): styles, auto-cycle, your MilkDrop presets and the Motion sliders, with more coming. The phone and computer must be on the same Wi-Fi (or the computer joins your phone's hotspot). See [Phone Remote](../../wiki/Phone-Remote).
 
@@ -481,7 +484,7 @@ Control the show from your phone while the computer stays plugged into the scree
 3. The phone and computer must be on the **same Wi-Fi**. No Wi-Fi at the venue? Turn on your phone's hotspot and join it from the computer.
 4. Paired phones reconnect on their own, even after Dropocalypse restarts. **Disconnect phones** (or **Forget paired phones**) signs them all out.
 
-The first time, macOS asks to let Dropocalypse find devices on your local network, and Windows may ask to allow it on private networks: say yes. If the computer has several networks (Ethernet and Wi-Fi, or a VPN), pick the one your phone is on under **Network**. In this preview the phone has the styles, auto-cycle, MilkDrop presets and Motion sliders; the rest of the controls are coming.
+The first time, macOS asks to let Dropocalypse find devices on your local network, and Windows may ask to allow it on private networks: say yes. If the computer has several networks (Ethernet and Wi-Fi, or a VPN), pick the one your phone is on under **Network**. The phone has Logos and text (add a logo from your photos or camera, with optional background removal), Style, Motion, Logo look, Audio and Look. Visuals, Record, Updates and Keyboard shortcuts stay on the computer.
 
 ### Setting up for a live show
 

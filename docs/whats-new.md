@@ -11,6 +11,11 @@ Write for people who aren't technical: short, friendly bullets, no file names or
   CI fails if you forget, and the release fails if the version being released has no section here.
 -->
 
+## 1.6.6
+- **Add your logo from your phone.** In the phone remote, **Add logo** opens your photos or camera, and the picture shows up in Dropocalypse right away. You can also add text, change its words, font and color, move items around, replace or remove them.
+- **Transparent background in one tap.** If your picture has a plain background, the phone offers to remove it and shows you a preview first.
+- **More on the phone.** **Logo look**, **Audio** and **Look** are on the phone remote too.
+
 ## 1.6.5
 - **Phone remote (preview).** Control Dropocalypse from your phone's web browser, with no app to install. Turn on **Phone remote** in the new **Phone** menu (or in the detached controls), press **Show QR code** and scan it with your phone's camera. This first version has the styles, auto-cycle, your MilkDrop presets and the Motion sliders; more is coming.
 - **Same Wi-Fi.** Your phone and computer need to be on the same Wi-Fi, or the computer can join your phone's hotspot. Phones you've paired reconnect on their own, even after a restart, until you press **Disconnect**.

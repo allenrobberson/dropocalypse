@@ -1,6 +1,6 @@
 # Phone Remote
 
-Control Dropocalypse from your phone while the computer stays plugged into the screen or projector. There's no app to install: the controls open in your phone's web browser. Mac, Windows and Linux, since 1.6.5 (preview).
+Control Dropocalypse from your phone while the computer stays plugged into the screen or projector. There's no app to install: the controls open in your phone's web browser. Mac, Windows and Linux, since 1.6.5.
 
 ## Pair a phone
 1. Open the **Phone** menu in the toolbar (or the **Phone remote** section of the detached controls window) and turn on **Phone remote**. It's off until you turn it on.
@@ -25,7 +25,16 @@ If the computer has several networks (for example Ethernet and Wi-Fi, or a VPN),
 Paired phones reconnect on their own, even after Dropocalypse or the computer restarts: open the same page again (bookmark it or add it to the home screen). **Disconnect phones** (or **Forget paired phones** when none are connected) signs every phone out; they need to scan a new QR code.
 
 ## What's on the phone
-In this preview: the style picker and arrows, auto-cycle and **Change style every**, the style list with its auto-cycle checkboxes, your MilkDrop presets folder with search, and the **Motion** section with the **Logo layers** sliders. The rest of the controls window, and adding a logo from the phone's photos or camera, are coming next.
+- **Logos and text:** **Add logo** opens your photos or camera. Add text and change its words, font and color. Move items, **Replace...** a picture, or **Remove** it. Up to 4 items.
+- **Style:** the style picker and arrows, auto-cycle and **Change style every**, the style list with its auto-cycle checkboxes, and your MilkDrop presets folder with search.
+- **Motion** with the **Logo layers** sliders, **Logo look**, **Audio** and **Look**.
+
+Visuals, Record, Updates and Keyboard shortcuts stay on the computer.
+
+## Transparent backgrounds
+When the picture you pick has a plain background (a logo on white, for example), the phone asks **Make the background transparent?** Tap **Yes** to see a preview: the checkerboard shows the see-through parts. Turn on **Also clear enclosed areas** to clear the inside of letters like O and A too. Then **Use it**, or **Use the original**. This works best for logos and graphics on a plain or nearly plain color; it won't cut a person out of a busy photo.
+
+The phone converts the picture to PNG (iPhone HEIC photos included) and scales it to at most 1600 pixels before sending it, so uploads are quick.
 
 ## Troubleshooting
 - **"Can't reach Dropocalypse"** on the phone: check both are on the same Wi-Fi, that Phone remote is still on, and the permissions above. Some guest and venue Wi-Fi networks block devices from talking to each other; use your phone's hotspot instead.

@@ -2,6 +2,11 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.6
+- 📱 **Logos from your phone.** In the phone remote, **Add logo** opens the phone's photos or camera. The phone turns the picture (HEIC, JPG, PNG, rotated camera shots) into an upright PNG up to 1600 pixels and sends it to the app, where it's added like a dropped file (or swapped in with **Replace...**). The 4-item limit applies.
+- ✂️ **Background removal.** When a picture has no transparency, the phone asks whether to make its background transparent and shows a preview on a checkerboard, with an option to also clear enclosed areas such as the inside of letters. Works best for logos on a plain background.
+- 🎛 **More on the phone.** Text items (words, font, color), reorder and remove; **Logo look** (size, glow, tint, trails, show logos); **Audio** (source, refresh, restart, sensitivity, beat threshold); **Look** (beat flash, brightness, Landscape/Portrait, frame rate). Visuals, Record, Updates and Keyboard shortcuts stay on the computer. Mac, Windows and Linux.
+
 ## 1.6.5
 - 📱 **Phone remote (preview).** Control Dropocalypse from your phone's web browser, no app to install. Turn on **Phone remote** in the new **Phone** toolbar menu (or the detached controls), press **Show QR code to pair a phone** and scan it. The phone gets the style picker and arrows, auto-cycle and its timer, the style list with auto-cycle checkboxes, your MilkDrop presets folder with search, and the Motion and Logo layers sliders. Changes show up on both sides instantly. Each pairing code works once, the QR hides itself after a phone pairs, and paired phones reconnect after a restart until you press **Disconnect phones**. LAN only. Mac, Windows and Linux. See [Phone Remote](Phone-Remote).
 
