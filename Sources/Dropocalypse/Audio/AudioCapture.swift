@@ -215,7 +215,16 @@ final class AudioCapture: ObservableObject {
         if same {
             // Same device and format: the engine only needs to be running again.
             if !engine.isRunning {
-                DispatchQueue.global(qos: .userInitiated).async { try? engine.start() }
+                // Starting can take a moment, so it runs off the main thread. If the engine was
+                // replaced (device change, stop) in the meantime, this old one must not keep running.
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                    let current = DispatchQueue.main.sync { self?.engine === engine }
+                    guard current else { return }
+                    try? engine.start()
+                    DispatchQueue.main.async { [weak self] in
+                        if self?.engine !== engine { engine.stop() }
+                    }
+                }
             }
             return
         }

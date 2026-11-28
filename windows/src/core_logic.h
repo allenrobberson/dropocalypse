@@ -335,13 +335,24 @@ try {
     if ($null -ne $still) {
         throw "Dropocalypse didn't close, so the update wasn't installed."
     }
-    Get-ChildItem -LiteralPath $Source -File | ForEach-Object {
-        $name = $_.Name
+    # The program and its DLLs must all be replaced (an old DLL next to a new exe can crash it):
+    # retry each a few times in case something still holds it, and stop if one won't copy.
+    # Other files (the guide, the readme) may be open in another app, so they may stay old.
+    # The exe goes last: it is only replaced once every DLL is in place.
+    $files = Get-ChildItem -LiteralPath $Source -File | Sort-Object { $_.Name -eq 'Dropocalypse.exe' }
+    foreach ($f in $files) {
+        $name = $f.Name
         $target = Join-Path $Dest $name
-        try {
-            Copy-Item -LiteralPath $_.FullName -Destination $target -Force
-        } catch {
-            if ($name -eq 'Dropocalypse.exe') { throw }
+        $required = $name -like '*.exe' -or $name -like '*.dll'
+        for ($try = 1; ; $try++) {
+            try {
+                Copy-Item -LiteralPath $f.FullName -Destination $target -Force
+                break
+            } catch {
+                if (-not $required) { break }
+                if ($try -ge 10) { throw "Couldn't replace $name (another program may be using it), so the update stopped." }
+                Start-Sleep -Milliseconds 500
+            }
         }
     }
     $exe = Join-Path $Dest 'Dropocalypse.exe'

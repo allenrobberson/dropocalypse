@@ -209,6 +209,47 @@ void onState(pa_context* c, void* user) {
     }
 }
 
+/// The name of PulseAudio's current default output (loopback) or input. "" if it doesn't answer
+/// within a second.
+std::string defaultDeviceName(bool loopback) {
+    struct Query {
+        bool loopback;
+        std::string name;
+        bool done = false, failed = false;
+    } q{loopback};
+    pa_mainloop* ml = pa_mainloop_new();
+    if (!ml) return "";
+    pa_context* ctx = pa_context_new(pa_mainloop_get_api(ml), "Dropocalypse");
+    if (ctx) {
+        pa_context_set_state_callback(ctx, [](pa_context* c, void* user) {
+            auto* q = static_cast<Query*>(user);
+            const pa_context_state_t st = pa_context_get_state(c);
+            if (st == PA_CONTEXT_READY) {
+                pa_operation* op = pa_context_get_server_info(c, [](pa_context*, const pa_server_info* info, void* u) {
+                    auto* q = static_cast<Query*>(u);
+                    if (info) {
+                        const char* n = q->loopback ? info->default_sink_name : info->default_source_name;
+                        if (n) q->name = n;
+                    }
+                    q->done = true;
+                }, q);
+                if (op) pa_operation_unref(op); else q->failed = true;
+            } else if (st == PA_CONTEXT_FAILED || st == PA_CONTEXT_TERMINATED) {
+                q->failed = true;
+            }
+        }, &q);
+        if (pa_context_connect(ctx, nullptr, PA_CONTEXT_NOFLAGS, nullptr) >= 0) {
+            auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+            while (!q.done && !q.failed && std::chrono::steady_clock::now() < deadline)
+                pa_mainloop_iterate(ml, 0, nullptr), std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            pa_context_disconnect(ctx);
+        }
+        pa_context_unref(ctx);
+    }
+    pa_mainloop_free(ml);
+    return q.done ? q.name : "";
+}
+
 } // namespace
 
 std::vector<AudioSource> AudioCapture::listSources() {
@@ -309,8 +350,26 @@ void AudioCapture::run(std::wstring id, bool loopback) {
             setStatus(L"Listening to " + widen(name) + L" · 48000 Hz · 5 ms blocks");
         }
 
+        // Following the default device: check every two seconds (on a helper thread, so reading
+        // never waits) whether the user switched outputs, for example to HDMI or headphones.
+        std::atomic<bool> defaultChanged{false}, watchStop{false};
+        std::thread watcher;
+        if (id.empty()) {
+            watcher = std::thread([&] {
+                const std::string first = defaultDeviceName(loopback);
+                while (!watchStop && !stopRequested_) {
+                    for (int i = 0; i < 20 && !watchStop && !stopRequested_; ++i)
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    if (watchStop || stopRequested_) break;
+                    const std::string now = defaultDeviceName(loopback);
+                    if (!first.empty() && !now.empty() && now != first) { defaultChanged = true; break; }
+                }
+            });
+        }
+
         bool failed = false;
         while (!stopRequested_) {
+            if (defaultChanged) { failed = true; break; }
             if (pa_simple_read(s, stereo.data(), stereo.size() * sizeof(float), &err) < 0) { failed = true; break; }
             for (uint32_t i = 0; i < frames; ++i) mono[i] = 0.5f * (stereo[i * 2] + stereo[i * 2 + 1]);
             extractor.process(mono.data(), (int)frames, analysis);
@@ -319,6 +378,8 @@ void AudioCapture::run(std::wstring id, bool loopback) {
                 if (recordSink_) recordSink_(stereo.data(), frames, rate);
             }
         }
+        watchStop = true;
+        if (watcher.joinable()) watcher.join();
         pa_simple_free(s);
         running_ = false;
         if (failed && !stopRequested_) {

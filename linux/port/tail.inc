@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
 
     loadItems();
 
-    g.sources = AudioCapture::listSources();
+    refreshSources();   // fills in a moment later, off the UI thread
     startAudio();
     if (g.settings.checkForUpdates && g.settings.privacyNoticeSeen && !isDevVersion(APP_VERSION_STR) &&
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
@@ -413,6 +413,7 @@ int main(int argc, char** argv) {
         g.audio.analysis.sensitivity.store(g.settings.sensitivity);
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
 
+        pollSources();  // a device list that finished loading
         remoteTick();   // the phone remote
 
         // Visualizer.

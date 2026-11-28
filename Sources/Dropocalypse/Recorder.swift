@@ -2,6 +2,7 @@ import AVFoundation
 import CoreVideo
 import DropocalypseCore
 import Metal
+import os
 import QuartzCore
 
 /// Records the visuals (without the toolbar) and the music to an MP4 (H.264 + AAC).
@@ -222,48 +223,98 @@ final class Recorder: @unchecked Sendable {
 }
 
 /// The audio callbacks feed the recorder through this, so AudioCapture doesn't need to know
-/// about recording. Interleaves to stereo in a reusable buffer.
+/// about recording. The callbacks run on Core Audio's real-time thread, which must never wait,
+/// allocate or call into CoreMedia: `feed` only copies samples into a fixed ring buffer (and
+/// skips a buffer rather than wait if the lock is busy). A timer on its own queue drains the ring
+/// every 20 ms and does the CoreMedia work there.
 final class RecordingAudioTap: @unchecked Sendable {
     static let shared = RecordingAudioTap()
-    private let lock = NSLock()
-    private var recorder: Recorder?
-    private var scratch = [Float](repeating: 0, count: 16384)
-    private var pending = [Float]()        // batched to ~20 ms chunks to keep the writer light
-    private var pendingRate: Double = 0
 
-    func attach(_ recorder: Recorder?) {
-        lock.lock()
-        self.recorder = recorder
-        pending.removeAll(keepingCapacity: true)
-        lock.unlock()
+    private static let capacity = 1 << 20          // floats, stereo interleaved: about 5 s at 96 kHz
+    private let lockPtr: UnsafeMutablePointer<os_unfair_lock>
+    private let ring = UnsafeMutablePointer<Float>.allocate(capacity: RecordingAudioTap.capacity)
+    private let drained = UnsafeMutablePointer<Float>.allocate(capacity: RecordingAudioTap.capacity)
+    // Guarded by the lock. The indexes only grow; positions in the ring are index & (capacity - 1).
+    private var writeIndex = 0
+    private var readIndex = 0
+    private var ringRate: Double = 0
+    private var recorder: Recorder?
+
+    private let drainQueue = DispatchQueue(label: "dropocalypse.recording-audio", qos: .userInitiated)
+    private var timer: DispatchSourceTimer?    // drainQueue only
+
+    private init() {
+        lockPtr = .allocate(capacity: 1)
+        lockPtr.initialize(to: os_unfair_lock())
     }
 
+    func attach(_ recorder: Recorder?) {
+        if recorder == nil {
+            drainQueue.sync { drain() }   // the last few milliseconds go into the file too
+        }
+        os_unfair_lock_lock(lockPtr)
+        self.recorder = recorder
+        readIndex = writeIndex
+        os_unfair_lock_unlock(lockPtr)
+        drainQueue.async { [self] in
+            timer?.cancel()
+            timer = nil
+            guard recorder != nil else { return }
+            let t = DispatchSource.makeTimerSource(queue: drainQueue)
+            t.schedule(deadline: .now() + .milliseconds(20), repeating: .milliseconds(20), leeway: .milliseconds(5))
+            t.setEventHandler { [weak self] in self?.drain() }
+            t.resume()
+            timer = t
+        }
+    }
+
+    /// Real-time audio thread: copies up to two channels into the ring. No allocation, no waiting.
     func feed(_ list: UnsafeMutableAudioBufferListPointer, frameCount: Int, sampleRate: Double) {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let recorder, frameCount > 0 else { return }
-        if scratch.count < frameCount * 2 { scratch = [Float](repeating: 0, count: frameCount * 2) }
-        // Collect up to two channels from deinterleaved or interleaved buffers.
-        var channels: [(UnsafeMutablePointer<Float>, Int, Int)] = []   // (data, stride, offset)
+        guard frameCount > 0, os_unfair_lock_trylock(lockPtr) else { return }
+        defer { os_unfair_lock_unlock(lockPtr) }
+        guard recorder != nil else { return }
+        // Find the left and right channels in deinterleaved or interleaved buffers.
+        var left: (UnsafeMutablePointer<Float>, Int, Int)?
+        var right: (UnsafeMutablePointer<Float>, Int, Int)?
         for buffer in list {
             guard let data = buffer.mData?.assumingMemoryBound(to: Float.self) else { continue }
             let n = max(1, Int(buffer.mNumberChannels))
-            for c in 0..<n where channels.count < 2 { channels.append((data, n, c)) }
-        }
-        guard let left = channels.first else { return }
-        let right = channels.count > 1 ? channels[1] : left
-        if pendingRate != sampleRate { pending.removeAll(keepingCapacity: true); pendingRate = sampleRate }
-        pending.reserveCapacity(4096 * 2)
-        for i in 0..<frameCount {
-            pending.append(left.0[i * left.1 + left.2])
-            pending.append(right.0[i * right.1 + right.2])
-        }
-        let chunk = max(256, Int(sampleRate * 0.02))
-        if pending.count / 2 >= chunk {
-            pending.withUnsafeBufferPointer { buf in
-                recorder.appendAudio(buf.baseAddress!, frames: buf.count / 2, sampleRate: sampleRate)
+            for c in 0..<n {
+                if left == nil { left = (data, n, c) } else if right == nil { right = (data, n, c) }
             }
-            pending.removeAll(keepingCapacity: true)
+            if right != nil { break }
         }
+        guard let l = left else { return }
+        let r = right ?? l
+        if ringRate != sampleRate {   // a new input rate: start fresh rather than mix two rates
+            ringRate = sampleRate
+            readIndex = writeIndex
+        }
+        let mask = Self.capacity - 1
+        let room = (Self.capacity - (writeIndex - readIndex)) / 2
+        let frames = min(frameCount, room)
+        var w = writeIndex
+        for i in 0..<frames {
+            ring[w & mask] = l.0[i * l.1 + l.2]
+            ring[(w + 1) & mask] = r.0[i * r.1 + r.2]
+            w += 2
+        }
+        writeIndex = w
+    }
+
+    /// drainQueue: hands what the ring holds to the recorder.
+    private func drain() {
+        os_unfair_lock_lock(lockPtr)
+        let recorder = self.recorder, rate = ringRate
+        let count = writeIndex - readIndex
+        let mask = Self.capacity - 1
+        let start = readIndex & mask
+        let first = min(count, Self.capacity - start)
+        drained.update(from: ring + start, count: first)
+        if count > first { (drained + first).update(from: ring, count: count - first) }
+        readIndex = writeIndex
+        os_unfair_lock_unlock(lockPtr)
+        guard let recorder, count >= 2, rate > 0 else { return }
+        recorder.appendAudio(drained, frames: count / 2, sampleRate: rate)
     }
 }

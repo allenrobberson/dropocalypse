@@ -1382,6 +1382,35 @@ static void startAudio() {
     g.audio.start(g.settings.audioSource);
 }
 
+/// The input list. Linux asks PulseAudio, which can take a few seconds, so that runs off the
+/// UI thread and the list fills in when it's ready (pollSources, every frame).
+static std::mutex gSourcesMutex;
+static std::vector<AudioSource> gSourcesReady;
+static std::atomic<bool> gSourcesBusy{false}, gSourcesDone{false};
+
+static void refreshSources() {
+#ifdef _WIN32
+    g.sources = AudioCapture::listSources();
+#else
+    if (gSourcesBusy.exchange(true)) return;
+    std::thread([] {
+        std::vector<AudioSource> list = AudioCapture::listSources();
+        {
+            std::lock_guard<std::mutex> lock(gSourcesMutex);
+            gSourcesReady = std::move(list);
+        }
+        gSourcesDone = true;
+        gSourcesBusy = false;
+    }).detach();
+#endif
+}
+
+static void pollSources() {
+    if (!gSourcesDone.exchange(false)) return;
+    std::lock_guard<std::mutex> lock(gSourcesMutex);
+    g.sources = std::move(gSourcesReady);
+}
+
 // ---------------------------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------------------------
@@ -1716,7 +1745,7 @@ static void remoteAct(const std::string& id, const FlatJson& m) {
     else if (id == "milk.rescan") g.milkRescan = true;
     else if (id == "milk.remove") { g.settings.milkFolder.clear(); g.milkRescan = true; }
     else if (id == "motion.reset") resetMotion(r);
-    else if (id == "audio.refresh") g.sources = AudioCapture::listSources();
+    else if (id == "audio.refresh") refreshSources();
     else if (id == "audio.restart") startAudio();
     else {
         // Logos and text.
@@ -2028,7 +2057,7 @@ static void audioPanelBody() {
         }
         ImGui::EndCombo();
     }
-    if (ui3d::button("Refresh devices")) g.sources = AudioCapture::listSources();
+    if (ui3d::button("Refresh devices")) refreshSources();
     ImGui::SameLine();
     if (ui3d::button("Restart audio")) startAudio();
     ui3d::beginWell();
@@ -2914,7 +2943,7 @@ int main(int argc, char** argv) {
 
     loadItems();
 
-    g.sources = AudioCapture::listSources();
+    refreshSources();   // fills in a moment later, off the UI thread
     startAudio();
     if (g.settings.checkForUpdates && g.settings.privacyNoticeSeen && !isDevVersion(APP_VERSION_STR) &&
         (long long)std::time(nullptr) - g.settings.lastUpdateCheck > 20 * 3600)
@@ -2981,6 +3010,7 @@ int main(int argc, char** argv) {
         g.audio.analysis.sensitivity.store(g.settings.sensitivity);
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
 
+        pollSources();  // a device list that finished loading
         remoteTick();   // the phone remote
 
         // Visualizer.
