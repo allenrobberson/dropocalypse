@@ -102,5 +102,38 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "msstore reconfigure failed" }
           msstore settings --enableTelemetry false --output-stream stdout
           if ($LASTEXITCODE -ne 0) { Write-Host "::warning::Couldn't turn off Microsoft Store CLI telemetry. Continuing." }
-          msstore publish $msix.FullName -id $productId --output-stream stdout
-          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed. If Partner Center has a draft submission that was created in the browser, delete that draft and run this again. The first age-ratings questionnaire still has to be completed in Partner Center. See docs/microsoft-store/submission.md." }
+          # Upload the package as a draft, set "What's new in this version", then submit.
+          msstore publish $msix.FullName -id $productId --noCommit --output-stream stdout
+          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed. If Partner Center has a draft submission that was created in the browser, delete that draft and run this again. If the previous version is still in certification, wait until it is published. See docs/microsoft-store/submission.md." }
+
+          # The text under "## What's new in this version" in docs/microsoft-store/listing.md.
+          $notes = ""
+          $inSection = $false
+          foreach ($line in Get-Content docs/microsoft-store/listing.md) {
+            if ($line -match '^## ') { $inSection = $line -match "What's new in this version"; continue }
+            if ($inSection -and $line.Trim()) { $notes = ($notes + " " + $line.Trim()).Trim() }
+          }
+          if (-not $notes.Contains($env:STORE_VERSION)) {
+            Write-Host "::warning::docs/microsoft-store/listing.md has no notes for $($env:STORE_VERSION); keeping the previous What's new text."
+          } else {
+            try {
+              $raw = (msstore submission get $productId 2>&1 | Out-String)
+              $start = $raw.IndexOf('{'); $end = $raw.LastIndexOf('}')
+              if ($start -lt 0 -or $end -le $start) { throw "no submission JSON" }
+              $sub = $raw.Substring($start, $end - $start + 1) | ConvertFrom-Json
+              $langs = @($sub.listings.PSObject.Properties)
+              if ($langs.Count -eq 0) { throw "the submission has no listings" }
+              foreach ($l in $langs) {
+                if ($null -eq $l.Value.baseListing) { continue }
+                $l.Value.baseListing | Add-Member -NotePropertyName releaseNotes -NotePropertyValue $notes -Force
+                Write-Host "What's new set for $($l.Name)"
+              }
+              $sub | ConvertTo-Json -Depth 30 | Set-Content -Encoding utf8 submission.json
+              msstore submission update $productId --payload submission.json
+              if ($LASTEXITCODE -ne 0) { throw "msstore submission update failed" }
+            } catch {
+              Write-Host "::warning::Couldn't set What's new automatically ($($_.Exception.Message)). The package is still submitted; edit the text in Partner Center if needed."
+            }
+          }
+          msstore submission publish $productId
+          if ($LASTEXITCODE -ne 0) { throw "msstore submission publish failed. The draft is in Partner Center: submit it there, or delete it and run this again." }

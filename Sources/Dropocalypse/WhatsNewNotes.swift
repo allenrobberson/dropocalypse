@@ -3,6 +3,12 @@
 enum WhatsNewNotes {
     /// Newest first. Each bullet may use **bold** (rendered as Markdown).
     static let entries: [(version: String, items: [String])] = [
+        ("1.6.7", [
+            "**Smoother recordings on the Mac.** Recording no longer does its work on the audio system's own thread, so the sound can't stutter or drop while you record.",
+            "**Linux follows your speakers.** Switch between speakers, headphones or HDMI and Dropocalypse follows within a couple of seconds. The device list no longer freezes the window while it loads.",
+            "**More reliable recording and audio.** Stopping a recording on Linux can't get stuck, long pauses (a sleeping laptop) no longer use lots of memory, and on Windows the audio reconnects by itself if the input stops working.",
+            "**Safer updates.** Updates only download from GitHub, and on Windows every part of the app must be replaced before the new version starts. On the Mac, the spectrum bars now match your input's sample rate.",
+        ]),
         ("1.6.6", [
             "**Add your logo from your phone.** In the phone remote, **Add logo** opens your photos or camera, and the picture shows up in Dropocalypse right away. You can also add text, change its words, font and color, move items around, replace or remove them.",
             "**Transparent background in one tap.** If your picture has a plain background, the phone offers to remove it and shows you a preview first.",

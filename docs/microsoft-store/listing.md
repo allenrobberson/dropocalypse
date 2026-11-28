@@ -48,7 +48,7 @@ Dropocalypse is free and open source under the MIT license. Source code, guide a
 Note: Dropocalypse shows rapidly changing, flashing visuals. Viewer discretion is advised for people with photosensitive epilepsy.
 
 ## What's new in this version
-New in 1.6.6: Phone remote. Turn it on in the new Phone menu, scan the QR code and control Dropocalypse from your phone's web browser, with no app to install. Change styles and auto-cycle, pick MilkDrop presets, adjust Motion, Logo look, Audio and Look, and add a logo straight from your phone's photos or camera. If the picture has a plain background, the phone can make it transparent in one tap. Your phone and PC need to be on the same Wi-Fi (or the PC joins your phone's hotspot).
+New in 1.6.7: Reliability fixes. Audio reconnects by itself if the input stops working, long pauses during a recording no longer use lots of memory, updates only download from GitHub, and every part of the app is replaced before an update starts. Also in this release: the phone remote (new in 1.6.6). Turn it on in the Phone menu, scan the QR code and control Dropocalypse from your phone's web browser, including adding a logo from your photos with one-tap background removal.
 
 ## Product features (up to 20, short)
 - 31 music-reactive styles plus MilkDrop presets

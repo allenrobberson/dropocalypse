@@ -119,11 +119,11 @@ Play music and the visuals swirl, zoom and pulse. It listens straight to what yo
 
 ## 🆕 What's new
 
+### 1.6.7: reliability fixes
+- 🛠 **Steadier recording and audio**: Mac recording no longer runs on the real-time audio thread, Linux Stop can't hang and Linux follows your speakers or HDMI when you switch, Windows audio reconnects after capture errors, and updates only download from GitHub.
+
 ### 1.6.6: logos from your phone
 - 📱 **Phone remote: logos and more.** **Add logo** opens your phone's photos or camera; plain backgrounds can be made transparent in one tap (with a preview). Add and edit text, reorder, replace and remove items, and use **Logo look**, **Audio** and **Look** from the phone.
-
-### 1.6.5: phone remote (preview)
-- 📱 **Phone remote**: turn it on in the **Phone** menu, press **Show QR code** and scan it with your phone. The phone's browser shows the controls (no app to install): styles, auto-cycle, your MilkDrop presets and the Motion sliders, with more coming. The phone and computer must be on the same Wi-Fi (or the computer joins your phone's hotspot). See [Phone Remote](../../wiki/Phone-Remote).
 
 **[See every update in the Changelog →](../../wiki/Changelog)**
 

@@ -2,6 +2,14 @@
 
 All versions are on the [Releases page](https://github.com/allenrobberson/dropocalypse/releases). Each release has Mac, Windows and Linux downloads plus the PDF guide.
 
+## 1.6.7
+- 🎙 **Mac recording off the real-time audio thread.** The audio callback only copies samples into a fixed buffer; a separate queue writes them to the video, so recording can't cause audio dropouts.
+- 🐧 **Linux audio.** "What this computer is playing" (and the default microphone) follow a change of output or input within about 2 seconds. The device list loads in the background instead of freezing the window for up to 3 seconds.
+- ⏺ **Recording.** Linux Stop and Quit can't hang when ffmpeg fails early or stops reading. On Windows and Linux, a long pause (for example a sleeping laptop) fills the gap in small steps instead of building minutes of silence in memory.
+- 🎚 **Audio.** Windows reconnects after repeated capture errors, not only when a device is unplugged. A Mac microphone restart can't revive an old audio engine. The Mac spectrum bars use the input's real sample rate (44.1, 48 or 96 kHz).
+- 🔒 **Updates.** Update now downloads only from GitHub (checked again after redirects). On Windows, the program and all its DLLs must be replaced, with retries, before the new version starts.
+- 🧰 **Releases.** The Mac notarization step keeps the full checksum list, the AppImage packager is pinned and checked, and workflow inputs no longer reach shell commands directly.
+
 ## 1.6.6
 - 📱 **Logos from your phone.** In the phone remote, **Add logo** opens the phone's photos or camera. The phone turns the picture (HEIC, JPG, PNG, rotated camera shots) into an upright PNG up to 1600 pixels and sends it to the app, where it's added like a dropped file (or swapped in with **Replace...**). The 4-item limit applies.
 - ✂️ **Background removal.** When a picture has no transparency, the phone asks whether to make its background transparent and shows a preview on a checkerboard, with an option to also clear enclosed areas such as the inside of letters. Works best for logos on a plain background.
