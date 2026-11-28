@@ -47,6 +47,7 @@
   </Applications>
 
   <Capabilities>
+    <Capability Name="privateNetworkClientServer" />
     <rescap:Capability Name="runFullTrust" />
     <DeviceCapability Name="microphone" />
   </Capabilities>

@@ -39,6 +39,8 @@ jobs:
           python3 scripts/make-whats-new.py --check
           if [ -n "$RELEASE_VERSION" ]; then python3 scripts/make-whats-new.py --has "${RELEASE_VERSION#v}"; fi
           python3 scripts/make-milkdrop-bundle.py --check
+          python3 scripts/make-remote-assets.py --check
+          python3 scripts/check-remote-schema.py
 
       - name: Build projectM (MilkDrop engine)
         run: scripts/build-projectm.sh build/projectm
@@ -286,7 +288,7 @@ jobs:
           cp -P build/projectm/lib/libprojectM-4.so* build-linux/
 
       - name: Unit tests (shared update, auto-cycle and layout rules)
-        run: ./build-linux/dropocalypse_tests
+        run: ./build-linux/dropocalypse_tests && ./build-linux/remote_server_tests
 
       - name: Self-test under a virtual display
         run: |

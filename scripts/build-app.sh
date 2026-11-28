@@ -59,6 +59,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>ITSAppUsesNonExemptEncryption</key><false/>
     <key>NSAudioCaptureUsageDescription</key>
     <string>Dropocalypse listens to the audio your Mac is playing (for example Spotify) so the visuals can react to it.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Dropocalypse uses your local network for the phone remote, so you can control the visuals from your phone's web browser. It is off until you turn it on.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Dropocalypse listens to your microphone or line-in so the visuals and your logo can move with the music. Audio is analyzed live and never recorded or sent anywhere.</string>
 </dict>

@@ -10,6 +10,8 @@
 #include "renderer.h"
 #include "milkdrop.h"
 #include "milkdrop_bundled.h"
+#include "remote_json.h"
+#include "remote_server.h"
 
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(Dropocalypse LANGUAGES CXX RC)
+project(Dropocalypse LANGUAGES C CXX RC)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +24,9 @@ add_executable(Dropocalypse WIN32
     src/logo.cpp
     src/recorder.cpp
     src/milkdrop_host.cpp
+    ../shared/remote/remote_server.cpp
+    ../shared/remote/qrcodegen.c
+    src/remote_json.h
     src/recorder.h
     src/milkdrop.h
     src/milkdrop_host.h
@@ -41,15 +44,15 @@ add_executable(Dropocalypse WIN32
     dropocalypse.rc
 )
 
-target_include_directories(Dropocalypse PRIVATE src ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_include_directories(Dropocalypse PRIVATE src ../shared/remote ../shared/remote/include ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_compile_definitions(Dropocalypse PRIVATE UNICODE _UNICODE APP_VERSION_STR="${APP_VERSION}")
 option(DROPOCALYPSE_STORE "Build the Microsoft Store edition (no built-in updater)" OFF)
 if(DROPOCALYPSE_STORE)
     target_compile_definitions(Dropocalypse PRIVATE STORE_EDITION)
 endif()
-target_compile_options(Dropocalypse PRIVATE /W3 /permissive- /utf-8 /MP)
+target_compile_options(Dropocalypse PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W3 /permissive- /utf-8 /MP>)
 target_link_libraries(Dropocalypse PRIVATE
-    d3d11 dxgi d3dcompiler opengl32 ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt crypt32 wintrust mfplat mfreadwrite mfuuid)
+    d3d11 dxgi d3dcompiler opengl32 ole32 oleaut32 avrt winmm windowscodecs shell32 uuid propsys winhttp bcrypt crypt32 wintrust mfplat mfreadwrite mfuuid ws2_32)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -62,4 +65,9 @@ if(BUILD_TESTING)
         target_compile_options(dropocalypse_tests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME core_logic COMMAND dropocalypse_tests)
+    add_executable(remote_server_tests ../shared/remote/tests/remote_server_test.cpp
+        ../shared/remote/remote_server.cpp ../shared/remote/qrcodegen.c)
+    target_include_directories(remote_server_tests PRIVATE ../shared/remote ../shared/remote/include)
+    target_link_libraries(remote_server_tests PRIVATE ws2_32)
+    add_test(NAME remote_server COMMAND remote_server_tests)
 endif()

@@ -413,6 +413,8 @@ int main(int argc, char** argv) {
         g.audio.analysis.sensitivity.store(g.settings.sensitivity);
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
 
+        remoteTick();   // the phone remote
+
         // Visualizer.
         if (g.milkRescan) refreshMilkdrop();
         g.renderer.render(0, g.width, g.height, g.audio.analysis, g.audio.sampleRate.load(), g.settings.r);

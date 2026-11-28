@@ -28,6 +28,8 @@ final class AppSettings: ObservableObject {
     /// 0 = landscape (fills the window). 1 = portrait, a centered 9:16 frame. Recordings match it.
     @AppStorage("pictureOrientation") var pictureOrientation: Int = 0
     @AppStorage("recordFolderBookmark") var recordFolderBookmark: Data = Data()
+    /// Serve the phone remote on the local network (PhoneRemote.swift).
+    @AppStorage("phoneRemote") var phoneRemote: Bool = false
 
     private var skipped: Set<String> {
         Set(cycleSkip.split(separator: "\n").map(String.init))

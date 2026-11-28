@@ -10,6 +10,8 @@ final class VisualizerModel: NSObject, ObservableObject {
     let settings = AppSettings()
     let capture = AudioCapture()
     let updates = UpdateChecker()
+    /// The phone remote (PhoneRemote.swift).
+    private(set) lazy var phone = PhoneRemote(model: self)
 
     // Top toolbar auto-hide.
     @Published private(set) var toolbarVisible = true
@@ -85,6 +87,7 @@ final class VisualizerModel: NSObject, ObservableObject {
             self.openPopover = "update"
         }
         updates.checkAutomatically(enabled: settings.checkForUpdates)
+        _ = phone   // starts the server when Phone remote was left on
         if UserDefaults.standard.bool(forKey: "controlsDetached") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.detachControls() }
         }

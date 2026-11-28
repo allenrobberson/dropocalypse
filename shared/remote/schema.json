@@ -1,0 +1,92 @@
+{
+  "about": "The one description of the detached controls window, used by the phone remote page and checked against the Mac, Windows and Linux apps (scripts/check-remote-schema.py). Each section lists its items top to bottom. An item may say \"only\": [platforms], and may override any of its fields for one platform under \"mac\", \"windows\" or \"linux\". Values are read and written by id; buttons send their act id.",
+  "version": 1,
+  "order": {
+    "mac": ["visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "updates", "keys"],
+    "windows": ["updates", "visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "keys"],
+    "linux": ["updates", "visuals", "record", "logos", "style", "motion", "logolook", "audio", "look", "keys"]
+  },
+  "sections": [
+    {
+      "id": "style",
+      "kind": "heading",
+      "title": "Style",
+      "items": [
+        {"type": "stylePicker", "id": "style.index", "prev": "style.prev", "next": "style.next"},
+        {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["mac"]},
+        {
+          "type": "collapsible",
+          "title": "Styles and auto-cycle",
+          "open": true,
+          "mac": {"title": "Styles", "open": false, "hint": "Click a name to show it. Checked styles are the ones auto-cycle rotates through."},
+          "items": [
+            {"type": "well", "items": [
+              {"type": "slider", "id": "style.cycleSeconds", "label": "Change style every", "min": 5, "max": 360, "format": "%.0f s"}
+            ]},
+            {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["windows", "linux"]},
+            {"type": "hint", "text": "Checked = included in auto-cycle", "only": ["windows", "linux"]},
+            {"type": "row", "items": [
+              {"type": "toggle", "id": "style.autoCycle", "label": "Auto-cycle (A)", "only": ["mac"]},
+              {"type": "button", "act": "style.cycleAll", "label": "All", "small": true},
+              {"type": "button", "act": "style.cycleNone", "label": "None", "small": true}
+            ]},
+            {"type": "styleList", "id": "style.index", "cycle": "style.cycle", "setCycle": "style.setCycle",
+             "milkdropHeading": "MilkDrop"},
+            {
+              "type": "milkFolder",
+              "id": "milk.status",
+              "heading": "Your MilkDrop presets",
+              "emptyHint": "Pick a folder of .milk files (subfolders too), for example a MilkDrop or NestDrop \"Presets\" folder. A \"Textures\" folder next to it is used as well.",
+              "choose": {"act": "milk.choose", "label": "Choose folder...", "mac": {"label": "Choose Folder…"}},
+              "change": {"act": "milk.choose", "label": "Change folder...", "mac": {"label": "Change…"}},
+              "buttons": [
+                {"act": "milk.open", "label": "Open"},
+                {"act": "milk.rescan", "label": "Rescan"},
+                {"act": "milk.remove", "label": "Remove"}
+              ],
+              "scanning": "Looking for presets…",
+              "none": "No .milk files found in this folder.",
+              "count": "%d presets",
+              "countTruncated": "First %d presets",
+              "cycleUser": {"id": "milk.cycleUser", "label": "Include these in auto-cycle",
+                            "mac": {"label": "Include these %d presets in auto-cycle", "labelTruncated": "Include these %d presets in auto-cycle (first %d)"}},
+              "search": "Search presets",
+              "noMatch": "No presets match.",
+              "mac": {"count": "", "countTruncated": ""}
+            },
+            {"type": "cycleSummary", "id": "style.cycle",
+             "none": "Nothing checked: auto-cycle uses every style",
+             "some": "Auto-cycle: %d of %d styles",
+             "plusUser": ", plus your presets",
+             "mac": {"none": "Nothing checked, so auto-cycle uses every style."}}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "motion",
+      "kind": "collapsible",
+      "title": "Motion",
+      "open": true,
+      "items": [
+        {"type": "hint", "text": "Your logo's moves, driven by the bass", "only": ["mac"]},
+        {"type": "well", "items": [
+          {"type": "slider", "id": "motion.pulse", "label": "Pulse", "min": 0, "max": 1.5},
+          {"type": "slider", "id": "motion.squash", "label": "Squash & stretch", "min": 0, "max": 1.5},
+          {"type": "slider", "id": "motion.bounce", "label": "Bounce", "min": 0, "max": 1.5},
+          {"type": "slider", "id": "motion.slide", "label": "Slide", "min": 0, "max": 1.5},
+          {"type": "slider", "id": "motion.wobble", "label": "Wobble", "min": 0, "max": 1.5}
+        ]},
+        {"type": "label", "text": "Logo layers"},
+        {"type": "well", "items": [
+          {"type": "slider", "id": "layers.wave", "label": "Wave", "min": 0, "max": 100, "format": "%.0f"},
+          {"type": "slider", "id": "layers.explode", "label": "Explode", "min": 0, "max": 100, "format": "%.0f"},
+          {"type": "slider", "id": "layers.bands", "label": "Bands", "min": 0, "max": 100, "format": "%.0f"},
+          {"type": "slider", "id": "layers.scatter", "label": "Scatter", "min": 0, "max": 100, "format": "%.0f"}
+        ]},
+        {"type": "hint", "text": "Each separate shape in your logo (a letter, an icon) moves on its own. 0 = still, 100 = super wild; mix as many as you like. Wave: hops left to right. Explode: bursts outward. Bands: rides the bass/mid/treble. Scatter: flies every which way."},
+        {"type": "button", "act": "motion.reset", "label": "Reset to defaults"}
+      ]
+    }
+  ]
+}

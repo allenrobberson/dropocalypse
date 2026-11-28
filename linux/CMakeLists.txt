@@ -41,6 +41,8 @@ add_executable(dropocalypse
     src/logo.cpp
     src/recorder.cpp
     src/milkdrop_host.cpp
+    ../shared/remote/remote_server.cpp
+    ../shared/remote/qrcodegen.c
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
@@ -49,14 +51,18 @@ add_executable(dropocalypse
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 # windows/src supplies the shared, platform-free headers (scenes.h, core_logic.h).
-target_include_directories(dropocalypse PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR}/../windows/src ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends ${stb_SOURCE_DIR})
+target_include_directories(dropocalypse PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR}/../windows/src ${CMAKE_CURRENT_SOURCE_DIR}/../shared/remote ${CMAKE_CURRENT_SOURCE_DIR}/../shared/remote/include ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends ${stb_SOURCE_DIR})
 target_compile_definitions(dropocalypse PRIVATE APP_VERSION_STR="${APP_VERSION}")
-target_compile_options(dropocalypse PRIVATE -Wall -Wno-unused-function -Wno-missing-field-initializers)
+target_compile_options(dropocalypse PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wno-unused-function -Wno-missing-field-initializers>)
 target_link_libraries(dropocalypse PRIVATE glfw OpenGL::GL CURL::libcurl PkgConfig::PULSE Threads::Threads ${CMAKE_DL_LIBS})
 
 # Unit tests for the shared update / auto-cycle / layout rules (same file the Windows build runs).
 add_executable(dropocalypse_tests ../windows/tests/core_logic_test.cpp)
 target_include_directories(dropocalypse_tests PRIVATE ../windows/src)
+add_executable(remote_server_tests ../shared/remote/tests/remote_server_test.cpp
+    ../shared/remote/remote_server.cpp ../shared/remote/qrcodegen.c)
+target_include_directories(remote_server_tests PRIVATE ../shared/remote ../shared/remote/include)
+target_link_libraries(remote_server_tests PRIVATE Threads::Threads)
 
 install(TARGETS dropocalypse RUNTIME DESTINATION bin)
 install(FILES dropocalypse.desktop DESTINATION share/applications)

@@ -11,6 +11,8 @@
     <key>com.apple.security.files.bookmarks.app-scope</key><true/>
     <!-- Recordings are saved to Movies by default. -->
     <key>com.apple.security.assets.movies.read-write</key><true/>
+    <!-- Phone remote: a small web server on the local network (off until the user turns it on). -->
+    <key>com.apple.security.network.server</key><true/>
     <key>com.apple.application-identifier</key><string>FZAS899962.io.github.allenrobberson.dropocalypse</string>
     <key>com.apple.developer.team-identifier</key><string>FZAS899962</string>
 </dict>

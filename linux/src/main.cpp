@@ -12,6 +12,8 @@
 #include "renderer.h"
 #include "milkdrop.h"
 #include "milkdrop_bundled.h"
+#include "remote_json.h"
+#include "remote_server.h"
 
 #include <GLFW/glfw3.h>
 #include <curl/curl.h>
@@ -149,6 +151,7 @@ struct AppSettings {
     std::wstring recordFolder;        // empty = the Videos folder
     int frameCap = 0;                 // 0 = the display refresh, otherwise 30 or 60
     std::wstring milkFolder;          // the user's own MilkDrop presets (searched with subfolders)
+    bool phoneRemote = false;         // serve the phone remote on the local network
 };
 
 static std::wstring appDataDir() {
@@ -190,6 +193,7 @@ static std::string serialize(const AppSettings& s) {
     out += "frameCap=" + std::to_string(s.frameCap) + "\n";
     out += std::string("portrait=") + (s.r.portrait ? "1" : "0") + "\n";
     out += "recordFolder=" + narrow(s.recordFolder) + "\n";
+    out += std::string("phoneRemote=") + (s.phoneRemote ? "1" : "0") + "\n";
     out += serializeItems(s.items);
     return out;
 }
@@ -255,6 +259,7 @@ static bool loadSettings(const std::wstring& path, AppSettings& s) {
     flag("privacyNoticeSeen", s.privacyNoticeSeen);
     if (kv.count("whatsNewLastSeen")) s.whatsNewLastSeen = kv["whatsNewLastSeen"];
     flag("controlsDetached", s.controlsDetached);
+    flag("phoneRemote", s.phoneRemote);
     if (kv.count("recordQuality")) s.recordQuality = std::clamp(std::atoi(kv["recordQuality"].c_str()), 0, 2);
     if (kv.count("frameCap")) {
         int cap = std::atoi(kv["frameCap"].c_str());
@@ -1541,6 +1546,249 @@ static void itemsEditor(float width) {
     ImGui::PopTextWrapPos();
 }
 
+// ---- Phone remote: the web server (shared/remote), its QR code, and the options it can change.
+// The phone page is built from shared/remote/schema.json; every id there is read in
+// remoteValues() and written in remoteSet() / remoteAct() (scripts/check-remote-schema.py checks).
+struct PhoneRemote {
+    RemoteServer* server = nullptr;
+    bool failed = false;
+    std::string error;
+    std::map<std::string, std::string> sent;   // id -> the JSON value the phones last got
+    std::string stylesKey;                      // describes the style list the phones last got
+    double lastSync = 0;
+    std::string qrFor;
+    std::vector<unsigned char> qr;
+    int qrSize = 0;
+};
+static PhoneRemote gRemote;
+
+static const char* remotePlatform() {
+#ifdef _WIN32
+    return "windows";
+#else
+    return "linux";
+#endif
+}
+
+/// The value of every option the phone shows, as JSON.
+static void remoteValues(std::vector<std::pair<std::string, std::string>>& out) {
+    RenderSettings& r = g.settings.r;
+    const auto& scenes = allScenes();
+    const int n = (int)scenes.size();
+    const int bundledEnd = std::min(n, kBuiltInSceneCount + g.milkCatalog.bundledCount);
+    auto num = [&](const char* id, float v) { out.emplace_back(id, jsonNumber(v)); };
+    auto flag = [&](const char* id, bool v) { out.emplace_back(id, v ? "true" : "false"); };
+    out.emplace_back("style.index", std::to_string(((r.sceneIndex % n) + n) % n));
+    flag("style.autoCycle", r.autoCycle);
+    num("style.cycleSeconds", r.cycleSeconds);
+    std::string cycle;
+    for (int i = 0; i < bundledEnd; ++i) cycle += r.inCycle(i) ? '1' : '0';
+    out.emplace_back("style.cycle", jsonQuote(cycle));
+    std::string milk = "{\"available\":" + std::string(g.milkHost.available() ? "true" : "false");
+    milk += ",\"error\":" + jsonQuote(g.milkHost.available() ? "" : g.milkHost.error().empty()
+                                          ? "The MilkDrop engine isn't available." : g.milkHost.error());
+    milk += ",\"folder\":" + jsonQuote(narrow(g.settings.milkFolder));
+    milk += ",\"count\":" + std::to_string(g.settings.milkFolder.empty() ? 0 : g.milkCatalog.userCount());
+    milk += std::string(",\"truncated\":") + (g.milkCatalog.userTruncated ? "true" : "false") + ",\"scanning\":false}";
+    out.emplace_back("milk.status", milk);
+    flag("milk.cycleUser", r.cycleUserPresets);
+    num("motion.pulse", r.pulse);
+    num("motion.squash", r.squash);
+    num("motion.bounce", r.bounce);
+    num("motion.slide", r.slide);
+    num("motion.wobble", r.wobble);
+    num("layers.wave", r.layers.wave);
+    num("layers.explode", r.layers.explode);
+    num("layers.bands", r.layers.bands);
+    num("layers.scatter", r.layers.scatter);
+}
+
+/// A "set" from the phone.
+static void remoteSet(const std::string& id, const FlatJson& m) {
+    RenderSettings& r = g.settings.r;
+    const double v = m.n("v");
+    auto clampTo = [&](float& f, float lo, float hi) { f = std::min(hi, std::max(lo, (float)v)); };
+    struct Slider { const char* id; float* f; float lo, hi; };
+    const Slider sliders[] = {
+        {"style.cycleSeconds", &r.cycleSeconds, 5, 360},
+        {"motion.pulse", &r.pulse, 0, 1.5f},       {"motion.squash", &r.squash, 0, 1.5f},
+        {"motion.bounce", &r.bounce, 0, 1.5f},     {"motion.slide", &r.slide, 0, 1.5f},
+        {"motion.wobble", &r.wobble, 0, 1.5f},     {"layers.wave", &r.layers.wave, 0, 100},
+        {"layers.explode", &r.layers.explode, 0, 100}, {"layers.bands", &r.layers.bands, 0, 100},
+        {"layers.scatter", &r.layers.scatter, 0, 100},
+    };
+    for (const auto& s : sliders)
+        if (id == s.id) { clampTo(*s.f, s.lo, s.hi); return; }
+    if (id == "style.index") {
+        const int n = (int)allScenes().size();
+        r.sceneIndex = std::clamp((int)v, 0, n - 1);
+    } else if (id == "style.autoCycle") r.autoCycle = v != 0;
+    else if (id == "milk.cycleUser") r.cycleUserPresets = v != 0;
+}
+
+/// An "act" (a button) from the phone.
+static void remoteAct(const std::string& id, const FlatJson& m) {
+    RenderSettings& r = g.settings.r;
+    if (id == "style.prev") nextScene(-1);
+    else if (id == "style.next") nextScene(1);
+    else if (id == "style.cycleAll") r.cycleSkip = 0;
+    else if (id == "style.cycleNone") {
+        const int n = (int)allScenes().size();
+        const int bundledEnd = kBuiltInSceneCount + g.milkCatalog.bundledCount;
+        const int fixed = std::min(n, 64);
+        r.cycleSkip = fixed >= 64 ? ~0ull : ((1ull << std::min(fixed, bundledEnd)) - 1);
+    } else if (id == "style.setCycle") r.setInCycle((int)m.n("i", -1), m.n("v") != 0);
+    else if (id == "milk.choose") chooseMilkFolder();
+    else if (id == "milk.open") openMilkFolder();
+    else if (id == "milk.rescan") g.milkRescan = true;
+    else if (id == "milk.remove") { g.settings.milkFolder.clear(); g.milkRescan = true; }
+    else if (id == "motion.reset") resetMotion(r);
+}
+
+static std::string remoteStylesMessage() {
+    const auto& scenes = allScenes();
+    std::string m = "{\"t\":\"styles\",\"builtIn\":" + std::to_string(kBuiltInSceneCount) +
+                    ",\"bundledEnd\":" + std::to_string(kBuiltInSceneCount + g.milkCatalog.bundledCount) +
+                    ",\"userStart\":" + std::to_string(g.settings.r.userPresetStart) + ",\"names\":[";
+    for (size_t i = 0; i < scenes.size(); ++i) m += (i ? "," : "") + jsonQuote(scenes[i].name);
+    return m + "]}";
+}
+
+/// Runs every frame: starts / stops the server, applies what the phones changed and sends them
+/// what changed in the app (about ten times a second).
+static void remoteTick() {
+    if (!g.settings.phoneRemote) {
+        if (gRemote.server) remote_stop(gRemote.server);
+        gRemote = PhoneRemote();
+        return;
+    }
+    if (!gRemote.server) {
+        if (gRemote.failed) return;
+        gRemote.server = remote_start(47800, remotePlatform());
+        if (!gRemote.server) {
+            gRemote.failed = true;
+            gRemote.error = remote_last_error();
+            return;
+        }
+    }
+    if (std::getenv("DROPOCALYPSE_REMOTE_LOG")) {   // for testing: print each new pairing address
+        static std::string logged;
+        const std::string url = remote_pair_url(gRemote.server);
+        if (url != logged) { logged = url; std::fprintf(stderr, "phone remote: %s\n", url.c_str()); std::fflush(stderr); }
+    }
+    RemoteEvent ev;
+    bool fresh = false;
+    while (remote_next_event(gRemote.server, &ev)) {
+        if (ev.type == REMOTE_EVENT_CONNECTED) {
+            const std::string styles = remoteStylesMessage();
+            remote_send(gRemote.server, ev.client, styles.data(), styles.size());
+            std::vector<std::pair<std::string, std::string>> vals;
+            remoteValues(vals);
+            std::string m = "{\"t\":\"state\",\"v\":{";
+            for (size_t i = 0; i < vals.size(); ++i) m += (i ? "," : "") + jsonQuote(vals[i].first) + ":" + vals[i].second;
+            m += "}}";
+            remote_send(gRemote.server, ev.client, m.data(), m.size());
+        } else if (ev.type == REMOTE_EVENT_MESSAGE) {
+            FlatJson msg;
+            if (!parseFlatJson(std::string(ev.data, ev.size), msg)) continue;
+            const std::string t = msg.s("t"), id = msg.s("id");
+            if (t == "set") remoteSet(id, msg);
+            else if (t == "act") remoteAct(id, msg);
+            g.lastActivity = nowSeconds();
+            fresh = true;
+        }
+    }
+    const double now = nowSeconds();
+    if (!fresh && now - gRemote.lastSync < 0.1) return;
+    gRemote.lastSync = now;
+    if (remote_client_count(gRemote.server) == 0) {
+        gRemote.sent.clear();
+        gRemote.stylesKey.clear();
+        return;
+    }
+    const auto& scenes = allScenes();
+    const std::string key = std::to_string(scenes.size()) + "/" + std::to_string(g.settings.r.userPresetStart) +
+                            "/" + std::to_string(g.milkCatalog.bundledCount) + "/" +
+                            (scenes.empty() ? "" : scenes.back().name);
+    if (key != gRemote.stylesKey) {
+        gRemote.stylesKey = key;
+        const std::string styles = remoteStylesMessage();
+        remote_send(gRemote.server, -1, styles.data(), styles.size());
+    }
+    std::vector<std::pair<std::string, std::string>> vals;
+    remoteValues(vals);
+    std::string diff;
+    for (const auto& kv : vals) {
+        auto it = gRemote.sent.find(kv.first);
+        if (it != gRemote.sent.end() && it->second == kv.second) continue;
+        gRemote.sent[kv.first] = kv.second;
+        diff += (diff.empty() ? "" : ",") + jsonQuote(kv.first) + ":" + kv.second;
+    }
+    if (diff.empty()) return;
+    const std::string m = "{\"t\":\"state\",\"v\":{" + diff + "}}";
+    remote_send(gRemote.server, -1, m.data(), m.size());
+}
+
+/// The Phone remote panel: the switch, the QR code to scan and the connected phones.
+static void phonePanelBody() {
+    if (ui3d::toggle("Phone remote", &g.settings.phoneRemote) && g.settings.phoneRemote) gRemote.failed = false;
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Control Dropocalypse from your phone's web browser. No app to install.");
+    if (!g.settings.phoneRemote) { ImGui::PopTextWrapPos(); return; }
+    if (!gRemote.server) {
+        ImGui::TextColored(ui3d::col::red, "%s", gRemote.error.empty() ? "Starting..." : gRemote.error.c_str());
+        ImGui::PopTextWrapPos();
+        return;
+    }
+    const std::string url = remote_pair_url(gRemote.server);
+    if (url.empty()) {
+        ImGui::TextColored(ui3d::col::red, "No local network found. Connect this computer to Wi-Fi (or to your "
+                                           "phone's hotspot) to use the phone remote.");
+    } else {
+        if (url != gRemote.qrFor) {
+            gRemote.qrFor = url;
+            gRemote.qr.assign(177 * 177, 0);
+            gRemote.qrSize = remote_qr(url.c_str(), gRemote.qr.data(), (int)gRemote.qr.size());
+        }
+        if (gRemote.qrSize > 0) {
+            const float side = 190 * g.dpi, quiet = 4;
+            const float cell = side / (gRemote.qrSize + quiet * 2);
+            const ImVec2 p = ImGui::GetCursorScreenPos();
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            dl->AddRectFilled(p, ImVec2(p.x + side, p.y + side), IM_COL32(255, 255, 255, 255), 6 * g.dpi);
+            for (int y = 0; y < gRemote.qrSize; ++y)
+                for (int x = 0; x < gRemote.qrSize; ++x)
+                    if (gRemote.qr[y * gRemote.qrSize + x]) {
+                        const float x0 = p.x + (x + quiet) * cell, y0 = p.y + (y + quiet) * cell;
+                        dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + cell + 0.5f, y0 + cell + 0.5f), IM_COL32(0, 0, 0, 255));
+                    }
+            ImGui::Dummy(ImVec2(side, side));
+        }
+        ImGui::TextUnformatted("Scan with your phone's camera.");
+        ImGui::TextDisabled("Or open %s", url.c_str());
+        ImGui::TextDisabled("The code works once; each phone gets a new one.");
+    }
+    ImGui::TextDisabled("The phone and this computer must be on the same Wi-Fi (or this computer joins the "
+                        "phone's hotspot).");
+#ifdef _WIN32
+    ImGui::TextDisabled("If Windows asks, allow Dropocalypse on private networks.");
+#endif
+    ImGui::Spacing();
+    const std::string phones = remote_clients(gRemote.server);
+    if (phones.empty()) ImGui::TextDisabled("No phones connected.");
+    else {
+        ImGui::TextUnformatted("Connected:");
+        size_t a = 0;
+        while (a < phones.size()) {
+            size_t b = phones.find('\n', a);
+            ImGui::BulletText("%s", phones.substr(a, b - a).c_str());
+            a = b + 1;
+        }
+        if (ui3d::button("Disconnect phones")) remote_disconnect_all(gRemote.server);
+    }
+    ImGui::PopTextWrapPos();
+}
+
 // ---- Panel contents, shared by the toolbar's drop-downs and the detached controls window.
 static void motionPanelBody(RenderSettings& r) {
     ui3d::beginWell();
@@ -1884,6 +2132,8 @@ static void drawToolbar(float dt) {
     it.id = "##detach"; it.word = "Detach"; it.right = true;   // always the full word: easy to find
     it.name = "Move the controls into their own window (for a second screen)";
     const int iDetach = add(it);
+    const int iPhone = menuKey("##phone", "Phone", "P", "Phone remote", true);
+    if (g.settings.phoneRemote && gRemote.server && remote_client_count(gRemote.server) > 0) bar[iPhone].look = Look::Lit;
     const int iScreen = menuKey("##screen", "Screen", "S", "Screen", true);
     std::string updWord = installBusy() ? "Updating " + std::to_string((int)(gInstall.progress * 100)) + "%"
                           : highlight   ? "Update " + g.settings.latestVersion
@@ -1909,6 +2159,7 @@ static void drawToolbar(float dt) {
     if (bar[iRec].clicked) toggleRecording();
     if (bar[iRecOpts].clicked) ui3d::openUnder("recopts", bar[iRecOpts]);
     if (bar[iDetach].clicked) g.wantDetach = 1;
+    if (bar[iPhone].clicked) ui3d::openUnder("phone", bar[iPhone]);
     if (bar[iScreen].clicked) ui3d::openUnder("screen", bar[iScreen]);
     if (bar[iUpd].clicked) ui3d::openUnder("update", bar[iUpd]);
     if (bar[iKeys].clicked) ui3d::openUnder("keys", bar[iKeys]);
@@ -1955,6 +2206,12 @@ static void drawToolbar(float dt) {
     if (ui3d::beginMenu("recopts", "Recording")) {
         body(menuW);
         recordSettingsBody();
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    if (ui3d::beginMenu("phone", "Phone remote", "Control Dropocalypse from your phone")) {
+        body(280 * g.dpi);
+        phonePanelBody();
         ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
@@ -2083,6 +2340,7 @@ static void drawControlsPanel() {
         audioPanelBody();
     if (ui3d::section("Look")) lookPanelBody(r);
     if (ui3d::section("Keyboard shortcuts")) keysPanelBody();
+    if (ui3d::section("Phone remote", g.settings.phoneRemote ? ImGuiTreeNodeFlags_DefaultOpen : 0)) phonePanelBody();
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -2532,6 +2790,8 @@ int main(int argc, char** argv) {
         // Feed settings to the audio thread.
         g.audio.analysis.sensitivity.store(g.settings.sensitivity);
         g.audio.analysis.beatThreshold.store(g.settings.beatThreshold);
+
+        remoteTick();   // the phone remote
 
         // Visualizer.
         if (g.milkRescan) refreshMilkdrop();

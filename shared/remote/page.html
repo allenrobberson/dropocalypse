@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191922">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Dropocalypse remote</title>
+<style>
+:root {
+  --bar: #191922; --panel: #1e1e29; --well: #14141c; --key: #343445; --key-down: #2a2a38;
+  --rim: #5a5a70; --base: #0d0d14; --label: #f0f0f8; --dim: #a0a0b8; --pink: #ff4fa8;
+  --pink-base: #8a1f57; --pink-label: #2a0a1a; --groove: #0b0b11; --cap: #c8c8d9; --green: #1f8f6a;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bar); color: var(--label);
+  font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+body { padding: 0 16px calc(24px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+header { position: sticky; top: 0; z-index: 5; margin: 0 -16px 8px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: rgba(25,25,34,.94); backdrop-filter: blur(8px); border-bottom: 3px solid var(--base);
+  display: flex; align-items: center; gap: 10px; }
+header h1 { font-size: 17px; margin: 0; flex: 1; letter-spacing: .02em; }
+header h1 b { color: var(--pink); }
+#status { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+#status i { width: 9px; height: 9px; border-radius: 50%; background: #777; display: inline-block; }
+#status.ok i { background: #3ddc97; }
+#status.bad i { background: #ff6b6b; }
+#notice { display: none; margin: 16px 0; padding: 14px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--rim); }
+#notice.show { display: block; }
+.heading { margin: 20px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--dim);
+  text-transform: uppercase; }
+details { margin: 10px 0; border-radius: 12px; background: var(--panel); border: 1px solid #2c2c3a; }
+details > summary { list-style: none; padding: 13px 14px; font-weight: 600; cursor: pointer; display: flex;
+  align-items: center; gap: 10px; border-radius: 12px; background: var(--key);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 3px 0 var(--base); }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--dim);
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform .15s; }
+details[open] > summary::before { transform: rotate(90deg); }
+details > .body { padding: 12px 14px 14px; }
+details details { background: transparent; border-color: #2a2a37; }
+.well { background: var(--well); border-radius: 10px; padding: 6px 12px 10px; margin: 8px 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.5); }
+.label { margin: 12px 0 2px; font-size: 14px; }
+.hint { font-size: 13px; color: var(--dim); margin: 8px 0; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.row .grow { flex: 1; }
+button.key { appearance: none; border: 1px solid var(--rim); color: var(--label); background: var(--key);
+  font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 10px; min-height: 44px;
+  box-shadow: 0 3px 0 var(--base); cursor: pointer; }
+button.key:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--base); background: var(--key-down); }
+button.key.small { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+button.key.full { width: 100%; }
+button.key:disabled { opacity: .45; }
+/* fader */
+.fader { padding: 6px 0 2px; }
+.fader .top { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 2px; }
+.fader .val { color: var(--pink); font-variant-numeric: tabular-nums; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: var(--groove);
+  box-shadow: inset 0 1px 2px #000, 0 1px 0 #34344a; }
+input[type=range]::-moz-range-track { height: 8px; border-radius: 4px; background: var(--groove); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 26px; margin-top: -9px;
+  border-radius: 6px; background: linear-gradient(#e7e7f1, var(--cap)); border: 1px solid #4a4a5e;
+  box-shadow: 0 2px 0 #4a4a5e; }
+input[type=range]::-moz-range-thumb { width: 30px; height: 26px; border-radius: 6px; background: var(--cap); border: 1px solid #4a4a5e; }
+/* switch */
+label.switch { display: flex; align-items: center; gap: 12px; margin: 10px 0; min-height: 36px; cursor: pointer; }
+label.switch input { display: none; }
+label.switch .track { flex: none; width: 50px; height: 30px; border-radius: 15px; background: var(--groove);
+  position: relative; box-shadow: inset 0 1px 3px #000; transition: background .15s; }
+label.switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--cap); transition: left .15s; box-shadow: 0 1px 2px #000; }
+label.switch input:checked + .track { background: var(--pink); }
+label.switch input:checked + .track::after { left: 23px; }
+/* style picker */
+.picker { display: flex; gap: 8px; align-items: stretch; margin: 8px 0; }
+.picker select { flex: 1; min-width: 0; appearance: none; -webkit-appearance: none; font: inherit; font-weight: 600;
+  color: var(--label); background: #22222e; border: 1px solid #44445a; border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 3px 0 var(--base); text-overflow: ellipsis; }
+.picker button { width: 52px; font-size: 20px; }
+/* style list */
+.slist { background: var(--well); border-radius: 10px; padding: 4px; border: 1px solid #000; margin: 8px 0; }
+.slist .sub { font-size: 12px; font-weight: 600; color: var(--dim); padding: 12px 8px 4px; }
+.srow { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 8px; border-radius: 8px; }
+.srow.cur { background: rgba(255,79,168,.22); }
+.srow .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 10px 0; }
+.srow.cur .name { font-weight: 700; }
+.srow .num { color: var(--dim); font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+.srow.cur .name::after { content: " \25B6"; color: var(--pink); font-size: 11px; }
+.srow input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--pink); flex: none; margin: 0; }
+.vlist { position: relative; overflow-y: auto; max-height: 360px; -webkit-overflow-scrolling: touch; }
+input.search { width: 100%; font: inherit; font-size: 16px; color: var(--label); background: #101018;
+  border: 1px solid #44445a; border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
+.milk { padding: 0 4px; }
+</style>
+</head>
+<body>
+<header><h1><b>Drop</b>ocalypse</h1><div id="status"><i></i><span>Connecting…</span></div></header>
+<div id="notice"></div>
+<main id="app"></main>
+<script>
+"use strict";
+(() => {
+  const app = document.getElementById("app");
+  const statusEl = document.getElementById("status");
+  const notice = document.getElementById("notice");
+  const params = new URLSearchParams(location.search);
+  let pair = params.get("pair") || "";
+  let token = "";
+  try { token = localStorage.getItem("dropocalypse.token") || ""; } catch (e) {}
+
+  let ws = null, schema = null, platform = "windows", built = false;
+  const state = {};              // id -> value
+  const watchers = {};           // id -> [fn]
+  const busy = {};               // id -> time until which incoming values are ignored (being dragged)
+  let styles = {names: [], builtIn: 0, bundledEnd: 0, userStart: -1};
+  const styleWatchers = [];
+
+  function setStatus(text, cls) {
+    statusEl.className = cls || "";
+    statusEl.querySelector("span").textContent = text;
+  }
+  function showNotice(text) { notice.textContent = text; notice.classList.toggle("show", !!text); }
+
+  // ---- Values
+  function watch(id, fn) { (watchers[id] = watchers[id] || []).push(fn); if (id in state) fn(state[id]); }
+  function changed(id) { (watchers[id] || []).forEach(fn => fn(state[id])); }
+  function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+  const pendingSet = {};
+  let flushQueued = false;
+  function set(id, v) {          // coalesced: at most one message per value per animation frame
+    state[id] = v;
+    pendingSet[id] = v;
+    if (!flushQueued) {
+      flushQueued = true;
+      requestAnimationFrame(() => {
+        flushQueued = false;
+        for (const k in pendingSet) { send({t: "set", id: k, v: pendingSet[k]}); delete pendingSet[k]; }
+      });
+    }
+  }
+  function act(id, extra) { send(Object.assign({t: "act", id: id}, extra || {})); }
+
+  // ---- printf-style formats from the schema: "%.2f", "%.0f s", "%d of %d"
+  function fmt(f, ...args) {
+    let k = 0;
+    return String(f).replace(/%(\.(\d+))?([dfs%])/g, (m, _p, prec, ch) => {
+      if (ch === "%") return "%";
+      const a = args[k++];
+      if (ch === "d") return String(Math.round(a));
+      if (ch === "f") return Number(a).toFixed(prec === undefined ? 6 : +prec);
+      return String(a);
+    });
+  }
+
+  // Applies the per-platform fields ("mac": {...}) to every object, recursively.
+  function resolve(o) {
+    if (Array.isArray(o)) return o.filter(x => !(x && x.only && x.only.indexOf(platform) < 0)).map(resolve);
+    if (!o || typeof o !== "object") return o;
+    const out = {};
+    for (const k in o) if (k !== "mac" && k !== "windows" && k !== "linux") out[k] = resolve(o[k]);
+    if (o[platform] && typeof o[platform] === "object") Object.assign(out, resolve(o[platform]));
+    return out;
+  }
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function keyButton(label, onClick, cls) {
+    const b = el("button", "key" + (cls ? " " + cls : ""), label);
+    b.type = "button";
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  // ---- Widgets
+  const widgets = {
+    heading: (it) => el("div", "heading", it.title),
+    label: (it) => el("div", "label", it.text),
+    hint: (it) => el("div", "hint", it.text),
+    well: (it) => { const w = el("div", "well"); renderItems(it.items, w); return w; },
+    row: (it) => { const w = el("div", "row"); renderItems(it.items, w); return w; },
+    collapsible: (it) => {
+      const d = el("details");
+      d.open = !!it.open;
+      d.appendChild(el("summary", "", it.title));
+      const body = el("div", "body");
+      if (it.hint) body.appendChild(el("div", "hint", it.hint));
+      renderItems(it.items, body);
+      d.appendChild(body);
+      return d;
+    },
+    slider: (it) => {
+      const w = el("div", "fader");
+      const top = el("div", "top");
+      const val = el("span", "val");
+      top.append(el("span", "", it.label), val);
+      const r = el("input");
+      r.type = "range";
+      r.min = it.min; r.max = it.max;
+      r.step = it.step || ((it.max - it.min) / 1000);
+      const show = v => { val.textContent = fmt(it.format || "%.2f", v); };
+      r.addEventListener("input", () => {
+        busy[it.id] = Date.now() + 600;
+        const v = parseFloat(r.value);
+        show(v);
+        set(it.id, v);
+      });
+      watch(it.id, v => { if (!(busy[it.id] > Date.now())) { r.value = v; show(v); } });
+      w.append(top, r);
+      return w;
+    },
+    toggle: (it) => {
+      const l = el("label", "switch");
+      const c = el("input");
+      c.type = "checkbox";
+      const text = el("span", "", it.label);
+      c.addEventListener("change", () => set(it.id, c.checked));
+      l.append(c, el("span", "track"), text);
+      watch(it.id, v => { c.checked = !!v; });
+      return l;
+    },
+    button: (it) => keyButton(it.label, () => act(it.act), (it.small ? "small" : "") + (it.full ? " full" : "")),
+    stylePicker: (it) => {
+      const w = el("div", "picker");
+      const sel = el("select");
+      sel.addEventListener("change", () => set(it.id, parseInt(sel.value, 10)));
+      const fill = () => {
+        sel.textContent = "";
+        styles.names.forEach((n, i) => {
+          const o = el("option", "", n);
+          o.value = i;
+          sel.appendChild(o);
+        });
+        if (it.id in state) sel.value = state[it.id];
+      };
+      styleWatchers.push(fill);
+      watch(it.id, v => { sel.value = v; });
+      w.append(keyButton("◀", () => act(it.prev)), sel, keyButton("▶", () => act(it.next)));
+      return w;
+    },
+    styleList: (it) => {
+      const box = el("div", "slist");
+      const rows = [];
+      const build = () => {
+        box.textContent = "";
+        rows.length = 0;
+        const end = Math.min(styles.names.length, styles.bundledEnd);
+        for (let i = 0; i < end; ++i) {
+          if (i === styles.builtIn && end > styles.builtIn) box.appendChild(el("div", "sub", it.milkdropHeading));
+          const row = el("div", "srow");
+          const c = el("input");
+          c.type = "checkbox";
+          c.addEventListener("change", () => act(it.setCycle, {i: i, v: c.checked}));
+          const name = el("div", "name");
+          name.textContent = styles.names[i];
+          name.addEventListener("click", () => set(it.id, i));
+          row.append(c, el("span", "num", (i + 1) + "."), name);
+          box.appendChild(row);
+          rows.push({row, c});
+        }
+        mark();
+      };
+      const mark = () => {
+        const cur = state[it.id], cyc = state[it.cycle] || "";
+        rows.forEach((r, i) => {
+          r.row.classList.toggle("cur", i === cur);
+          r.c.checked = cyc[i] === "1";
+        });
+      };
+      styleWatchers.push(build);
+      watch(it.id, mark);
+      watch(it.cycle, mark);
+      return box;
+    },
+    milkFolder: (it) => {
+      const w = el("div", "milk");
+      w.appendChild(el("div", "sub heading", it.heading));
+      const info = el("div", "hint");
+      const btns = el("div", "row");
+      const chooseB = keyButton(it.choose.label, () => act(it.choose.act), "small");
+      const extra = it.buttons.map(b => keyButton(b.label, () => act(b.act), "small"));
+      btns.append(chooseB, ...extra);
+      const countEl = el("div", "hint");
+      const cyc = widgets.toggle({id: it.cycleUser.id, label: it.cycleUser.label});
+      const search = el("input", "search");
+      search.type = "search";
+      search.placeholder = it.search;
+      const list = el("div", "slist vlist");
+      const inner = el("div");
+      inner.style.position = "relative";
+      list.appendChild(inner);
+      const noMatch = el("div", "hint", it.noMatch);
+      w.append(info, btns, countEl, cyc, search, list, noMatch);
+
+      const ROW = 42;
+      let shown = [];
+      const drawRows = () => {   // only the rows in view: the folder can hold thousands of presets
+        const top = list.scrollTop, h = list.clientHeight || 360;
+        const a = Math.max(0, Math.floor(top / ROW) - 5), b = Math.min(shown.length, Math.ceil((top + h) / ROW) + 5);
+        inner.textContent = "";
+        inner.style.height = (shown.length * ROW) + "px";
+        const cur = state["style.index"];
+        for (let k = a; k < b; ++k) {
+          const i = shown[k];
+          const row = el("div", "srow" + (i === cur ? " cur" : ""));
+          row.style.position = "absolute"; row.style.left = 0; row.style.right = 0; row.style.top = (k * ROW) + "px";
+          const name = el("div", "name", styles.names[i]);
+          name.addEventListener("click", () => set("style.index", i));
+          row.appendChild(name);
+          inner.appendChild(row);
+        }
+      };
+      list.addEventListener("scroll", () => requestAnimationFrame(drawRows));
+      const filter = () => {
+        shown = [];
+        const s = styles.userStart;
+        const needle = search.value.trim().toLowerCase();
+        if (s >= 0) for (let i = s; i < styles.names.length; ++i)
+          if (!needle || styles.names[i].toLowerCase().indexOf(needle) >= 0) shown.push(i);
+        drawRows();
+        update();
+      };
+      search.addEventListener("input", filter);
+      const update = () => {
+        const st = state[it.id] || {};
+        const has = !!st.folder;
+        if (st.available === false) {
+          info.textContent = st.error || "";
+          [btns, countEl, cyc, search, list, noMatch].forEach(e => e.style.display = "none");
+          return;
+        }
+        info.textContent = has ? st.folder : it.emptyHint;
+        chooseB.textContent = has ? it.change.label : it.choose.label;
+        btns.style.display = "";
+        extra.forEach(b => b.style.display = has ? "" : "none");
+        const ready = has && !st.scanning && st.count > 0;
+        countEl.style.display = has && (st.scanning || st.count === 0 || (st.truncated ? it.countTruncated : it.count)) ? "" : "none";
+        countEl.textContent = st.scanning ? it.scanning : st.count === 0 ? it.none
+          : fmt(st.truncated ? it.countTruncated : it.count, st.count);
+        cyc.style.display = ready ? "" : "none";
+        cyc.querySelector("span:last-child").textContent =
+          fmt(st.truncated && it.cycleUser.labelTruncated ? it.cycleUser.labelTruncated : it.cycleUser.label, st.count, st.count);
+        search.style.display = ready ? "" : "none";
+        list.style.display = ready && shown.length ? "" : "none";
+        noMatch.style.display = ready && !shown.length ? "" : "none";
+      };
+      styleWatchers.push(filter);
+      watch(it.id, () => { update(); });
+      watch("style.index", drawRows);
+      return w;
+    },
+    cycleSummary: (it) => {
+      const t = el("div", "hint");
+      const update = () => {
+        const cyc = state[it.id] || "";
+        const fixed = Math.min(styles.names.length, styles.bundledEnd);
+        let checked = 0;
+        for (let i = 0; i < fixed; ++i) if (cyc[i] === "1") ++checked;
+        t.textContent = checked === 0 ? it.none
+          : fmt(it.some, checked, fixed) + (styles.userStart >= 0 && state["milk.cycleUser"] ? it.plusUser : "");
+      };
+      styleWatchers.push(update);
+      watch(it.id, update);
+      watch("milk.cycleUser", update);
+      return t;
+    },
+  };
+
+  function renderItems(items, parent) {
+    (items || []).forEach(it => {
+      const make = widgets[it.type];
+      if (make) parent.appendChild(make(it));
+    });
+  }
+
+  function build() {
+    app.textContent = "";
+    const s = resolve(schema);
+    const order = (schema.order && schema.order[platform]) || s.sections.map(x => x.id);
+    order.forEach(id => {
+      const sec = s.sections.find(x => x.id === id);
+      if (!sec) return;   // not on the phone yet
+      if (sec.kind === "collapsible") app.appendChild(widgets.collapsible(sec));
+      else { app.appendChild(widgets.heading(sec)); renderItems(sec.items, app); }
+    });
+    built = true;
+  }
+
+  // ---- Connection
+  let attempt = 0;
+  function connect() {
+    const q = token ? "token=" + encodeURIComponent(token) : pair ? "pair=" + encodeURIComponent(pair) : "";
+    if (!q) {
+      setStatus("Not paired", "bad");
+      showNotice("Scan the QR code in Dropocalypse (Phone remote) to connect this phone.");
+      return;
+    }
+    let hello = false;
+    const usedToken = !!token;
+    ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws?" + q);
+    ws.onmessage = (e) => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === "hello") {
+        hello = true;
+        attempt = 0;
+        token = m.token;
+        try { localStorage.setItem("dropocalypse.token", token); } catch (err) {}
+        if (pair) { pair = ""; history.replaceState(null, "", location.pathname); }
+        platform = m.platform || platform;
+        if (!built || JSON.stringify(m.schema) !== JSON.stringify(schema)) { schema = m.schema; build(); }
+        setStatus("Connected", "ok");
+        showNotice("");
+      } else if (m.t === "state") {
+        for (const k in m.v) { state[k] = m.v[k]; changed(k); }
+      } else if (m.t === "styles") {
+        styles = m;
+        styleWatchers.forEach(fn => fn());
+      } else if (m.t === "bye") {
+        showNotice(m.text || "Disconnected.");
+      }
+    };
+    ws.onclose = () => {
+      ws = null;
+      setStatus("Reconnecting…", "bad");
+      if (hello) { setTimeout(connect, 800); return; }
+      // Never got in. Is the computer there at all (asleep / other Wi-Fi), or was the code refused?
+      fetch("/", {cache: "no-store"}).then(() => {
+        if (usedToken) {
+          token = "";
+          try { localStorage.removeItem("dropocalypse.token"); } catch (err) {}
+          if (pair) return setTimeout(connect, 100);
+        }
+        pair = "";
+        setStatus("Not paired", "bad");
+        showNotice("This pairing code was already used or has expired. Scan the QR code in Dropocalypse again.");
+      }).catch(() => {
+        attempt++;
+        showNotice(attempt > 2 ? "Can't reach Dropocalypse. Is the phone on the same Wi-Fi as the computer, and is Phone remote still on?" : "");
+        setTimeout(connect, Math.min(5000, 1000 * attempt));
+      });
+    };
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !ws) connect();
+  });
+  connect();
+})();
+</script>
+</body>
+</html>

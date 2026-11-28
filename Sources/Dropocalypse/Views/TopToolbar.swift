@@ -18,6 +18,7 @@ struct TopToolbar: View {
     @State var showKeys = false
     @State private var milkFilter = ""
     @State var showUpdates = false
+    @State var showPhone = UserDefaults.standard.bool(forKey: "phoneRemote")
 
     var body: some View {
         if vertical { verticalBody } else { horizontalBody }
@@ -90,6 +91,9 @@ struct TopToolbar: View {
                     }
                 }
                 DisclosureGroup("Keyboard shortcuts", isExpanded: $showKeys) { shortcuts }
+                DisclosureGroup("Phone remote", isExpanded: $showPhone) {
+                    PhoneRemotePanel(remote: model.phone, settings: settings)
+                }
 
                 Divider()
                 Button {
@@ -171,6 +175,12 @@ struct TopToolbar: View {
             Button("Detach") { model.detachControls() }
                 .buttonStyle(RaisedKeyStyle(height: 36))
                 .help("Move the controls into their own window, for a second screen (D)")
+            menuKey("Phone", letter: "P", name: "Phone remote", id: "phone", letters: letters,
+                    look: model.phone.phones.isEmpty ? .normal : .lit) {
+                MenuPanel(title: "Phone remote", subtitle: "Control Dropocalypse from your phone", width: 310) {
+                    PhoneRemotePanel(remote: model.phone, settings: settings)
+                }
+            }
             menuKey("Screen", letter: "S", name: "Screen", id: "screen", letters: letters) { screenMenu }
             if UpdateChecker.isEnabled {
                 let highlight = updates.showBadge || updates.isBusy

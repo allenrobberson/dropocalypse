@@ -9,9 +9,18 @@ let package = Package(
             name: "DropocalypseCore",
             path: "Sources/DropocalypseCore"
         ),
+        // The phone remote's web server, shared with the Windows and Linux apps.
+        .target(
+            name: "DropoRemote",
+            path: "shared/remote",
+            exclude: ["page.html", "schema.json", "tests"],
+            sources: ["remote_server.cpp", "qrcodegen.c"],
+            publicHeadersPath: "include",
+            cxxSettings: [.headerSearchPath(".")]
+        ),
         .executableTarget(
             name: "Dropocalypse",
-            dependencies: ["DropocalypseCore"],
+            dependencies: ["DropocalypseCore", "DropoRemote"],
             path: "Sources/Dropocalypse",
             linkerSettings: [
                 .linkedFramework("AppKit"),
@@ -28,5 +37,6 @@ let package = Package(
             dependencies: ["DropocalypseCore"],
             path: "Tests/DropocalypseCoreTests"
         ),
-    ]
+    ],
+    cxxLanguageStandard: .cxx17
 )
